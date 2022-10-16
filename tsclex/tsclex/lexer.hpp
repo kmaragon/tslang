@@ -19,6 +19,7 @@
 #pragma once
 
 #include <istream>
+#include <optional>
 #include "source_location.hpp"
 
 namespace tscc::lex {
@@ -121,47 +122,24 @@ private:
 
 		constexpr position_t() noexcept : offset(0) {}
 
-		constexpr position_t& operator+=(const position_t& other) noexcept {
-			auto original_offset = offset;
-
-			offset += other.offset;
-			line.current_line_number += other.line.current_line_number;
-			if (other.line.current_line_number) {
-				std::ptrdiff_t offset_line_delta =
-					static_cast<std::ptrdiff_t>(other.offset) -
-					static_cast<std::ptrdiff_t>(other.line.line_start_offset);
-
-				line.line_start_offset = offset - offset_line_delta;
-			}
-
-			return *this;
-		}
-
 		void advance_line() {
-			line.current_line_number++;
+			++line.current_line_number;
 			line.line_start_offset = offset;
 		}
 	};
 
-	enum class parse_state {
-		// the initial state when first parsing
-		initial,
-
-		// first line, first character - hash - may be a shebang
-		first_line_hash,
-
-		// a shebang
-		shebang,
-
-		// any token
-		scan_token,
-	};
+	constexpr void advance(std::size_t by = 1)
+	{
+		gpos_.offset += by;
+		buffer_offset_ += by;
+	}
 
 	// read more data from the stream into the buffer
-	bool buffer_more();
+	std::size_t next_code_point(wchar_t& into, std::size_t look_forward = 0);
 
 	// read the next token from the stream
-	bool read_next_token(token& into);
+	bool scan(token& into);
+	bool scan_shebang(std::size_t shebang_offset, token& into);
 
 	source_location location() const;
 
@@ -178,18 +156,19 @@ private:
 									  position_t& pos,
 									  token& into,
 									  bool eof);
-
-	template <bool (lexer::*processor)(char, position_t&, token&, bool)>
-	constexpr bool scan_next(token& into);
+	constexpr bool process_bang(char c, position_t& pos, token& into, bool eof);
 
 	std::istream& stream_;
 	std::shared_ptr<source> source_;
 
-	std::string buffer_;
+	// input buffer
+	std::string rbuffer_;
 	std::size_t buffer_offset_;
 
+	// output buffer
+	std::wstring wbuffer_;
+
 	position_t gpos_;
-	parse_state pstate_;
 
 	const iterator end_;
 	bool cr_;

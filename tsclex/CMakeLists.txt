@@ -4,7 +4,6 @@ set(SOURCES
         tsclex/error/unexpected_token.cpp
         tsclex/tokens/basic_token.cpp
         tsclex/tokens/comment_token.cpp
-        tsclex/tokens/shebang_command.cpp
         tsclex/tokens/shebang_token.cpp
         tsclex/lexer.cpp
         tsclex/source.cpp
@@ -17,7 +16,6 @@ set(HEADERS
         tsclex/error/unexpected_token.hpp
         tsclex/tokens/basic_token.hpp
         tsclex/tokens/comment_token.hpp
-        tsclex/tokens/shebang_command.hpp
         tsclex/tokens/shebang_token.hpp
         tsclex/lexer.hpp
         tsclex/source.hpp

@@ -20,7 +20,7 @@
 
 using namespace tscc::lex::tokens;
 
-comment_token::comment_token(std::string comment_body)
+comment_token::comment_token(std::wstring comment_body)
 	: body_(std::move(comment_body)) {}
 
 bool comment_token::operator==(
@@ -33,7 +33,7 @@ bool comment_token::operator!=(
 	return body_ != other.body_;
 }
 
-std::string comment_token::to_string() const
+std::wstring comment_token::to_string() const
 {
-	return body_;
+	return L"//" + body_;
 }

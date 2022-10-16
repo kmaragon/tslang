@@ -18,16 +18,22 @@
 
 #pragma once
 
+#include <string>
 #include "basic_token.hpp"
 
 namespace tscc::lex::tokens {
 
 class shebang_token : public basic_token {
 public:
+	shebang_token(std::wstring command);
+
 	bool operator==(const shebang_token& other) const;
 	bool operator!=(const shebang_token& other) const;
 
-	std::string to_string() const override;
+	std::wstring to_string() const override;
+
+private:
+	std::wstring cmd_;
 };
 
 }  // namespace tscc::lex::tokens

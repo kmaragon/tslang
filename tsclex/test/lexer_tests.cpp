@@ -30,9 +30,8 @@ TEST_CASE("Lexer", "[lexer]") {
 
 			std::vector<tscc::lex::token> tokens{subject.begin(),
 												 subject.end()};
-			REQUIRE(tokens.size() == 2);
-			REQUIRE(tokens[0]->to_string() == "#!");
-			REQUIRE(tokens[1]->to_string() == "/bin/bash");
+			REQUIRE(tokens.size() == 1);
+			REQUIRE(tokens[0]->to_string() == L"#!/bin/bash");
 		}
 
 		SECTION("Single line shebang with spaces and newline") {
@@ -42,9 +41,19 @@ TEST_CASE("Lexer", "[lexer]") {
 
 			std::vector<tscc::lex::token> tokens{subject.begin(),
 												 subject.end()};
-			REQUIRE(tokens.size() == 2);
-			REQUIRE(tokens[0]->to_string() == "#!");
-			REQUIRE(tokens[1]->to_string() == "/bin/bash");
+			REQUIRE(tokens.size() == 1);
+			REQUIRE(tokens[0]->to_string() == L"#!/bin/bash");
+		}
+
+		SECTION("Single line comment at EOF") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"  // this is a comment"};
+			tscc::lex::lexer subject(file, source);
+
+			std::vector<tscc::lex::token> tokens{subject.begin(),
+												 subject.end()};
+			REQUIRE(tokens.size() == 1);
+			REQUIRE(tokens[0]->to_string() == L"// this is a comment");
 		}
 	}
 }

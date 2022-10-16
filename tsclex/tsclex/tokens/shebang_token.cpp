@@ -20,16 +20,19 @@
 
 using namespace tscc::lex::tokens;
 
+shebang_token::shebang_token(std::wstring command)
+	: cmd_(std::move(command)) {}
+
 bool shebang_token::operator==(
 	const tscc::lex::tokens::shebang_token& other) const {
-	return true;
+	return cmd_ == other.cmd_;
 }
 
 bool shebang_token::operator!=(
 	const tscc::lex::tokens::shebang_token& other) const {
-	return false;
+	return cmd_ != other.cmd_;
 }
 
-std::string shebang_token::to_string() const {
-	return "#!";
+std::wstring shebang_token::to_string() const {
+	return L"#!" + cmd_;
 }

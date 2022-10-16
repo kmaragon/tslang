@@ -22,7 +22,6 @@
 #include <variant>
 #include "source_location.hpp"
 #include "tokens/comment_token.hpp"
-#include "tokens/shebang_command.hpp"
 #include "tokens/shebang_token.hpp"
 
 namespace tscc::lex {
@@ -128,8 +127,7 @@ public:
 
 private:
 	using all_tokens_t = std::variant<tokens::comment_token,
-									  tokens::shebang_token,
-									  tokens::shebang_command>;
+									  tokens::shebang_token>;
 
 	source_location location_;
 	std::optional<all_tokens_t> token_;

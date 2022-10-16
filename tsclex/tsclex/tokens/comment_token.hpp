@@ -28,15 +28,15 @@ namespace tscc::lex::tokens {
  */
 class comment_token : public basic_token {
 public:
-	comment_token(std::string comment_body);
+	comment_token(std::wstring comment_body);
 
 	bool operator==(const comment_token& other) const;
 	bool operator!=(const comment_token& other) const;
 
-	std::string to_string() const override;
+	std::wstring to_string() const override;
 
 private:
-	std::string body_;
+	std::wstring body_;
 };
 
 }  // namespace tscc::lex::tokens

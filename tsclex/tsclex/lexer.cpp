@@ -21,7 +21,6 @@
 #include "error/expected_command.hpp"
 #include "error/unexpected_token.hpp"
 #include "token.hpp"
-#include "tokens/shebang_command.hpp"
 #include "tokens/shebang_token.hpp"
 
 using namespace tscc::lex;
@@ -45,7 +44,7 @@ lexer::iterator& lexer::iterator::operator++() {
 	if (token_.use_count() > 1)
 		token_ = std::make_shared<token>();
 
-	if (!lexer_->read_next_token(*token_))
+	if (!lexer_->scan(*token_))
 		token_->undefine();
 	return *this;
 }
@@ -71,160 +70,9 @@ lexer::lexer(std::istream& stream, std::shared_ptr<source> stream_metadata)
 	: stream_(stream),
 	  source_(std::move(stream_metadata)),
 	  buffer_offset_(0),
-	  pstate_(parse_state::initial),
 	  end_(this),
-	  cr_(false) {}
-
-// private function template definition
-template <bool (lexer::*processor)(char, lexer::position_t&, token&, bool)>
-constexpr bool lexer::scan_next(token& into) {
-	position_t local_position{};
-	auto mark_offset = [&]() {
-		local_position.offset++;
-		gpos_ += local_position;
-		buffer_offset_ += local_position.offset;
-	};
-
-	for (; true; local_position.offset++) {
-		bool eof = false;
-
-		// see if we are on the second to last character
-		if ((local_position.offset + buffer_offset_ + 1) >= buffer_.size()) {
-			if (!buffer_more()) {
-				if ((local_position.offset + buffer_offset_) >= buffer_.size())
-					return false;
-				eof = true;
-			}
-		}
-
-		char c = buffer_[local_position.offset + buffer_offset_];
-
-		// if our prior character was a carriage return or if the current
-		// character is a newline, process the newline in our line / column
-		// accounting. We'll fall through regardless to let the individual
-		// rule handle what to do with it.
-		if (cr_ || c == '\n') {
-			if (c == '\n') {
-				local_position.advance_line();
-			} else {
-				local_position.offset--;
-				if (((this)->*(processor))('\r', local_position, into, eof)) {
-					mark_offset();
-					return true;
-				}
-
-				local_position.offset++;
-			}
-
-			cr_ = false;
-		}
-
-		// if we got a carriage return, we'll treat it as a newline
-		// if there's a newline after though, we'll treat the two together
-		// as a single line
-		if (c == '\r') {
-			cr_ = true;
-			if (!eof)
-				continue;
-		}
-
-		if (((this)->*(processor))(c, local_position, into, eof)) {
-			mark_offset();
-			return true;
-		}
-
-		// if we're at the end of file and the handler
-		// didn't return true, fail with a premature end
-		if (eof) {
-			return false;
-		}
-	}
-}
-
-constexpr bool lexer::process_initial(char c,
-									  position_t& pos,
-									  token& into,
-									  bool eof) {
-	auto line_number =
-		pos.line.current_line_number + gpos_.line.current_line_number;
-
-	// handle shebang only valid on the first line
-	if (line_number == 0) {
-		// if we already got a hash on the first line as the initial token
-		// check for the !, without it, that's an error
-		if (pstate_ == parse_state::first_line_hash) {
-			if (c == '!') {
-				// we have a shebang. Mark the token start
-				pstate_ = parse_state::shebang;
-				into.emplace_token<tokens::shebang_token>(location());
-				return true;
-			} else {
-				stream_.setstate(std::ios::failbit);
-				throw unexpected_token(location());
-			}
-		} else if (c == '#' && pstate_ == parse_state::initial) {
-			// we got a first line hash - it might be a shebang
-			pstate_ = parse_state::first_line_hash;
-			return false;
-		}
-	}
-
-	pstate_ = parse_state::scan_token;
-	return process_scan_token(c, pos, into, eof);
-}
-
-constexpr bool lexer::process_shebang(char c,
-									  position_t& pos,
-									  token& into,
-									  bool eof) {
-	auto bc = buffer_[buffer_offset_];
-	if (std::isspace(bc)) {
-		if (c == '\n' || eof) {
-			throw expected_command(location());
-		}
-
-		if (std::isspace(c)) {
-			pos.offset++;
-			gpos_ += pos;
-			buffer_offset_ += pos.offset;
-
-			pos = position_t{};
-			pos.offset--;
-			return false;
-		}
-	}
-
-	if (c == '\n' || eof) {
-		auto end = buffer_offset_ + pos.offset - (eof ? 0 : 1);
-		while (std::isspace(buffer_[end]))
-			--end;
-		++end;
-
-		auto command = buffer_.substr(buffer_offset_, end);
-		into.emplace_token<tokens::shebang_command>(location(),
-													std::move(command));
-		return true;
-	}
-
-	return false;
-}
-
-constexpr bool lexer::process_scan_token(char c,
-										 position_t& pos,
-										 token& into,
-										 bool eof) {
-	if (std::isspace(c)) {
-		pos.offset++;
-		gpos_ += pos;
-		buffer_offset_ += pos.offset;
-
-		pos = position_t{};
-		pos.offset--;
-		return false;
-	}
-
-	// TODO: update
-	return false;
+	  cr_(false) {
+	wbuffer_.reserve(buffer_size);
 }
 
 lexer::iterator lexer::begin() {
@@ -237,42 +85,310 @@ lexer::iterator lexer::end() {
 	return end_;
 }
 
-bool lexer::buffer_more() {
-	// first move the content that is already consumed
-	std::size_t current_size = buffer_.size();
-	if (buffer_offset_) {
-		memmove(buffer_.data(), buffer_.data() + buffer_offset_,
-				buffer_.size() - buffer_offset_);
-		current_size -= buffer_offset_;
-		buffer_offset_ = 0;
+inline std::size_t lexer::next_code_point(wchar_t& into,
+										  std::size_t look_forward) {
+	auto read_more = [this](std::size_t needed) -> std::size_t {
+		if (stream_.eof())
+			return 0;
+
+		auto sn = needed;
+		while (true) {
+			auto preserve_size = rbuffer_.size() - buffer_offset_;
+			memmove(rbuffer_.data(), rbuffer_.data() + buffer_offset_,
+					preserve_size);
+			buffer_offset_ = 0;
+
+			rbuffer_.resize(buffer_size);
+			auto read = stream_.readsome(
+				rbuffer_.data() + preserve_size,
+				static_cast<std::streamsize>(buffer_size - preserve_size));
+
+			if (read <= 0) {
+				rbuffer_.resize(preserve_size);
+				return sn - needed;
+			}
+
+			rbuffer_.resize(buffer_offset_ + read);
+			needed -= std::min(needed, static_cast<std::size_t>(read));
+
+			if (!needed)
+				return sn;
+		}
+	};
+
+	if ((buffer_offset_ + look_forward) >= rbuffer_.size()) {
+		if (!read_more(1))
+			return 0;
 	}
 
-	// ensure we have at least buffer_size available in teh buffer
-	buffer_.resize(current_size + buffer_size);
-	auto read = stream_.readsome(buffer_.data() + current_size, buffer_.size());
-	if (read > 0) {
-		buffer_.resize(current_size + read);
-		return true;
+	// get one character
+	auto chr0 =
+		static_cast<unsigned char>(rbuffer_[buffer_offset_ + look_forward]);
+	// if the value is either below 0x7f or isn't a valid utf-8 codepoint
+	if (chr0 <= 0x7f || (chr0 & 0xc0) != 0xc0) {
+		into = chr0;
+		return 1;
 	}
 
-	buffer_.resize(current_size);
-	return false;
+	if ((chr0 & 0xe0) == 0xc0) {
+		// 2 characters -> 11 bits
+		if ((buffer_offset_ + look_forward + 1) >= rbuffer_.size() &&
+			read_more(1) < 1) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr1 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 1]);
+		if ((chr1 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		into = (static_cast<wchar_t>(chr0 & 0x1f) << 6) |
+			   static_cast<wchar_t>(chr1 & 0x3f);
+		return 2;
+	}
+
+	if ((chr0 & 0xf0) == 0xe0) {
+		// 3 characters -> 16 bits
+		if ((buffer_offset_ + look_forward + 2) >= rbuffer_.size() &&
+			read_more(2) < 2) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr1 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 1]);
+		if ((chr1 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr2 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 2]);
+		if ((chr2 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		into = (static_cast<wchar_t>(chr0 & 0x0f) << 12) |
+			   (static_cast<wchar_t>(chr1 & 0x3f) << 6) |
+			   static_cast<wchar_t>(chr2 & 0x3f);
+		return 3;
+	}
+
+	if ((chr0 & 0xf8) == 0xf0) {
+		// 4 characters -> 21 bits
+		if ((buffer_offset_ + look_forward + 3) >= rbuffer_.size() &&
+			read_more(3) < 3) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr1 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 1]);
+		if ((chr1 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr2 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 2]);
+		if ((chr2 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr3 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 3]);
+		if ((chr3 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		into = (static_cast<wchar_t>(chr0 & 0x07) << 18) |
+			   (static_cast<wchar_t>(chr1 & 0x3f) << 12) |
+			   (static_cast<wchar_t>(chr2 & 0x3f) << 6) |
+			   static_cast<wchar_t>(chr3 & 0x3f);
+		return 4;
+	}
+
+	if ((chr0 & 0xfc) == 0xf8) {
+		// 5 characters -> 26 bits
+		if ((buffer_offset_ + look_forward + 4) >= rbuffer_.size() &&
+			read_more(4) < 4) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr1 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 1]);
+		if ((chr1 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr2 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 2]);
+		if ((chr2 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr3 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 3]);
+		if ((chr3 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr4 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 4]);
+		if ((chr4 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		into = (static_cast<wchar_t>(chr0 & 0x03) << 24) |
+			   (static_cast<wchar_t>(chr1 & 0x3f) << 18) |
+			   (static_cast<wchar_t>(chr2 & 0x3f) << 12) |
+			   (static_cast<wchar_t>(chr3 & 0x3f) << 6) |
+			   static_cast<wchar_t>(chr4 & 0x3f);
+		return 5;
+	}
+
+	if ((chr0 & 0xfe) == 0xfc) {
+		// 6 characters -> 31 bits
+		if ((buffer_offset_ + look_forward + 5) >= rbuffer_.size() &&
+			read_more(5) < 5) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr1 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 1]);
+		if ((chr1 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr2 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 2]);
+		if ((chr2 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr3 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 3]);
+		if ((chr3 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr4 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 4]);
+		if ((chr4 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		auto chr5 = static_cast<unsigned char>(
+			rbuffer_[buffer_offset_ + look_forward + 5]);
+		if ((chr5 & 0xc0) != 0x80) {
+			into = chr0;
+			return 1;
+		}
+
+		into = (static_cast<wchar_t>(chr0 & 0x01) << 30) |
+			   (static_cast<wchar_t>(chr1 & 0x3f) << 24) |
+			   (static_cast<wchar_t>(chr2 & 0x3f) << 18) |
+			   (static_cast<wchar_t>(chr3 & 0x3f) << 12) |
+			   (static_cast<wchar_t>(chr4 & 0x3f) << 6) |
+			   static_cast<wchar_t>(chr5 & 0x3f);
+		return 6;
+	}
+
+	return chr0;
 }
 
-bool lexer::read_next_token(tscc::lex::token& into) {
-	try {
-		switch (pstate_) {
-			case parse_state::initial:
-			case parse_state::first_line_hash:
-				return scan_next<&lexer::process_initial>(into);
-			case parse_state::shebang:
-				return scan_next<&lexer::process_shebang>(into);
-			case parse_state::scan_token:
-				return scan_next<&lexer::process_scan_token>(into);
+bool lexer::scan_shebang(std::size_t shebang_offset, tscc::lex::token& into) {
+	wchar_t first{};
+	auto shebang_location = location();
+	advance(shebang_offset);
+
+	// skip any whitespace
+	while (true) {
+		auto nc = next_code_point(first);
+		if (!nc) {
+			throw expected_command(shebang_location);
 		}
-	} catch (const lex_error&) {
-		stream_.setstate(std::ios_base::failbit);
-		throw;
+
+		advance(nc);
+		if (!std::iswspace(first))
+			break;
+	}
+
+	wbuffer_.reserve(buffer_size);
+	wbuffer_.assign(&first, 1);
+
+	// read the command until a eof or an eol
+	while (true) {
+		auto nc = next_code_point(first);
+		if (!nc) {
+			// trim any whitespace off of the end
+			std::size_t end = wbuffer_.size();
+			while (std::iswspace(wbuffer_[end - 1])) {
+				end--;
+			}
+
+			wbuffer_.erase(end);
+			into.emplace_token<tokens::shebang_token>(shebang_location,
+													  std::move(wbuffer_));
+			return true;
+		}
+
+		advance(nc);
+		if (first == '\n') {
+			// trim any whitespace off of the end
+			std::size_t end = wbuffer_.size();
+			while (std::iswspace(wbuffer_[end - 1])) {
+				end--;
+			}
+
+			wbuffer_.erase(end);
+			gpos_.advance_line();
+			into.emplace_token<tokens::shebang_token>(shebang_location,
+													  std::move(wbuffer_));
+			return true;
+		}
+
+		if (wbuffer_.capacity() == wbuffer_.size()) {
+			wbuffer_.reserve(wbuffer_.size() + buffer_size);
+		}
+		wbuffer_.push_back(first);
+	}
+}
+
+bool lexer::scan(tscc::lex::token& into) {
+	while (true) {
+		wchar_t ch{};
+		auto pos = next_code_point(ch);
+
+		if (!ch)
+			return false;
+
+		// check for shebang
+		if (gpos_.offset == 0 && ch == L'#') {
+			wchar_t next{};
+			auto gs = next_code_point(next, pos);
+			if ((gs > 0) && next == L'!') {
+				return scan_shebang(pos + gs, into);
+			}
+		}
+
+		return false;
 	}
 }
 
