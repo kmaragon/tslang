@@ -19,6 +19,8 @@
 #include "lexer.hpp"
 #include <cstring>
 #include "error/expected_command.hpp"
+#include "error/invalid_character.hpp"
+#include "error/misplaced_shebang.hpp"
 #include "error/unexpected_token.hpp"
 #include "token.hpp"
 #include "tokens/shebang_token.hpp"
@@ -313,7 +315,7 @@ inline std::size_t lexer::next_code_point(wchar_t& into,
 	return chr0;
 }
 
-bool lexer::scan_shebang(std::size_t shebang_offset, tscc::lex::token& into) {
+void lexer::scan_shebang(std::size_t shebang_offset, tscc::lex::token& into) {
 	wchar_t first{};
 	auto shebang_location = location();
 	advance(shebang_offset);
@@ -346,7 +348,7 @@ bool lexer::scan_shebang(std::size_t shebang_offset, tscc::lex::token& into) {
 			wbuffer_.erase(end);
 			into.emplace_token<tokens::shebang_token>(shebang_location,
 													  std::move(wbuffer_));
-			return true;
+			return;
 		}
 
 		advance(nc);
@@ -361,7 +363,7 @@ bool lexer::scan_shebang(std::size_t shebang_offset, tscc::lex::token& into) {
 			gpos_.advance_line();
 			into.emplace_token<tokens::shebang_token>(shebang_location,
 													  std::move(wbuffer_));
-			return true;
+			return;
 		}
 
 		if (wbuffer_.capacity() == wbuffer_.size()) {
@@ -369,6 +371,14 @@ bool lexer::scan_shebang(std::size_t shebang_offset, tscc::lex::token& into) {
 		}
 		wbuffer_.push_back(first);
 	}
+}
+
+void lexer::scan_string(tscc::lex::token& into) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+void lexer::scan_string_template(tscc::lex::token& into) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
 bool lexer::scan(tscc::lex::token& into) {
@@ -384,8 +394,618 @@ bool lexer::scan(tscc::lex::token& into) {
 			wchar_t next{};
 			auto gs = next_code_point(next, pos);
 			if ((gs > 0) && next == L'!') {
-				return scan_shebang(pos + gs, into);
+				scan_shebang(pos + gs, into);
+				return true;
 			}
+		}
+
+		switch (ch) {
+			case L'\r': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if ((gs > 0) && next == L'\n') {
+					pos += gs;
+				}
+
+				advance(pos);
+				gpos_.advance_line();
+				into.emplace_token<tokens::newline_token>(loc);
+				return true;
+			}
+			case L'\n': {
+				auto loc = location();
+				advance(pos);
+				gpos_.advance_line();
+				into.emplace_token<tokens::newline_token>(loc);
+				return true;
+			}
+			case L'\t':	  // tab
+			case 0x0b:	  // vertical tab
+			case 0x0c:	  // form feed
+			case L' ':	  // space
+			case 0xa0:	  // nbsp
+			case 0x1680:  // ogham space
+			case 0x2000:  // en quad
+			case 0x2001:  // em quad
+			case 0x2002:  // en space
+			case 0x2003:  // em space
+			case 0x2004:  // three per em space
+			case 0x2005:  // four per em space
+			case 0x2006:  // six per em space
+			case 0x2007:  // figure space
+			case 0x2008:  // punctuation space
+			case 0x2009:  // thin space
+			case 0x200a:  // hair space
+			case 0x200b:  // zero-width space
+			case 0x202f:  // narrow no break space
+			case 0x205f:  // medium mathematical space
+			case 0x3000:  // ideographic space
+			case 0xfeff:  // zero-width nbsp / bom
+				advance(pos);
+				break;
+			case L'!': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == L'=') {
+						wchar_t excnext{};
+						auto ggs = next_code_point(excnext, pos + gs);
+						if (ggs > 0 && excnext == '=') {
+							advance(pos + gs + ggs);
+							into.emplace_token<
+								tokens::exclamation_eq_eq_token>(loc);
+							return true;
+						}
+
+						advance(pos + gs);
+						into.emplace_token<tokens::exclamation_eq_token>(
+							loc);
+						return true;
+					}
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::exclamation_token>(loc);
+				return true;
+			}
+			case L'"':
+			case L'\'':
+				scan_string(into);
+				return true;
+			case L'`':
+				scan_string_template(into);
+				return true;
+			case L'%': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if ((gs > 0) && next == L'=') {
+					advance(pos + gs);
+					into.emplace_token<tokens::percent_eq_token>(loc);
+					return true;
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::percent_token>(loc);
+				return true;
+			}
+			case L'&': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == L'=') {
+						advance(pos + gs);
+						into.emplace_token<tokens::ampersand_eq_token>(loc);
+						return true;
+					}
+
+					if (next == L'&') {
+						wchar_t ampnext{};
+						auto ggs = next_code_point(ampnext, pos + gs);
+						if (ggs > 0 && ampnext == '=') {
+							advance(pos + gs + ggs);
+							into.emplace_token<
+								tokens::double_ampersand_eq_token>(loc);
+							return true;
+						}
+
+						advance(pos + gs);
+						into.emplace_token<tokens::double_ampersand_token>(loc);
+						return true;
+					}
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::ampersand_token>(loc);
+				return true;
+			}
+			case L'(':
+				into.emplace_token<tokens::open_paren_token>(location());
+				advance(pos);
+				break;
+			case L')':
+				into.emplace_token<tokens::close_paren_token>(location());
+				advance(pos);
+				break;
+			case L'*': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == L'=') {
+						advance(pos + gs);
+						into.emplace_token<tokens::asterisk_eq_token>(loc);
+						return true;
+					}
+
+					if (next == L'*') {
+						wchar_t astnext{};
+						auto ggs = next_code_point(astnext, pos + gs);
+						if (ggs > 0 && astnext == '=') {
+							advance(pos + gs + ggs);
+							into.emplace_token<
+								tokens::double_asterisk_eq_token>(loc);
+							return true;
+						}
+
+						advance(pos + gs);
+						into.emplace_token<tokens::double_asterisk_token>(loc);
+						return true;
+					}
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::asterisk_token>(loc);
+				return true;
+			}
+			case L'+': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == L'+') {
+						advance(pos + gs);
+						into.emplace_token<tokens::double_plus_token>(loc);
+						return true;
+					}
+
+					if (next == L'=') {
+						advance(pos + gs);
+						into.emplace_token<tokens::plus_eq_token>(loc);
+						return true;
+					}
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::plus_token>(loc);
+				return true;
+			}
+			case L',':
+				into.emplace_token<tokens::comma_token>(location());
+				advance(pos);
+				break;
+			case L'-': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == L'-') {
+						advance(pos + gs);
+						into.emplace_token<tokens::double_minus_token>(loc);
+						return true;
+					}
+
+					if (next == L'=') {
+						advance(pos + gs);
+						into.emplace_token<tokens::minus_eq_token>(loc);
+						return true;
+					}
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::minus_token>(loc);
+				return true;
+			}
+			case L'.': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == L'.') {
+						wchar_t dotnext{};
+						auto ggs = next_code_point(dotnext, pos + gs);
+						if (ggs > 0 && dotnext == '.') {
+							advance(pos + gs + ggs);
+							into.emplace_token<tokens::triple_dot_token>(loc);
+							return true;
+						}
+					} else if (is_digit(next)) {
+						scan_decimal_number(into);
+						return true;
+					}
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::dot_token>(loc);
+				return true;
+			}
+			case L'/': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == L'=') {
+						advance(pos + gs);
+						into.emplace_token<tokens::slash_eq_token>(loc);
+						return true;
+					}
+
+					if (next == L'/') {
+						scan_line_comment(into);
+						return true;
+					}
+
+					if (next == L'*') {
+						bool is_jsdoc = false;
+
+						wchar_t astnext{};
+						auto ggs = next_code_point(astnext, pos + gs);
+						if (ggs > 0 && astnext == '*') {
+							gs += ggs;
+							is_jsdoc = true;
+						}
+
+						scan_multiline_comment(into, is_jsdoc);
+						return true;
+					}
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::slash_token>(loc);
+				return true;
+			}
+			case L'0': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == 'x' || next == 'X') {
+						advance(pos + gs);
+						scan_hex_number(into);
+						return true;
+					}
+
+					if (next == 'b' || next == 'B') {
+						advance(pos + gs);
+						scan_binary_number(into);
+						return true;
+					}
+
+					if (next == 'o' || next == 'O') {
+						advance(pos + gs);
+						scan_octal_number(into);
+						return true;
+					}
+
+					// try to parse an octal number
+					if (is_octal_digit(next) && scan_octal_number(into, false))
+						return true;
+				}
+			}
+			case L'1':
+			case L'2':
+			case L'3':
+			case L'4':
+			case L'5':
+			case L'6':
+			case L'7':
+			case L'8':
+			case L'9':
+				scan_decimal_number(into);
+				return true;
+			case L':':
+				into.emplace_token<tokens::colon_token>(location());
+				advance(pos);
+				break;
+			case L';':
+				into.emplace_token<tokens::semicolon_token>(location());
+				advance(pos);
+				break;
+			case L'<': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == L'=') {
+						advance(pos + gs);
+						into.emplace_token<tokens::less_eq_token>(loc);
+						return true;
+					}
+
+					if (next == L'<') {
+						wchar_t ltnext{};
+						auto ggs = next_code_point(ltnext, pos + gs);
+						if (ggs > 0) {
+							if (ltnext == L'<') {
+								scan_conflict_marker(into);
+								return true;
+							}
+
+							if (ltnext == L'=') {
+								advance(pos + gs + ggs);
+								into.emplace_token<tokens::double_less_eq_token>(
+									loc);
+								return true;
+							}
+						}
+
+						advance(pos + gs);
+						into.emplace_token<tokens::double_less_token>(loc);
+						return true;
+					}
+
+					if (is_alpha(next)) {
+						if (scan_jsx_token(into)) {
+							return true;
+						}
+					}
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::less_token>(loc);
+				return true;
+			}
+			case L'=': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == L'=') {
+						wchar_t eqnext{};
+						auto ggs = next_code_point(eqnext, pos + gs);
+						if (ggs > 0) {
+							if (eqnext == L'=') {
+								wchar_t eenext{};
+								auto gggs = next_code_point(eenext);
+
+								if (gggs > 0 && eenext == L'=') {
+									scan_conflict_marker(into);
+									return true;
+								}
+
+								advance(pos + gs + ggs);
+								into.emplace_token<tokens::triple_eq_token>(
+									loc);
+								return true;
+							}
+						}
+
+						advance(pos + gs);
+						into.emplace_token<tokens::double_eq_token>(loc);
+						return true;
+					}
+
+					if (next == L'>') {
+						advance(pos + gs);
+						into.emplace_token<tokens::eq_greater_token>(loc);
+						return true;
+					}
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::eq_token>(loc);
+				return true;
+			}
+			case L'>': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == L'=') {
+						advance(pos + gs);
+						into.emplace_token<tokens::greater_eq_token>(loc);
+						return true;
+					}
+
+					if (next == L'>') {
+						wchar_t gtnext{};
+						auto ggs = next_code_point(gtnext, pos + gs);
+						if (ggs > 0) {
+							if (gtnext == L'>') {
+								scan_conflict_marker(into);
+								return true;
+							}
+
+							if (gtnext == L'=') {
+								advance(pos + gs + ggs);
+								into.emplace_token<
+									tokens::double_greater_eq_token>(loc);
+								return true;
+							}
+						}
+
+						advance(pos + gs);
+						into.emplace_token<tokens::double_greater_token>(loc);
+						return true;
+					}
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::greater_token>(loc);
+				return true;
+			}
+			case L'?': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					wchar_t qnext{};
+					auto ggs = next_code_point(qnext, pos + gs);
+
+					if (next == L'.' && (ggs > 0) && !is_digit(qnext)) {
+						advance(pos + gs);
+						into.emplace_token<tokens::question_dot_token>(loc);
+						return true;
+					}
+
+					if (next == L'?') {
+						if ((ggs > 0) && qnext == L'=') {
+							advance(pos + gs + ggs);
+							into.emplace_token<
+								tokens::double_question_eq_token>(loc);
+							return true;
+						}
+
+						advance(pos + gs);
+						into.emplace_token<tokens::double_question_token>(
+							loc);
+						return true;
+					}
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::question_token>(loc);
+				return true;
+			}
+			case L'[':
+				into.emplace_token<tokens::open_bracket_token>(location());
+				advance(pos);
+				break;
+			case L']':
+				into.emplace_token<tokens::close_bracket_token>(location());
+				advance(pos);
+				break;
+			case L'^': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if ((gs > 0) && next == L'=') {
+					advance(pos + gs);
+					into.emplace_token<tokens::caret_eq_token>(loc);
+					return true;
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::caret_token>(loc);
+				return true;
+			}
+			case L'{':
+				into.emplace_token<tokens::open_brace_token>(location());
+				advance(pos);
+				break;
+			case L'|': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == L'=') {
+						advance(pos + gs);
+						into.emplace_token<tokens::bar_eq_token>(loc);
+						return true;
+					}
+
+					if (next == L'|') {
+						wchar_t gtnext{};
+						auto ggs = next_code_point(gtnext, pos + gs);
+						if (ggs > 0) {
+							if (gtnext == L'|') {
+								scan_conflict_marker(into);
+								return true;
+							}
+
+							if (gtnext == L'=') {
+								advance(pos + gs + ggs);
+								into.emplace_token<tokens::double_bar_eq_token>(
+									loc);
+								return true;
+							}
+						}
+
+						advance(pos + gs);
+						into.emplace_token<tokens::double_bar_token>(loc);
+						return true;
+					}
+				}
+
+				advance(pos);
+				into.emplace_token<tokens::bar_token>(loc);
+				return true;
+			}
+			case L'}':
+				into.emplace_token<tokens::close_brace_token>(location());
+				advance(pos);
+				break;
+			case L'~':
+				into.emplace_token<tokens::tilde_token>(location());
+				advance(pos);
+				break;
+			case L'@':
+				into.emplace_token<tokens::at_token>(location());
+				advance(pos);
+				break;
+			case L'\\': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == L'u') {
+						wchar_t ucnext{};
+						auto ggs = next_code_point(ucnext, pos + gs);
+						if (ggs > 0 && ucnext == L'{') {
+							scan_unicode_escape(into, 1, true, false);
+							return true;
+						}
+
+						scan_unicode_escape(into, 4, false, false);
+					}
+				}
+
+				throw invalid_character(loc);
+			}
+			case L'#': {
+				wchar_t next{};
+				auto gs = next_code_point(next, pos);
+
+				auto loc = location();
+				if (gs > 0) {
+					if (next == '!') {
+						throw misplaced_shebang(loc);
+					}
+
+					advance(pos);
+					if (try_scan_identifier(into, true)) {
+						return true;
+					}
+				}
+
+				throw invalid_character(loc);
+			}
+			default:
+				if (try_scan_identifier(into)) {
+					return true;
+				}
+
+				throw invalid_character(location());
 		}
 
 		return false;

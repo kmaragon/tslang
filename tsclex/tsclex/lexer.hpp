@@ -128,8 +128,7 @@ private:
 		}
 	};
 
-	constexpr void advance(std::size_t by = 1)
-	{
+	constexpr void advance(std::size_t by = 1) {
 		gpos_.offset += by;
 		buffer_offset_ += by;
 	}
@@ -139,24 +138,31 @@ private:
 
 	// read the next token from the stream
 	bool scan(token& into);
-	bool scan_shebang(std::size_t shebang_offset, token& into);
+	void scan_shebang(std::size_t shebang_offset, token& into);
+	void scan_string(token& into);
+	void scan_string_template(token& into);
+	void scan_line_comment(token& into);
+	void scan_multiline_comment(token& into, bool is_jsdoc);
+	void scan_binary_number(token& into);
+	bool scan_octal_number(token& into, bool throw_on_invalid = true);
+	void scan_decimal_number(token& into);
+	void scan_hex_number(token& into);
+	void scan_conflict_marker(token& into);
+	bool scan_jsx_token(token& into);
+	void scan_unicode_escape(token& into,
+							 std::size_t min_size,
+							 bool scan_as_many_as_possible,
+							 bool can_have_separators);
+
+	// consider unicode and is identifier start
+	bool try_scan_identifier(token& into, bool is_private = false);
+
+	static constexpr bool is_digit(wchar_t ch);
+	static constexpr bool is_octal_digit(wchar_t ch);
+	static constexpr bool is_hex_digit(wchar_t ch);
+	static constexpr bool is_alpha(wchar_t ch);
 
 	source_location location() const;
-
-	// handler functions
-	constexpr bool process_initial(char c,
-								   position_t& pos,
-								   token& into,
-								   bool eof);
-	constexpr bool process_shebang(char c,
-								   position_t& pos,
-								   token& into,
-								   bool eof);
-	constexpr bool process_scan_token(char c,
-									  position_t& pos,
-									  token& into,
-									  bool eof);
-	constexpr bool process_bang(char c, position_t& pos, token& into, bool eof);
 
 	std::istream& stream_;
 	std::shared_ptr<source> source_;
