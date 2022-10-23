@@ -16,4 +16,14 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "invalid_character.hpp"
+#include "misplaced_shebang.hpp"
+
+using namespace tscc::lex;
+
+misplaced_shebang::misplaced_shebang(
+	const tscc::lex::source_location& location) noexcept
+	: lex_error(location) {}
+
+const char* misplaced_shebang::what() const noexcept {
+	return "Shebang Command (#!) is only valid at the beginning of the file";
+}

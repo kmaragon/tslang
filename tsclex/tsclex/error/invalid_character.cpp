@@ -17,3 +17,13 @@
  */
 
 #include "invalid_character.hpp"
+
+using namespace tscc::lex;
+
+invalid_character::invalid_character(
+	const tscc::lex::source_location& location) noexcept
+	: lex_error(location) {}
+
+const char* invalid_character::what() const noexcept {
+	return "Invalid Character";
+}

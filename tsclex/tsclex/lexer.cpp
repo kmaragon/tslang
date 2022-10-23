@@ -381,6 +381,74 @@ void lexer::scan_string_template(tscc::lex::token& into) {
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
+void lexer::scan_line_comment(tscc::lex::token& into) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+void lexer::scan_multiline_comment(tscc::lex::token& into, bool is_jsdoc) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+void lexer::scan_binary_number(tscc::lex::token& into) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+bool lexer::scan_octal_number(tscc::lex::token& into, bool throw_on_invalid) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+void lexer::scan_decimal_number(tscc::lex::token& into) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+void lexer::scan_hex_number(tscc::lex::token& into) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+void lexer::scan_conflict_marker(tscc::lex::token& into) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+bool lexer::scan_jsx_token(tscc::lex::token& into) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+void lexer::scan_unicode_escape(tscc::lex::token& into, std::size_t min_size, bool scan_as_many_as_possible, bool can_have_separators) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+bool lexer::try_scan_identifier(tscc::lex::token& into, bool is_private) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+constexpr bool lexer::is_decimal_digit(wchar_t ch)
+{
+	return (ch >= L'0' && ch <= L'9') || (ch >= 0xff10 && ch <= 0xff19);
+}
+
+constexpr bool lexer::is_octal_digit(wchar_t ch)
+{
+	return (ch >= L'0' && ch <= L'8') || (ch >= 0xff10 && ch <= 0xff18);
+}
+
+constexpr bool lexer::is_hex_digit(wchar_t ch)
+{
+	return (ch >= L'0' && ch <= L'8') ||
+		   (ch >= L'A' && ch <= L'F') ||
+		   (ch >= L'a' && ch <= L'f') ||
+		   (ch >= 0xff21 && ch <= 0xff26) ||
+		   (ch >= 0xff41 && ch <= 0xff46) ||
+		   (ch >= 0xff10 && ch <= 0xff18);
+}
+
+constexpr bool lexer::is_alpha(wchar_t ch)
+{
+	return (ch >= L'A' && ch <= L'Z') ||
+		   (ch >= L'a' && ch <= L'z') ||
+		   (ch >= 0xff21 && ch <= 0xff3a) ||
+		   (ch >= 0xff41 && ch <= 0xff5a);
+}
+
 bool lexer::scan(tscc::lex::token& into) {
 	while (true) {
 		wchar_t ch{};
@@ -630,7 +698,7 @@ bool lexer::scan(tscc::lex::token& into) {
 							into.emplace_token<tokens::triple_dot_token>(loc);
 							return true;
 						}
-					} else if (is_digit(next)) {
+					} else if (is_decimal_digit(next)) {
 						scan_decimal_number(into);
 						return true;
 					}
@@ -859,7 +927,7 @@ bool lexer::scan(tscc::lex::token& into) {
 					wchar_t qnext{};
 					auto ggs = next_code_point(qnext, pos + gs);
 
-					if (next == L'.' && (ggs > 0) && !is_digit(qnext)) {
+					if (next == L'.' && (ggs > 0) && !is_decimal_digit(qnext)) {
 						advance(pos + gs);
 						into.emplace_token<tokens::question_dot_token>(loc);
 						return true;
