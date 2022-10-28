@@ -53,7 +53,18 @@ TEST_CASE("Lexer", "[lexer]") {
 			std::vector<tscc::lex::token> tokens{subject.begin(),
 												 subject.end()};
 			REQUIRE(tokens.size() == 1);
-			REQUIRE(tokens[0]->to_string() == L"// this is a comment");
+			REQUIRE(tokens[0]->to_string() == L"//this is a comment");
+		}
+
+		SECTION("Single line comment with spaces and newline") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"  //~ this is a comment \t \n  "};
+			tscc::lex::lexer subject(file, source);
+
+			std::vector<tscc::lex::token> tokens{subject.begin(),
+												 subject.end()};
+			REQUIRE(tokens.size() == 1);
+			REQUIRE(tokens[0]->to_string() == L"//~ this is a comment");
 		}
 	}
 }

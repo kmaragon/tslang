@@ -316,61 +316,16 @@ inline std::size_t lexer::next_code_point(wchar_t& into,
 }
 
 void lexer::scan_shebang(std::size_t shebang_offset, tscc::lex::token& into) {
-	wchar_t first{};
 	auto shebang_location = location();
 	advance(shebang_offset);
 
-	// skip any whitespace
-	while (true) {
-		auto nc = next_code_point(first);
-		if (!nc) {
-			throw expected_command(shebang_location);
-		}
+	scan_line_into_wbuffer();
 
-		advance(nc);
-		if (!std::iswspace(first))
-			break;
-	}
+	if (wbuffer_.empty())
+		throw expected_command(shebang_location);
 
-	wbuffer_.reserve(buffer_size);
-	wbuffer_.assign(&first, 1);
-
-	// read the command until a eof or an eol
-	while (true) {
-		auto nc = next_code_point(first);
-		if (!nc) {
-			// trim any whitespace off of the end
-			std::size_t end = wbuffer_.size();
-			while (std::iswspace(wbuffer_[end - 1])) {
-				end--;
-			}
-
-			wbuffer_.erase(end);
-			into.emplace_token<tokens::shebang_token>(shebang_location,
-													  std::move(wbuffer_));
-			return;
-		}
-
-		advance(nc);
-		if (first == '\n') {
-			// trim any whitespace off of the end
-			std::size_t end = wbuffer_.size();
-			while (std::iswspace(wbuffer_[end - 1])) {
-				end--;
-			}
-
-			wbuffer_.erase(end);
-			gpos_.advance_line();
-			into.emplace_token<tokens::shebang_token>(shebang_location,
-													  std::move(wbuffer_));
-			return;
-		}
-
-		if (wbuffer_.capacity() == wbuffer_.size()) {
-			wbuffer_.reserve(wbuffer_.size() + buffer_size);
-		}
-		wbuffer_.push_back(first);
-	}
+	into.emplace_token<tokens::shebang_token>(shebang_location,
+											  std::move(wbuffer_));
 }
 
 void lexer::scan_string(tscc::lex::token& into) {
@@ -381,8 +336,14 @@ void lexer::scan_string_template(tscc::lex::token& into) {
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
-void lexer::scan_line_comment(tscc::lex::token& into) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+void lexer::scan_line_comment(std::size_t comment_offset, tscc::lex::token& into) {
+	auto comment_location = location();
+	advance(comment_offset);
+
+	scan_line_into_wbuffer();
+
+	into.emplace_token<tokens::comment_token>(comment_location,
+											  std::move(wbuffer_));
 }
 
 void lexer::scan_multiline_comment(tscc::lex::token& into, bool is_jsdoc) {
@@ -413,7 +374,10 @@ bool lexer::scan_jsx_token(tscc::lex::token& into) {
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
-void lexer::scan_unicode_escape(tscc::lex::token& into, std::size_t min_size, bool scan_as_many_as_possible, bool can_have_separators) {
+void lexer::scan_unicode_escape(tscc::lex::token& into,
+								std::size_t min_size,
+								bool scan_as_many_as_possible,
+								bool can_have_separators) {
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
@@ -421,32 +385,80 @@ bool lexer::try_scan_identifier(tscc::lex::token& into, bool is_private) {
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
-constexpr bool lexer::is_decimal_digit(wchar_t ch)
-{
+constexpr bool lexer::is_decimal_digit(wchar_t ch) {
 	return (ch >= L'0' && ch <= L'9') || (ch >= 0xff10 && ch <= 0xff19);
 }
 
-constexpr bool lexer::is_octal_digit(wchar_t ch)
-{
+constexpr bool lexer::is_octal_digit(wchar_t ch) {
 	return (ch >= L'0' && ch <= L'8') || (ch >= 0xff10 && ch <= 0xff18);
 }
 
-constexpr bool lexer::is_hex_digit(wchar_t ch)
-{
-	return (ch >= L'0' && ch <= L'8') ||
-		   (ch >= L'A' && ch <= L'F') ||
-		   (ch >= L'a' && ch <= L'f') ||
-		   (ch >= 0xff21 && ch <= 0xff26) ||
-		   (ch >= 0xff41 && ch <= 0xff46) ||
-		   (ch >= 0xff10 && ch <= 0xff18);
+constexpr bool lexer::is_hex_digit(wchar_t ch) {
+	return (ch >= L'0' && ch <= L'8') || (ch >= L'A' && ch <= L'F') ||
+		   (ch >= L'a' && ch <= L'f') || (ch >= 0xff21 && ch <= 0xff26) ||
+		   (ch >= 0xff41 && ch <= 0xff46) || (ch >= 0xff10 && ch <= 0xff18);
 }
 
-constexpr bool lexer::is_alpha(wchar_t ch)
-{
-	return (ch >= L'A' && ch <= L'Z') ||
-		   (ch >= L'a' && ch <= L'z') ||
-		   (ch >= 0xff21 && ch <= 0xff3a) ||
-		   (ch >= 0xff41 && ch <= 0xff5a);
+constexpr bool lexer::is_alpha(wchar_t ch) {
+	return (ch >= L'A' && ch <= L'Z') || (ch >= L'a' && ch <= L'z') ||
+		   (ch >= 0xff21 && ch <= 0xff3a) || (ch >= 0xff41 && ch <= 0xff5a);
+}
+
+void lexer::scan_line_into_wbuffer(bool trim) {
+	wchar_t first{};
+
+	// skip any whitespace
+	while (true) {
+		auto nc = next_code_point(first);
+		if (!nc) {
+			wbuffer_.clear();
+			return;
+		}
+
+		advance(nc);
+		if (!trim || !std::iswspace(first))
+			break;
+	}
+
+	wbuffer_.reserve(buffer_size);
+	wbuffer_.assign(&first, 1);
+
+	// read the command until a eof or an eol
+	while (true) {
+		auto nc = next_code_point(first);
+		if (!nc) {
+			if (trim) {
+				// trim any whitespace off of the end
+				std::size_t end = wbuffer_.size();
+				while (std::iswspace(wbuffer_[end - 1])) {
+					end--;
+				}
+
+				wbuffer_.erase(end);
+			}
+			return;
+		}
+
+		advance(nc);
+		if (first == '\n') {
+			if (trim) {
+				// trim any whitespace off of the end
+				std::size_t end = wbuffer_.size();
+				while (std::iswspace(wbuffer_[end - 1])) {
+					end--;
+				}
+
+				wbuffer_.erase(end);
+			}
+			gpos_.advance_line();
+			return;
+		}
+
+		if (wbuffer_.capacity() == wbuffer_.size()) {
+			wbuffer_.reserve(wbuffer_.size() + buffer_size);
+		}
+		wbuffer_.push_back(first);
+	}
 }
 
 bool lexer::scan(tscc::lex::token& into) {
@@ -524,14 +536,13 @@ bool lexer::scan(tscc::lex::token& into) {
 						auto ggs = next_code_point(excnext, pos + gs);
 						if (ggs > 0 && excnext == '=') {
 							advance(pos + gs + ggs);
-							into.emplace_token<
-								tokens::exclamation_eq_eq_token>(loc);
+							into.emplace_token<tokens::exclamation_eq_eq_token>(
+								loc);
 							return true;
 						}
 
 						advance(pos + gs);
-						into.emplace_token<tokens::exclamation_eq_token>(
-							loc);
+						into.emplace_token<tokens::exclamation_eq_token>(loc);
 						return true;
 					}
 				}
@@ -721,7 +732,7 @@ bool lexer::scan(tscc::lex::token& into) {
 					}
 
 					if (next == L'/') {
-						scan_line_comment(into);
+						scan_line_comment(pos + gs, into);
 						return true;
 					}
 
@@ -815,8 +826,8 @@ bool lexer::scan(tscc::lex::token& into) {
 
 							if (ltnext == L'=') {
 								advance(pos + gs + ggs);
-								into.emplace_token<tokens::double_less_eq_token>(
-									loc);
+								into.emplace_token<
+									tokens::double_less_eq_token>(loc);
 								return true;
 							}
 						}
@@ -942,8 +953,7 @@ bool lexer::scan(tscc::lex::token& into) {
 						}
 
 						advance(pos + gs);
-						into.emplace_token<tokens::double_question_token>(
-							loc);
+						into.emplace_token<tokens::double_question_token>(loc);
 						return true;
 					}
 				}
@@ -1075,8 +1085,6 @@ bool lexer::scan(tscc::lex::token& into) {
 
 				throw invalid_character(location());
 		}
-
-		return false;
 	}
 }
 

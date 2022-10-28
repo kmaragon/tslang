@@ -137,11 +137,13 @@ private:
 	std::size_t next_code_point(wchar_t& into, std::size_t look_forward = 0);
 
 	// read the next token from the stream
+	void scan_line_into_wbuffer(bool trim = true);
+
 	bool scan(token& into);
 	void scan_shebang(std::size_t shebang_offset, token& into);
 	void scan_string(token& into);
 	void scan_string_template(token& into);
-	void scan_line_comment(token& into);
+	void scan_line_comment(std::size_t comment_offset, token& into);
 	void scan_multiline_comment(token& into, bool is_jsdoc);
 	void scan_binary_number(token& into);
 	bool scan_octal_number(token& into, bool throw_on_invalid = true);
