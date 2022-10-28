@@ -44,7 +44,9 @@ TEST_CASE("Lexer", "[lexer]") {
 			REQUIRE(tokens.size() == 1);
 			REQUIRE(tokens[0]->to_string() == L"#!/bin/bash");
 		}
+	}
 
+	SECTION("Single line comment") {
 		SECTION("Single line comment at EOF") {
 			auto source = std::make_shared<fake_source>(__FILE_NAME__);
 			std::stringstream file{"  // this is a comment"};
