@@ -2,6 +2,7 @@
 set(SOURCES
         tsclex/error/expected_command.cpp
         tsclex/error/invalid_character.cpp
+        tsclex/error/invalid_identifier.cpp
         tsclex/error/misplaced_shebang.cpp
         tsclex/error/unexpected_token.cpp
         tsclex/tokens/ampersand_eq_token.cpp
@@ -73,6 +74,7 @@ set(SOURCES
 set(HEADERS
         tsclex/error/expected_command.hpp
         tsclex/error/invalid_character.hpp
+        tsclex/error/invalid_identifier.hpp
         tsclex/error/misplaced_shebang.hpp
         tsclex/error/unexpected_token.hpp
         tsclex/tokens/ampersand_eq_token.hpp

@@ -27,6 +27,26 @@ namespace tscc::lex {
 // forward declaration of token
 class token;
 
+// TODO maybe move this
+/**
+ * \brief The TS language variant version
+ */
+enum class language_version : std::uint8_t {
+	es3 = 0,
+	es5 = 1,
+	es2015 = 2,
+	es2016 = 3,
+	es2017 = 4,
+	es2018 = 5,
+	es2019 = 6,
+	es2020 = 7,
+	es2021 = 8,
+	es2022 = 9,
+	es_next = 99,
+	json = 100,
+	latest = es_next
+};
+
 /**
  * \brief A generic exception while lexing
  */
@@ -93,7 +113,9 @@ public:
 	 * @param stream
 	 * @param stream_metadata
 	 */
-	lexer(std::istream& stream, std::shared_ptr<source> stream_metadata);
+	lexer(std::istream& stream,
+		  std::shared_ptr<source> stream_metadata,
+		  language_version version = language_version::latest);
 
 	// disable copy / move
 	lexer(const lexer&) = delete;
@@ -109,6 +131,13 @@ public:
 	iterator end();
 
 private:
+	static std::array<wchar_t, 512> unicode_es3_identifier_start;
+	static std::array<wchar_t, 684> unicode_es3_identifier_part;
+	static std::array<wchar_t, 740> unicode_es5_identifier_start;
+	static std::array<wchar_t, 856> unicode_es5_identifier_part;
+	static std::array<wchar_t, 1218> unicode_esnext_identifier_start;
+	static std::array<wchar_t, 1426> unicode_esnext_identifier_part;
+
 	struct position_t {
 		struct line_t {
 			std::size_t current_line_number;
@@ -151,18 +180,21 @@ private:
 	void scan_hex_number(token& into);
 	void scan_conflict_marker(token& into);
 	bool scan_jsx_token(token& into);
-	void scan_unicode_escape(token& into,
-							 std::size_t min_size,
-							 bool scan_as_many_as_possible,
-							 bool can_have_separators);
+
+	// must scan one value or throw
+	void scan_unicode_escape_into_wbuffer(std::size_t min_size,
+										  bool scan_as_many_as_possible,
+										  bool can_have_separators);
 
 	// consider unicode and is identifier start
-	bool try_scan_identifier(token& into, bool is_private = false);
+	void scan_identifier(token& into, bool is_private = false);
 
 	static constexpr bool is_decimal_digit(wchar_t ch);
 	static constexpr bool is_octal_digit(wchar_t ch);
 	static constexpr bool is_hex_digit(wchar_t ch);
 	static constexpr bool is_alpha(wchar_t ch);
+	constexpr bool is_identifier_part(wchar_t ch, bool is_jsx = false);
+	constexpr bool is_identifier_start(wchar_t ch);
 
 	source_location location() const;
 
@@ -180,6 +212,8 @@ private:
 
 	const iterator end_;
 	bool cr_;
+
+	const language_version vers_;
 };
 
 }  // namespace tscc::lex

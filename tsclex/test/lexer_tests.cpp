@@ -69,4 +69,28 @@ TEST_CASE("Lexer", "[lexer]") {
 			REQUIRE(tokens[0]->to_string() == L"//~ this is a comment");
 		}
 	}
+
+	SECTION("Known Keywords") {
+		SECTION("Class Declaration") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{R"(
+class MyClass extends MyBase implements IMyInterface
+{
+    constructor()
+    {
+    }
+
+	interfaceMethod(a: string): void
+    {
+    }
+}
+)"};
+			tscc::lex::lexer subject(file, source);
+
+			std::vector<tscc::lex::token> tokens{subject.begin(),
+												 subject.end()};
+			REQUIRE(tokens.size() == 1);
+			REQUIRE(tokens[0]->to_string() == L"//~ this is a comment");
+		}
+	}
 }
