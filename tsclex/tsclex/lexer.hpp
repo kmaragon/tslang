@@ -20,6 +20,7 @@
 
 #include <istream>
 #include <optional>
+#include <unordered_map>
 #include "source_location.hpp"
 
 namespace tscc::lex {
@@ -138,6 +139,9 @@ private:
 	static std::array<wchar_t, 1218> unicode_esnext_identifier_start;
 	static std::array<wchar_t, 1426> unicode_esnext_identifier_part;
 
+	using tokfactory = void(*)(token& into, const source_location& location);
+	static std::unordered_map<std::wstring, tokfactory> keyword_lookup;
+
 	struct position_t {
 		struct line_t {
 			std::size_t current_line_number;
@@ -207,11 +211,9 @@ private:
 
 	// output buffer
 	std::wstring wbuffer_;
-
 	position_t gpos_;
-
 	const iterator end_;
-	bool cr_;
+	bool pnewline_;
 
 	const language_version vers_;
 };

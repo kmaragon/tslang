@@ -5,22 +5,44 @@ set(SOURCES
         tsclex/error/invalid_identifier.cpp
         tsclex/error/misplaced_shebang.cpp
         tsclex/error/unexpected_token.cpp
+        tsclex/tokens/abstract_token.cpp
+        tsclex/tokens/accessor_token.cpp
         tsclex/tokens/ampersand_eq_token.cpp
         tsclex/tokens/ampersand_token.cpp
+        tsclex/tokens/any_token.cpp
+        tsclex/tokens/as_token.cpp
+        tsclex/tokens/assert_token.cpp
+        tsclex/tokens/asserts_token.cpp
         tsclex/tokens/asterisk_eq_token.cpp
         tsclex/tokens/asterisk_token.cpp
+        tsclex/tokens/async_token.cpp
         tsclex/tokens/at_token.cpp
+        tsclex/tokens/await_token.cpp
         tsclex/tokens/bar_eq_token.cpp
         tsclex/tokens/bar_token.cpp
         tsclex/tokens/basic_token.cpp
+        tsclex/tokens/bigint_token.cpp
+        tsclex/tokens/boolean_token.cpp
+        tsclex/tokens/break_token.cpp
         tsclex/tokens/caret_eq_token.cpp
         tsclex/tokens/caret_token.cpp
+        tsclex/tokens/case_token.cpp
+        tsclex/tokens/catch_token.cpp
+        tsclex/tokens/class_token.cpp
         tsclex/tokens/close_brace_token.cpp
         tsclex/tokens/close_bracket_token.cpp
         tsclex/tokens/close_paren_token.cpp
         tsclex/tokens/colon_token.cpp
         tsclex/tokens/comma_token.cpp
         tsclex/tokens/comment_token.cpp
+        tsclex/tokens/const_token.cpp
+        tsclex/tokens/constructor_token.cpp
+        tsclex/tokens/continue_token.cpp
+        tsclex/tokens/debugger_token.cpp
+        tsclex/tokens/declare_token.cpp
+        tsclex/tokens/default_token.cpp
+        tsclex/tokens/delete_token.cpp
+        tsclex/tokens/do_token.cpp
         tsclex/tokens/dot_token.cpp
         tsclex/tokens/double_ampersand_eq_token.cpp
         tsclex/tokens/double_ampersand_token.cpp
@@ -37,34 +59,94 @@ set(SOURCES
         tsclex/tokens/double_plus_token.cpp
         tsclex/tokens/double_question_eq_token.cpp
         tsclex/tokens/double_question_token.cpp
+        tsclex/tokens/else_token.cpp
         tsclex/tokens/eq_greater_token.cpp
         tsclex/tokens/eq_token.cpp
         tsclex/tokens/exclamation_eq_eq_token.cpp
         tsclex/tokens/exclamation_eq_token.cpp
         tsclex/tokens/exclamation_token.cpp
+        tsclex/tokens/export_token.cpp
+        tsclex/tokens/extends_token.cpp
+        tsclex/tokens/false_token.cpp
+        tsclex/tokens/finally_token.cpp
+        tsclex/tokens/for_token.cpp
+        tsclex/tokens/from_token.cpp
+        tsclex/tokens/function_token.cpp
+        tsclex/tokens/get_token.cpp
+        tsclex/tokens/global_token.cpp
         tsclex/tokens/greater_eq_token.cpp
         tsclex/tokens/greater_token.cpp
+        tsclex/tokens/identifier_token.cpp
+        tsclex/tokens/if_token.cpp
+        tsclex/tokens/implements_token.cpp
+        tsclex/tokens/import_token.cpp
+        tsclex/tokens/in_token.cpp
+        tsclex/tokens/infer_token.cpp
+        tsclex/tokens/instanceof_token.cpp
+        tsclex/tokens/interface_token.cpp
+        tsclex/tokens/intrinsic_token.cpp
+        tsclex/tokens/is_token.cpp
+        tsclex/tokens/keyof_token.cpp
         tsclex/tokens/less_eq_token.cpp
         tsclex/tokens/less_token.cpp
+        tsclex/tokens/let_token.cpp
         tsclex/tokens/minus_eq_token.cpp
         tsclex/tokens/minus_token.cpp
+        tsclex/tokens/module_token.cpp
+        tsclex/tokens/namespace_token.cpp
+        tsclex/tokens/never_token.cpp
+        tsclex/tokens/new_token.cpp
         tsclex/tokens/newline_token.cpp
+        tsclex/tokens/null_token.cpp
+        tsclex/tokens/number_token.cpp
+        tsclex/tokens/object_token.cpp
+        tsclex/tokens/of_token.cpp
         tsclex/tokens/open_brace_token.cpp
         tsclex/tokens/open_bracket_token.cpp
         tsclex/tokens/open_paren_token.cpp
+        tsclex/tokens/out_token.cpp
+        tsclex/tokens/override_token.cpp
+        tsclex/tokens/package_token.cpp
         tsclex/tokens/percent_eq_token.cpp
         tsclex/tokens/percent_token.cpp
         tsclex/tokens/plus_eq_token.cpp
         tsclex/tokens/plus_token.cpp
+        tsclex/tokens/private_token.cpp
+        tsclex/tokens/protected_token.cpp
+        tsclex/tokens/public_token.cpp
         tsclex/tokens/question_dot_token.cpp
         tsclex/tokens/question_token.cpp
+        tsclex/tokens/readonly_token.cpp
+        tsclex/tokens/require_token.cpp
+        tsclex/tokens/return_token.cpp
+        tsclex/tokens/satisfies_token.cpp
         tsclex/tokens/semicolon_token.cpp
+        tsclex/tokens/set_token.cpp
         tsclex/tokens/slash_eq_token.cpp
         tsclex/tokens/slash_token.cpp
         tsclex/tokens/shebang_token.cpp
+        tsclex/tokens/static_token.cpp
+        tsclex/tokens/string_token.cpp
+        tsclex/tokens/super_token.cpp
+        tsclex/tokens/switch_token.cpp
+        tsclex/tokens/symbol_token.cpp
+        tsclex/tokens/this_token.cpp
+        tsclex/tokens/throw_token.cpp
         tsclex/tokens/tilde_token.cpp
         tsclex/tokens/triple_dot_token.cpp
         tsclex/tokens/triple_eq_token.cpp
+        tsclex/tokens/true_token.cpp
+        tsclex/tokens/try_token.cpp
+        tsclex/tokens/type_token.cpp
+        tsclex/tokens/typeof_token.cpp
+        tsclex/tokens/undefined_token.cpp
+        tsclex/tokens/unique_token.cpp
+        tsclex/tokens/unknown_token.cpp
+        tsclex/tokens/var_token.cpp
+        tsclex/tokens/void_token.cpp
+        tsclex/tokens/while_token.cpp
+        tsclex/tokens/with_token.cpp
+        tsclex/tokens/yield_token.cpp
         tsclex/lexer.cpp
         tsclex/source.cpp
         tsclex/source_location.cpp
@@ -77,22 +159,44 @@ set(HEADERS
         tsclex/error/invalid_identifier.hpp
         tsclex/error/misplaced_shebang.hpp
         tsclex/error/unexpected_token.hpp
+        tsclex/tokens/abstract_token.hpp
+        tsclex/tokens/accessor_token.hpp
         tsclex/tokens/ampersand_eq_token.hpp
         tsclex/tokens/ampersand_token.hpp
+        tsclex/tokens/any_token.hpp
+        tsclex/tokens/as_token.hpp
+        tsclex/tokens/assert_token.hpp
+        tsclex/tokens/asserts_token.hpp
         tsclex/tokens/asterisk_eq_token.hpp
         tsclex/tokens/asterisk_token.hpp
+        tsclex/tokens/async_token.hpp
         tsclex/tokens/at_token.hpp
+        tsclex/tokens/await_token.hpp
         tsclex/tokens/bar_eq_token.hpp
         tsclex/tokens/bar_token.hpp
         tsclex/tokens/basic_token.hpp
+        tsclex/tokens/bigint_token.hpp
+        tsclex/tokens/boolean_token.hpp
+        tsclex/tokens/break_token.hpp
         tsclex/tokens/caret_eq_token.hpp
         tsclex/tokens/caret_token.hpp
+        tsclex/tokens/case_token.hpp
+        tsclex/tokens/catch_token.hpp
+        tsclex/tokens/class_token.hpp
         tsclex/tokens/close_brace_token.hpp
         tsclex/tokens/close_bracket_token.hpp
         tsclex/tokens/close_paren_token.hpp
         tsclex/tokens/colon_token.hpp
         tsclex/tokens/comma_token.hpp
         tsclex/tokens/comment_token.hpp
+        tsclex/tokens/const_token.hpp
+        tsclex/tokens/constructor_token.hpp
+        tsclex/tokens/continue_token.hpp
+        tsclex/tokens/debugger_token.hpp
+        tsclex/tokens/declare_token.hpp
+        tsclex/tokens/default_token.hpp
+        tsclex/tokens/delete_token.hpp
+        tsclex/tokens/do_token.hpp
         tsclex/tokens/dot_token.hpp
         tsclex/tokens/double_ampersand_eq_token.hpp
         tsclex/tokens/double_ampersand_token.hpp
@@ -109,34 +213,94 @@ set(HEADERS
         tsclex/tokens/double_plus_token.hpp
         tsclex/tokens/double_question_eq_token.hpp
         tsclex/tokens/double_question_token.hpp
+        tsclex/tokens/else_token.hpp
         tsclex/tokens/eq_greater_token.hpp
         tsclex/tokens/eq_token.hpp
         tsclex/tokens/exclamation_eq_eq_token.hpp
         tsclex/tokens/exclamation_eq_token.hpp
         tsclex/tokens/exclamation_token.hpp
+        tsclex/tokens/export_token.hpp
+        tsclex/tokens/extends_token.hpp
+        tsclex/tokens/false_token.hpp
+        tsclex/tokens/finally_token.hpp
+        tsclex/tokens/for_token.hpp
+        tsclex/tokens/from_token.hpp
+        tsclex/tokens/function_token.hpp
+        tsclex/tokens/get_token.hpp
+        tsclex/tokens/global_token.hpp
         tsclex/tokens/greater_eq_token.hpp
         tsclex/tokens/greater_token.hpp
+        tsclex/tokens/identifier_token.hpp
+        tsclex/tokens/if_token.hpp
+        tsclex/tokens/implements_token.hpp
+        tsclex/tokens/import_token.hpp
+        tsclex/tokens/in_token.hpp
+        tsclex/tokens/infer_token.hpp
+        tsclex/tokens/instanceof_token.hpp
+        tsclex/tokens/interface_token.hpp
+        tsclex/tokens/intrinsic_token.hpp
+        tsclex/tokens/is_token.hpp
+        tsclex/tokens/keyof_token.hpp
         tsclex/tokens/less_eq_token.hpp
         tsclex/tokens/less_token.hpp
+        tsclex/tokens/let_token.hpp
         tsclex/tokens/minus_eq_token.hpp
         tsclex/tokens/minus_token.hpp
+        tsclex/tokens/module_token.hpp
+        tsclex/tokens/namespace_token.hpp
+        tsclex/tokens/never_token.hpp
+        tsclex/tokens/new_token.hpp
         tsclex/tokens/newline_token.hpp
+        tsclex/tokens/null_token.hpp
+        tsclex/tokens/number_token.hpp
+        tsclex/tokens/object_token.hpp
+        tsclex/tokens/of_token.hpp
         tsclex/tokens/open_brace_token.hpp
         tsclex/tokens/open_bracket_token.hpp
         tsclex/tokens/open_paren_token.hpp
+        tsclex/tokens/out_token.hpp
+        tsclex/tokens/override_token.hpp
+        tsclex/tokens/package_token.hpp
         tsclex/tokens/percent_eq_token.hpp
         tsclex/tokens/percent_token.hpp
         tsclex/tokens/plus_eq_token.hpp
         tsclex/tokens/plus_token.hpp
+        tsclex/tokens/private_token.hpp
+        tsclex/tokens/protected_token.hpp
+        tsclex/tokens/public_token.hpp
         tsclex/tokens/question_dot_token.hpp
         tsclex/tokens/question_token.hpp
+        tsclex/tokens/readonly_token.hpp
+        tsclex/tokens/require_token.hpp
+        tsclex/tokens/return_token.hpp
+        tsclex/tokens/satisfies_token.hpp
         tsclex/tokens/semicolon_token.hpp
+        tsclex/tokens/set_token.hpp
         tsclex/tokens/slash_eq_token.hpp
         tsclex/tokens/slash_token.hpp
         tsclex/tokens/shebang_token.hpp
+        tsclex/tokens/static_token.hpp
+        tsclex/tokens/string_token.hpp
+        tsclex/tokens/super_token.hpp
+        tsclex/tokens/switch_token.hpp
+        tsclex/tokens/symbol_token.hpp
+        tsclex/tokens/this_token.hpp
+        tsclex/tokens/throw_token.hpp
         tsclex/tokens/tilde_token.hpp
         tsclex/tokens/triple_dot_token.hpp
         tsclex/tokens/triple_eq_token.hpp
+        tsclex/tokens/true_token.hpp
+        tsclex/tokens/try_token.hpp
+        tsclex/tokens/type_token.hpp
+        tsclex/tokens/typeof_token.hpp
+        tsclex/tokens/undefined_token.hpp
+        tsclex/tokens/unique_token.hpp
+        tsclex/tokens/unknown_token.hpp
+        tsclex/tokens/var_token.hpp
+        tsclex/tokens/void_token.hpp
+        tsclex/tokens/while_token.hpp
+        tsclex/tokens/with_token.hpp
+        tsclex/tokens/yield_token.hpp
         tsclex/lexer.hpp
         tsclex/source.hpp
         tsclex/source_location.hpp

@@ -80,7 +80,7 @@ class MyClass extends MyBase implements IMyInterface
     {
     }
 
-	interfaceMethod(a: string): void
+	interfaceMethod(a: string, b: number): void
     {
     }
 }
@@ -89,8 +89,50 @@ class MyClass extends MyBase implements IMyInterface
 
 			std::vector<tscc::lex::token> tokens{subject.begin(),
 												 subject.end()};
-			REQUIRE(tokens.size() == 1);
-			REQUIRE(tokens[0]->to_string() == L"//~ this is a comment");
+			REQUIRE(tokens.size() == 37);
+			REQUIRE(tokens[0].is<tscc::lex::tokens::newline_token>());
+			REQUIRE(tokens[1].is<tscc::lex::tokens::class_token>());
+			REQUIRE(tokens[2].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[2]->to_string() == L"MyClass");
+			REQUIRE(tokens[3].is<tscc::lex::tokens::extends_token>());
+			REQUIRE(tokens[4].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[4]->to_string() == L"MyBase");
+			REQUIRE(tokens[5].is<tscc::lex::tokens::implements_token>());
+			REQUIRE(tokens[6].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[6]->to_string() == L"IMyInterface");
+			REQUIRE(tokens[7].is<tscc::lex::tokens::newline_token>());
+			REQUIRE(tokens[8].is<tscc::lex::tokens::open_brace_token>());
+			REQUIRE(tokens[9].is<tscc::lex::tokens::newline_token>());
+			REQUIRE(tokens[10].is<tscc::lex::tokens::constructor_token>());
+			REQUIRE(tokens[11].is<tscc::lex::tokens::open_paren_token>());
+			REQUIRE(tokens[12].is<tscc::lex::tokens::close_paren_token>());
+			REQUIRE(tokens[13].is<tscc::lex::tokens::newline_token>());
+			REQUIRE(tokens[14].is<tscc::lex::tokens::open_brace_token>());
+			REQUIRE(tokens[15].is<tscc::lex::tokens::newline_token>());
+			REQUIRE(tokens[16].is<tscc::lex::tokens::close_brace_token>());
+			REQUIRE(tokens[17].is<tscc::lex::tokens::newline_token>());
+			REQUIRE(tokens[18].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[18]->to_string() == L"interfaceMethod");
+			REQUIRE(tokens[19].is<tscc::lex::tokens::open_paren_token>());
+			REQUIRE(tokens[20].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[20]->to_string() == L"a");
+			REQUIRE(tokens[21].is<tscc::lex::tokens::colon_token>());
+			REQUIRE(tokens[22].is<tscc::lex::tokens::string_token>());
+			REQUIRE(tokens[23].is<tscc::lex::tokens::comma_token>());
+			REQUIRE(tokens[24].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[24]->to_string() == L"b");
+			REQUIRE(tokens[25].is<tscc::lex::tokens::colon_token>());
+			REQUIRE(tokens[26].is<tscc::lex::tokens::number_token>());
+			REQUIRE(tokens[27].is<tscc::lex::tokens::close_paren_token>());
+			REQUIRE(tokens[28].is<tscc::lex::tokens::colon_token>());
+			REQUIRE(tokens[29].is<tscc::lex::tokens::void_token>());
+			REQUIRE(tokens[30].is<tscc::lex::tokens::newline_token>());
+			REQUIRE(tokens[31].is<tscc::lex::tokens::open_brace_token>());
+			REQUIRE(tokens[32].is<tscc::lex::tokens::newline_token>());
+			REQUIRE(tokens[33].is<tscc::lex::tokens::close_brace_token>());
+			REQUIRE(tokens[34].is<tscc::lex::tokens::newline_token>());
+			REQUIRE(tokens[35].is<tscc::lex::tokens::close_brace_token>());
+			REQUIRE(tokens[36].is<tscc::lex::tokens::newline_token>());
 		}
 	}
 }

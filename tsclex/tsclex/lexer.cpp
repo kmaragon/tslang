@@ -636,7 +636,7 @@ lexer::lexer(std::istream& stream,
 	  source_(std::move(stream_metadata)),
 	  buffer_offset_(0),
 	  end_(this),
-	  cr_(false),
+	  pnewline_(false),
 	  vers_(version) {
 	wbuffer_.reserve(buffer_size);
 }
@@ -650,6 +650,349 @@ lexer::iterator lexer::begin() {
 lexer::iterator lexer::end() {
 	return end_;
 }
+
+std::unordered_map<std::wstring, lexer::tokfactory>
+	lexer::
+		keyword_lookup{{L"abstract",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::abstract_token>(
+								location);
+						}},
+					   {L"accessor",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::accessor_token>(
+								location);
+						}},
+					   {L"any",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::any_token>(location);
+						}},
+					   {L"as",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::as_token>(location);
+						}},
+					   {L"asserts",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::asserts_token>(location);
+						}},
+					   {L"assert",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::assert_token>(location);
+						}},
+					   {L"async",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::async_token>(location);
+						}},
+					   {L"await",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::await_token>(location);
+						}},
+					   {L"bigint",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::bigint_token>(location);
+						}},
+					   {L"boolean",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::boolean_token>(location);
+						}},
+					   {L"break",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::break_token>(location);
+						}},
+					   {L"case",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::case_token>(location);
+						}},
+					   {L"catch",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::catch_token>(location);
+						}},
+					   {L"class",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::class_token>(location);
+						}},
+					   {L"continue",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::continue_token>(
+								location);
+						}},
+					   {L"const",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::const_token>(location);
+						}},
+					   {L"constructor",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::constructor_token>(
+								location);
+						}},
+					   {L"debugger",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::debugger_token>(
+								location);
+						}},
+					   {L"declare",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::declare_token>(location);
+						}},
+					   {L"default",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::default_token>(location);
+						}},
+					   {L"delete",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::delete_token>(location);
+						}},
+					   {L"do",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::do_token>(location);
+						}},
+					   {L"else",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::else_token>(location);
+						}},
+					   {L"export",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::export_token>(location);
+						}},
+					   {L"extends",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::extends_token>(location);
+						}},
+					   {L"false",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::false_token>(location);
+						}},
+					   {L"finally",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::finally_token>(location);
+						}},
+					   {L"for",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::for_token>(location);
+						}},
+					   {L"from",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::from_token>(location);
+						}},
+					   {L"function",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::function_token>(
+								location);
+						}},
+					   {L"get",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::get_token>(location);
+						}},
+					   {L"global",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::global_token>(location);
+						}},
+					   {L"if",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::if_token>(location);
+						}},
+					   {L"implements",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::implements_token>(
+								location);
+						}},
+					   {L"import",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::import_token>(location);
+						}},
+					   {L"in",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::in_token>(location);
+						}},
+					   {L"infer",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::infer_token>(location);
+						}},
+					   {L"instanceof",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::instanceof_token>(
+								location);
+						}},
+					   {L"interface",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::interface_token>(
+								location);
+						}},
+					   {L"intrinsic",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::intrinsic_token>(
+								location);
+						}},
+					   {L"is",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::is_token>(location);
+						}},
+					   {L"keyof",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::keyof_token>(location);
+						}},
+					   {L"let",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::let_token>(location);
+						}},
+					   {L"module",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::module_token>(location);
+						}},
+					   {L"namespace",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::namespace_token>(
+								location);
+						}},
+					   {L"never",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::never_token>(location);
+						}},
+					   {L"new",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::new_token>(location);
+						}},
+					   {L"null",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::null_token>(location);
+						}},
+					   {L"number",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::number_token>(location);
+						}},
+					   {L"of",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::of_token>(location);
+						}},
+					   {L"object",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::object_token>(location);
+						}},
+					   {L"package",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::package_token>(location);
+						}},
+					   {L"private",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::private_token>(location);
+						}},
+					   {L"protected",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::protected_token>(
+								location);
+						}},
+					   {L"public",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::public_token>(location);
+						}},
+					   {L"override",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::override_token>(
+								location);
+						}},
+					   {L"out",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::out_token>(location);
+						}},
+					   {L"readonly",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::readonly_token>(
+								location);
+						}},
+					   {L"require",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::require_token>(location);
+						}},
+					   {L"return",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::return_token>(location);
+						}},
+					   {L"satisfies",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::satisfies_token>(
+								location);
+						}},
+					   {L"set",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::set_token>(location);
+						}},
+					   {L"static",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::static_token>(location);
+						}},
+					   {L"string",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::string_token>(location);
+						}},
+					   {L"super",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::super_token>(location);
+						}},
+					   {L"switch",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::switch_token>(location);
+						}},
+					   {L"symbol",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::symbol_token>(location);
+						}},
+					   {L"this",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::this_token>(location);
+						}},
+					   {L"throw",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::throw_token>(location);
+						}},
+					   {L"true",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::true_token>(location);
+						}},
+					   {L"try",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::try_token>(location);
+						}},
+					   {L"type",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::type_token>(location);
+						}},
+					   {L"typeof",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::typeof_token>(location);
+						}},
+					   {L"undefined",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::undefined_token>(
+								location);
+						}},
+					   {L"unique",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::unique_token>(location);
+						}},
+					   {L"unknown",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::unknown_token>(location);
+						}},
+					   {L"var",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::var_token>(location);
+						}},
+					   {L"void",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::void_token>(location);
+						}},
+					   {L"while",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::while_token>(location);
+						}},
+					   {L"with",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::with_token>(location);
+						}},
+					   {L"yield",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::yield_token>(location);
+						}}};
 
 inline std::size_t lexer::next_code_point(wchar_t& into,
 										  std::size_t look_forward) {
@@ -946,6 +1289,7 @@ void lexer::scan_unicode_escape_into_wbuffer(std::size_t min_size,
 }
 
 void lexer::scan_identifier(tscc::lex::token& into, bool is_private) {
+	wbuffer_.clear();
 	auto identifier_start = location();
 
 	while (true) {
@@ -1006,9 +1350,14 @@ void lexer::scan_identifier(tscc::lex::token& into, bool is_private) {
 		throw invalid_identifier(identifier_start);
 	}
 
-	// TODO determine whether wbuffer_ has a named identifier or a keyword
+	auto kit = keyword_lookup.find(wbuffer_);
+	if (kit != keyword_lookup.end()) {
+		kit->second(into, identifier_start);
+		return;
+	}
 
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	into.emplace_token<tokens::identifier_token>(identifier_start,
+												 std::move(wbuffer_));
 }
 
 constexpr bool lexer::is_decimal_digit(wchar_t ch) {
@@ -1170,28 +1519,40 @@ bool lexer::scan(tscc::lex::token& into) {
 			}
 		}
 
+		if (ch == '\r') {
+			wchar_t next{};
+			auto gs = next_code_point(next, pos);
+
+			auto loc = location();
+			if ((gs > 0) && next == L'\n') {
+				pos += gs;
+			}
+
+			advance(pos);
+			gpos_.advance_line();
+			if (pnewline_)
+				continue;
+
+			pnewline_ = true;
+			into.emplace_token<tokens::newline_token>(loc);
+			return true;
+		}
+
+		if (ch == '\n') {
+			auto loc = location();
+			advance(pos);
+			gpos_.advance_line();
+
+			if (pnewline_)
+				continue;
+
+			pnewline_ = true;
+			into.emplace_token<tokens::newline_token>(loc);
+			return true;
+		}
+
+		pnewline_ = false;
 		switch (ch) {
-			case L'\r': {
-				wchar_t next{};
-				auto gs = next_code_point(next, pos);
-
-				auto loc = location();
-				if ((gs > 0) && next == L'\n') {
-					pos += gs;
-				}
-
-				advance(pos);
-				gpos_.advance_line();
-				into.emplace_token<tokens::newline_token>(loc);
-				return true;
-			}
-			case L'\n': {
-				auto loc = location();
-				advance(pos);
-				gpos_.advance_line();
-				into.emplace_token<tokens::newline_token>(loc);
-				return true;
-			}
 			case L'\t':	  // tab
 			case 0x0b:	  // vertical tab
 			case 0x0c:	  // form feed
@@ -1299,11 +1660,11 @@ bool lexer::scan(tscc::lex::token& into) {
 			case L'(':
 				into.emplace_token<tokens::open_paren_token>(location());
 				advance(pos);
-				break;
+				return true;
 			case L')':
 				into.emplace_token<tokens::close_paren_token>(location());
 				advance(pos);
-				break;
+				return true;
 			case L'*': {
 				wchar_t next{};
 				auto gs = next_code_point(next, pos);
@@ -1362,7 +1723,7 @@ bool lexer::scan(tscc::lex::token& into) {
 			case L',':
 				into.emplace_token<tokens::comma_token>(location());
 				advance(pos);
-				break;
+				return true;
 			case L'-': {
 				wchar_t next{};
 				auto gs = next_code_point(next, pos);
@@ -1489,11 +1850,11 @@ bool lexer::scan(tscc::lex::token& into) {
 			case L':':
 				into.emplace_token<tokens::colon_token>(location());
 				advance(pos);
-				break;
+				return true;
 			case L';':
 				into.emplace_token<tokens::semicolon_token>(location());
 				advance(pos);
-				break;
+				return true;
 			case L'<': {
 				wchar_t next{};
 				auto gs = next_code_point(next, pos);
@@ -1656,11 +2017,11 @@ bool lexer::scan(tscc::lex::token& into) {
 			case L'[':
 				into.emplace_token<tokens::open_bracket_token>(location());
 				advance(pos);
-				break;
+				return true;
 			case L']':
 				into.emplace_token<tokens::close_bracket_token>(location());
 				advance(pos);
-				break;
+				return true;
 			case L'^': {
 				wchar_t next{};
 				auto gs = next_code_point(next, pos);
@@ -1679,7 +2040,7 @@ bool lexer::scan(tscc::lex::token& into) {
 			case L'{':
 				into.emplace_token<tokens::open_brace_token>(location());
 				advance(pos);
-				break;
+				return true;
 			case L'|': {
 				wchar_t next{};
 				auto gs = next_code_point(next, pos);
@@ -1722,15 +2083,15 @@ bool lexer::scan(tscc::lex::token& into) {
 			case L'}':
 				into.emplace_token<tokens::close_brace_token>(location());
 				advance(pos);
-				break;
+				return true;
 			case L'~':
 				into.emplace_token<tokens::tilde_token>(location());
 				advance(pos);
-				break;
+				return true;
 			case L'@':
 				into.emplace_token<tokens::at_token>(location());
 				advance(pos);
-				break;
+				return true;
 			case L'#': {
 				wchar_t next{};
 				auto gs = next_code_point(next, pos);
