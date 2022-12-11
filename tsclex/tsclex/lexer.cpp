@@ -20,13 +20,14 @@
 #include <array>
 #include <cassert>
 #include <cstring>
+#include <vector>
 #include "error/expected_command.hpp"
 #include "error/invalid_character.hpp"
 #include "error/invalid_identifier.hpp"
 #include "error/misplaced_shebang.hpp"
+#include "error/premature_end_of_file.hpp"
 #include "error/unexpected_token.hpp"
 #include "token.hpp"
-#include "tokens/shebang_token.hpp"
 
 using namespace tscc::lex;
 
@@ -1255,7 +1256,61 @@ void lexer::scan_line_comment(std::size_t comment_offset,
 }
 
 void lexer::scan_multiline_comment(tscc::lex::token& into, bool is_jsdoc) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	auto comment_location = location();
+
+	std::vector<std::wstring> lines;
+
+	wchar_t first{};
+	while (true) {
+		auto nc = next_code_point(first);
+		if (!nc) {
+			throw premature_end_of_file(comment_location);
+		}
+
+		advance(nc);
+		if (first == '\n') {
+			// trim any whitespace off of the end
+			std::size_t end = wbuffer_.size();
+			while (std::iswspace(wbuffer_[end - 1])) {
+				end--;
+			}
+
+			wbuffer_.erase(end);
+			gpos_.advance_line();
+
+			lines.emplace_back(std::move(wbuffer_));
+			wbuffer_.clear();
+			continue;
+		}
+
+		if (first == '*') {
+			wchar_t second{};
+			auto nnc = next_code_point(second);
+			if (nnc && second == '/') {
+				advance(nnc);
+				break;
+			}
+		}
+
+		if (wbuffer_.capacity() == wbuffer_.size()) {
+			wbuffer_.reserve(wbuffer_.size() + buffer_size);
+		}
+		wbuffer_.push_back(first);
+	}
+
+	if (!wbuffer_.empty()) {
+		lines.emplace_back(std::move(wbuffer_));
+		wbuffer_.clear();
+	}
+
+	if (is_jsdoc) {
+		into.emplace_token<tokens::jsdoc_token>(comment_location,
+												std::move(lines));
+		return;
+	}
+
+	into.emplace_token<tokens::multiline_comment_token>(comment_location,
+														std::move(lines));
 }
 
 void lexer::scan_binary_number(tscc::lex::token& into) {
@@ -1794,10 +1849,17 @@ bool lexer::scan(tscc::lex::token& into) {
 						wchar_t astnext{};
 						auto ggs = next_code_point(astnext, pos + gs);
 						if (ggs > 0 && astnext == '*') {
-							gs += ggs;
-							is_jsdoc = true;
+							wchar_t verify_jsdoc_char;
+							auto verify_gs = next_code_point(verify_jsdoc_char,
+															 pos + gs + ggs);
+
+							if (verify_gs && verify_jsdoc_char != '*') {
+								gs += ggs;
+								is_jsdoc = true;
+							}
 						}
 
+						advance(pos + gs);
 						scan_multiline_comment(into, is_jsdoc);
 						return true;
 					}

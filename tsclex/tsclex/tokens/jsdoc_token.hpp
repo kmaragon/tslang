@@ -18,15 +18,25 @@
 
 #pragma once
 
-#include "../lexer.hpp"
+#include <string>
+#include <vector>
+#include "basic_token.hpp"
 
-namespace tscc::lex {
+namespace tscc::lex::tokens {
 
-class invalid_identifier : public lex_error {
+/**
+ * @brief A typescript token that represents a comment
+ */
+class jsdoc_token : public basic_token {
 public:
-	invalid_identifier(const source_location& location) noexcept;
+	jsdoc_token(const std::vector<std::wstring>& comment_lines);
 
-	const char* what() const noexcept override;
+	bool operator==(const jsdoc_token& other) const;
+	bool operator!=(const jsdoc_token& other) const;
+
+	std::wstring to_string() const override;
+
+private:
 };
 
-}  // namespace tscc::lex
+}  // namespace tscc::lex::tokens

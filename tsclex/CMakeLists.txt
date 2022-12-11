@@ -4,6 +4,7 @@ set(SOURCES
         tsclex/error/invalid_character.cpp
         tsclex/error/invalid_identifier.cpp
         tsclex/error/misplaced_shebang.cpp
+        tsclex/error/premature_end_of_file.cpp
         tsclex/error/unexpected_token.cpp
         tsclex/tokens/abstract_token.cpp
         tsclex/tokens/accessor_token.cpp
@@ -86,6 +87,7 @@ set(SOURCES
         tsclex/tokens/interface_token.cpp
         tsclex/tokens/intrinsic_token.cpp
         tsclex/tokens/is_token.cpp
+        tsclex/tokens/jsdoc_token.cpp
         tsclex/tokens/keyof_token.cpp
         tsclex/tokens/less_eq_token.cpp
         tsclex/tokens/less_token.cpp
@@ -93,6 +95,7 @@ set(SOURCES
         tsclex/tokens/minus_eq_token.cpp
         tsclex/tokens/minus_token.cpp
         tsclex/tokens/module_token.cpp
+        tsclex/tokens/multiline_comment_token.cpp
         tsclex/tokens/namespace_token.cpp
         tsclex/tokens/never_token.cpp
         tsclex/tokens/new_token.cpp

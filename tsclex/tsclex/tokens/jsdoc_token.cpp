@@ -16,17 +16,26 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "jsdoc_token.hpp"
+#include <sstream>
 
-#include "../lexer.hpp"
+using namespace tscc::lex::tokens;
 
-namespace tscc::lex {
+jsdoc_token::jsdoc_token(const std::vector<std::wstring>& comment_lines) {
+	// TODO: implement parsing jsdoc
+}
 
-class invalid_identifier : public lex_error {
-public:
-	invalid_identifier(const source_location& location) noexcept;
+bool jsdoc_token::operator==(
+	const tscc::lex::tokens::jsdoc_token& other) const {
+	return false;
+}
 
-	const char* what() const noexcept override;
-};
+bool jsdoc_token::operator!=(
+	const tscc::lex::tokens::jsdoc_token& other) const {
+	return !operator==(other);
+}
 
-}  // namespace tscc::lex
+std::wstring jsdoc_token::to_string() const {
+	throw std::system_error(std::make_error_code(std::errc::not_supported),
+							"JSDoc type scheme not built yet");
+}

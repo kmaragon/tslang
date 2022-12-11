@@ -101,6 +101,7 @@
 #include "tokens/interface_token.hpp"
 #include "tokens/intrinsic_token.hpp"
 #include "tokens/is_token.hpp"
+#include "tokens/jsdoc_token.hpp"
 #include "tokens/keyof_token.hpp"
 #include "tokens/less_eq_token.hpp"
 #include "tokens/less_token.hpp"
@@ -108,6 +109,7 @@
 #include "tokens/minus_eq_token.hpp"
 #include "tokens/minus_token.hpp"
 #include "tokens/module_token.hpp"
+#include "tokens/multiline_comment_token.hpp"
 #include "tokens/namespace_token.hpp"
 #include "tokens/never_token.hpp"
 #include "tokens/new_token.hpp"
@@ -356,6 +358,7 @@ private:
 									  tokens::interface_token,
 									  tokens::intrinsic_token,
 									  tokens::is_token,
+									  tokens::jsdoc_token,
 									  tokens::keyof_token,
 									  tokens::less_eq_token,
 									  tokens::less_token,
@@ -363,6 +366,7 @@ private:
 									  tokens::minus_eq_token,
 									  tokens::minus_token,
 									  tokens::module_token,
+									  tokens::multiline_comment_token,
 									  tokens::namespace_token,
 									  tokens::never_token,
 									  tokens::new_token,

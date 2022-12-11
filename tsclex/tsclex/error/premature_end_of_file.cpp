@@ -16,17 +16,15 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "premature_end_of_file.hpp"
 
-#include "../lexer.hpp"
+using namespace tscc::lex;
 
-namespace tscc::lex {
+premature_end_of_file::premature_end_of_file(
+	const tscc::lex::source_location& location) noexcept
+	: lex_error(location) {}
 
-class invalid_identifier : public lex_error {
-public:
-	invalid_identifier(const source_location& location) noexcept;
-
-	const char* what() const noexcept override;
-};
-
-}  // namespace tscc::lex
+const char* premature_end_of_file::what() const noexcept {
+	return "Premature end of file while processing the token starting at the "
+		   "given location";
+}

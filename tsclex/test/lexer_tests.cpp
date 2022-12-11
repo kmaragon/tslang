@@ -135,4 +135,36 @@ class MyClass extends MyBase implements IMyInterface
 			REQUIRE(tokens[36].is<tscc::lex::tokens::newline_token>());
 		}
 	}
+
+	SECTION("Multi line comment") {
+		SECTION("Unterminated Multi-line comment") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"  /* this is a comment"};
+			tscc::lex::lexer subject(file, source);
+
+			auto should_throw = [&]() {
+				return std::vector<tscc::lex::token>{subject.begin(),
+													 subject.end()};
+			};
+			REQUIRE_THROWS(should_throw());
+		}
+
+		SECTION("Multi line non-jsdoc comment") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{R"(/*
+this is a comment
+And some more
+*/
+)"};
+			tscc::lex::lexer subject(file, source);
+
+			std::vector<tscc::lex::token> tokens{subject.begin(),
+												 subject.end()};
+			REQUIRE(tokens.size() == 2);
+			REQUIRE(tokens[0].is<tscc::lex::tokens::multiline_comment_token>());
+			REQUIRE(tokens[0]->to_string() ==
+					L"/*\nthis is a comment\nAnd some more\n*/");
+			REQUIRE(tokens[1].is<tscc::lex::tokens::newline_token>());
+		}
+	}
 }

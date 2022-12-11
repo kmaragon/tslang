@@ -22,9 +22,9 @@
 
 namespace tscc::lex {
 
-class invalid_identifier : public lex_error {
+class premature_end_of_file : public lex_error {
 public:
-	invalid_identifier(const source_location& location) noexcept;
+	premature_end_of_file(const source_location& location) noexcept;
 
 	const char* what() const noexcept override;
 };
