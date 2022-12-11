@@ -167,4 +167,40 @@ And some more
 			REQUIRE(tokens[1].is<tscc::lex::tokens::newline_token>());
 		}
 	}
+
+	SECTION("Native UTF-8 Handling") {
+		SECTION("Two-byte sequence") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{R"( const varµ = 12; )"};
+			tscc::lex::lexer subject(file, source);
+
+			std::vector<tscc::lex::token> tokens{subject.begin(),
+												 subject.end()};
+			REQUIRE(tokens.size() == 5);
+			REQUIRE(tokens[0].is<tscc::lex::tokens::const_token>());
+			REQUIRE(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[1]->to_string() == L"varµ");
+			REQUIRE(tokens[2].is<tscc::lex::tokens::eq_token>());
+			REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(tokens[3]->to_string() == L"12");
+			REQUIRE(tokens[4].is<tscc::lex::tokens::semicolon_token>());
+		}
+
+		SECTION("Three-byte sequence") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{R"( const varァ = 3.14195; )"};
+			tscc::lex::lexer subject(file, source);
+
+			std::vector<tscc::lex::token> tokens{subject.begin(),
+												 subject.end()};
+			REQUIRE(tokens.size() == 5);
+			REQUIRE(tokens[0].is<tscc::lex::tokens::const_token>());
+			REQUIRE(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[1]->to_string() == L"varァ");
+			REQUIRE(tokens[2].is<tscc::lex::tokens::eq_token>());
+			REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(tokens[3]->to_string().substr(0, 7) == L"3.14195");
+			REQUIRE(tokens[4].is<tscc::lex::tokens::semicolon_token>());
+		}
+	}
 }

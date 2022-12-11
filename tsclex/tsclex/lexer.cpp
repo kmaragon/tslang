@@ -19,6 +19,7 @@
 #include "lexer.hpp"
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <cstring>
 #include <vector>
 #include "error/expected_command.hpp"
@@ -1322,7 +1323,110 @@ bool lexer::scan_octal_number(tscc::lex::token& into, bool throw_on_invalid) {
 }
 
 void lexer::scan_decimal_number(tscc::lex::token& into) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	auto number_location = location();
+
+	long long number_part = 0;
+	std::size_t nc = 0;
+
+	wchar_t first{};
+	while (true) {
+		nc = next_code_point(first);
+		if (!nc) {
+			into.emplace_token<tokens::constant_value_token>(number_location,
+															 number_part);
+			return;
+		}
+
+		if (!is_decimal_digit(first))
+			break;
+
+		advance(nc);
+		number_part = (number_part * 10) + decimal_value(first);
+	}
+
+	if (nc && first == '.') {
+		advance(nc);
+
+		// parse as a decimal
+		long long numerator = 0;
+		long long denominator = 1;
+
+		while (true) {
+			nc = next_code_point(first);
+			if (!nc || !is_decimal_digit(first)) {
+				break;
+			}
+
+			advance(nc);
+			numerator = (numerator * 10) + decimal_value(first);
+			denominator *= 10;
+		}
+
+		auto value = static_cast<long double>(number_part) +
+					 (static_cast<long double>(numerator) /
+					  static_cast<long double>(denominator));
+		if (nc && (first == 'e' || first == 'E')) {
+			advance(nc);
+
+			nc = next_code_point(first);
+			if (!is_decimal_digit(first)) {
+				throw invalid_identifier(number_location);
+			}
+
+			advance(nc);
+
+			// this is a double with an e value
+			long long exponent = decimal_value(first);
+			while (true) {
+				nc = next_code_point(first);
+				if (!nc || !is_decimal_digit(first)) {
+					break;
+				}
+
+				advance(nc);
+				exponent = (exponent * 10) + decimal_value(first);
+			}
+
+			value = value * std::pow(10.0l, exponent);
+		}
+
+		into.emplace_token<tokens::constant_value_token>(number_location,
+														 value);
+		return;
+	}
+
+	if (nc && (first == 'e' || first == 'E')) {
+		advance(nc);
+
+		nc = next_code_point(first);
+		if (!is_decimal_digit(first)) {
+			throw invalid_identifier(number_location);
+		}
+
+		advance(nc);
+
+		// this is an integer with an e value - convert to long double
+		long long exponent = decimal_value(first);
+		while (true) {
+			nc = next_code_point(first);
+			if (!nc || !is_decimal_digit(first)) {
+				break;
+			}
+
+			advance(nc);
+			exponent = (exponent * 10) + decimal_value(first);
+		}
+
+		long double value =
+			static_cast<long double>(number_part) * std::pow(10.0l, exponent);
+
+		into.emplace_token<tokens::constant_value_token>(number_location,
+														 value);
+		return;
+	}
+
+	into.emplace_token<tokens::constant_value_token>(number_location,
+													 number_part);
 }
 
 void lexer::scan_hex_number(tscc::lex::token& into) {
@@ -1417,6 +1521,14 @@ void lexer::scan_identifier(tscc::lex::token& into, bool is_private) {
 
 constexpr bool lexer::is_decimal_digit(wchar_t ch) {
 	return (ch >= L'0' && ch <= L'9') || (ch >= 0xff10 && ch <= 0xff19);
+}
+
+constexpr long long lexer::decimal_value(wchar_t ch) {
+	if (ch >= 0xff10) {
+		return ch - 0xff10;
+	}
+
+	return ch - L'0';
 }
 
 constexpr bool lexer::is_octal_digit(wchar_t ch) {

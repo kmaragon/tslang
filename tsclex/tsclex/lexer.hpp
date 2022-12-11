@@ -194,6 +194,7 @@ private:
 	void scan_identifier(token& into, bool is_private = false);
 
 	static constexpr bool is_decimal_digit(wchar_t ch);
+	static constexpr long long decimal_value(wchar_t ch);
 	static constexpr bool is_octal_digit(wchar_t ch);
 	static constexpr bool is_hex_digit(wchar_t ch);
 	static constexpr bool is_alpha(wchar_t ch);

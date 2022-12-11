@@ -51,6 +51,7 @@
 #include "tokens/comma_token.hpp"
 #include "tokens/comment_token.hpp"
 #include "tokens/const_token.hpp"
+#include "tokens/constant_value_token.hpp"
 #include "tokens/constructor_token.hpp"
 #include "tokens/continue_token.hpp"
 #include "tokens/debugger_token.hpp"
@@ -308,6 +309,7 @@ private:
 									  tokens::comma_token,
 									  tokens::comment_token,
 									  tokens::const_token,
+									  tokens::constant_value_token,
 									  tokens::constructor_token,
 									  tokens::continue_token,
 									  tokens::debugger_token,

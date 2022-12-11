@@ -37,6 +37,7 @@ set(SOURCES
         tsclex/tokens/comma_token.cpp
         tsclex/tokens/comment_token.cpp
         tsclex/tokens/const_token.cpp
+        tsclex/tokens/constant_value_token.cpp
         tsclex/tokens/constructor_token.cpp
         tsclex/tokens/continue_token.cpp
         tsclex/tokens/debugger_token.cpp
