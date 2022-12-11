@@ -30,6 +30,6 @@ bool object_token::operator!=(
 	return false;
 }
 
-std::wstring object_token::to_string() const {
-	return L"object";
+std::string object_token::to_string() const {
+	return "object";
 }

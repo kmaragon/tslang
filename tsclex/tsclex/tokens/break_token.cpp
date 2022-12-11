@@ -30,6 +30,6 @@ bool break_token::operator!=(
 	return false;
 }
 
-std::wstring break_token::to_string() const {
-	return L"break";
+std::string break_token::to_string() const {
+	return "break";
 }

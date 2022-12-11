@@ -30,6 +30,6 @@ bool function_token::operator!=(
 	return false;
 }
 
-std::wstring function_token::to_string() const {
-	return L"function";
+std::string function_token::to_string() const {
+	return "function";
 }

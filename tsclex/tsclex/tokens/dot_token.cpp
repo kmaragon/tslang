@@ -30,6 +30,6 @@ bool dot_token::operator!=(
 	return false;
 }
 
-std::wstring dot_token::to_string() const {
-	return L".";
+std::string dot_token::to_string() const {
+	return ".";
 }

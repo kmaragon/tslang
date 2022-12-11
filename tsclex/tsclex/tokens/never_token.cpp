@@ -30,6 +30,6 @@ bool never_token::operator!=(
 	return false;
 }
 
-std::wstring never_token::to_string() const {
-	return L"never";
+std::string never_token::to_string() const {
+	return "never";
 }

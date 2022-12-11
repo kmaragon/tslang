@@ -30,6 +30,6 @@ bool newline_token::operator!=(
 	return false;
 }
 
-std::wstring newline_token::to_string() const {
-	return L"\n";
+std::string newline_token::to_string() const {
+	return "\n";
 }

@@ -30,6 +30,6 @@ bool symbol_token::operator!=(
 	return false;
 }
 
-std::wstring symbol_token::to_string() const {
-	return L"symbol";
+std::string symbol_token::to_string() const {
+	return "symbol";
 }

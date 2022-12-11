@@ -30,6 +30,6 @@ bool infer_token::operator!=(
 	return false;
 }
 
-std::wstring infer_token::to_string() const {
-	return L"infer";
+std::string infer_token::to_string() const {
+	return "infer";
 }

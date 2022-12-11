@@ -30,6 +30,6 @@ bool ampersand_token::operator!=(
 	return false;
 }
 
-std::wstring ampersand_token::to_string() const {
-	return L"&";
+std::string ampersand_token::to_string() const {
+	return "&";
 }

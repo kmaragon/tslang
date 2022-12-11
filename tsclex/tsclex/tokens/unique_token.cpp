@@ -30,6 +30,6 @@ bool unique_token::operator!=(
 	return false;
 }
 
-std::wstring unique_token::to_string() const {
-	return L"unique";
+std::string unique_token::to_string() const {
+	return "unique";
 }

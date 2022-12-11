@@ -30,6 +30,6 @@ bool double_minus_token::operator!=(
 	return false;
 }
 
-std::wstring double_minus_token::to_string() const {
-	return L"--";
+std::string double_minus_token::to_string() const {
+	return "--";
 }

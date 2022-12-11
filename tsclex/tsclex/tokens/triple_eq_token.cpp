@@ -30,6 +30,6 @@ bool triple_eq_token::operator!=(
 	return false;
 }
 
-std::wstring triple_eq_token::to_string() const {
-	return L"===";
+std::string triple_eq_token::to_string() const {
+	return "===";
 }

@@ -30,6 +30,6 @@ bool super_token::operator!=(
 	return false;
 }
 
-std::wstring super_token::to_string() const {
-	return L"super";
+std::string super_token::to_string() const {
+	return "super";
 }

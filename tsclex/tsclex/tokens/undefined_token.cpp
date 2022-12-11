@@ -30,6 +30,6 @@ bool undefined_token::operator!=(
 	return false;
 }
 
-std::wstring undefined_token::to_string() const {
-	return L"undefined";
+std::string undefined_token::to_string() const {
+	return "undefined";
 }

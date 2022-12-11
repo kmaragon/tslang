@@ -30,6 +30,6 @@ bool double_question_token::operator!=(
 	return false;
 }
 
-std::wstring double_question_token::to_string() const {
-	return L"\?\?";
+std::string double_question_token::to_string() const {
+	return "\?\?";
 }

@@ -30,6 +30,6 @@ bool exclamation_token::operator!=(
 	return false;
 }
 
-std::wstring exclamation_token::to_string() const {
-	return L"!";
+std::string exclamation_token::to_string() const {
+	return "!";
 }

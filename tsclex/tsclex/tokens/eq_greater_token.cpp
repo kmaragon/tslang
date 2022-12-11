@@ -30,6 +30,6 @@ bool eq_greater_token::operator!=(
 	return false;
 }
 
-std::wstring eq_greater_token::to_string() const {
-	return L"=>";
+std::string eq_greater_token::to_string() const {
+	return "=>";
 }

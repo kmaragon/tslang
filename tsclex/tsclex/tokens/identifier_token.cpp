@@ -17,11 +17,12 @@
  */
 
 #include "identifier_token.hpp"
+#include <tsccore/utf8.hpp>
 
 using namespace tscc::lex::tokens;
 
-identifier_token::identifier_token(std::wstring identifier)
-	: id_(std::move(identifier)) {}
+identifier_token::identifier_token(const std::u32string& identifier)
+	: id_(utf8_encode(identifier)) {}
 
 bool identifier_token::operator==(
 	const tscc::lex::tokens::identifier_token& other) const {
@@ -33,6 +34,6 @@ bool identifier_token::operator!=(
 	return id_ != other.id_;
 }
 
-std::wstring identifier_token::to_string() const {
+std::string identifier_token::to_string() const {
 	return id_;
 }

@@ -30,6 +30,6 @@ bool type_token::operator!=(
 	return false;
 }
 
-std::wstring type_token::to_string() const {
-	return L"type";
+std::string type_token::to_string() const {
+	return "type";
 }

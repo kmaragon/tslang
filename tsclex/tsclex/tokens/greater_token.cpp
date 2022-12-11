@@ -30,6 +30,6 @@ bool greater_token::operator!=(
 	return false;
 }
 
-std::wstring greater_token::to_string() const {
-	return L">";
+std::string greater_token::to_string() const {
+	return ">";
 }

@@ -30,6 +30,6 @@ bool double_ampersand_token::operator!=(
 	return false;
 }
 
-std::wstring double_ampersand_token::to_string() const {
-	return L"&&";
+std::string double_ampersand_token::to_string() const {
+	return "&&";
 }

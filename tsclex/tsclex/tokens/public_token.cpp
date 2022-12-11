@@ -30,6 +30,6 @@ bool public_token::operator!=(
 	return false;
 }
 
-std::wstring public_token::to_string() const {
-	return L"public";
+std::string public_token::to_string() const {
+	return "public";
 }

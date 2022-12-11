@@ -30,6 +30,6 @@ bool satisfies_token::operator!=(
 	return false;
 }
 
-std::wstring satisfies_token::to_string() const {
-	return L"satisfies";
+std::string satisfies_token::to_string() const {
+	return "satisfies";
 }

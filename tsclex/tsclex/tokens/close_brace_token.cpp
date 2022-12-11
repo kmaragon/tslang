@@ -30,6 +30,6 @@ bool close_brace_token::operator!=(
 	return false;
 }
 
-std::wstring close_brace_token::to_string() const {
-	return L"}";
+std::string close_brace_token::to_string() const {
+	return "}";
 }

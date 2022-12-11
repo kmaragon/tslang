@@ -30,6 +30,6 @@ bool constructor_token::operator!=(
 	return false;
 }
 
-std::wstring constructor_token::to_string() const {
-	return L"constructor";
+std::string constructor_token::to_string() const {
+	return "constructor";
 }

@@ -30,6 +30,6 @@ bool caret_token::operator!=(
 	return false;
 }
 
-std::wstring caret_token::to_string() const {
-	return L"^";
+std::string caret_token::to_string() const {
+	return "^";
 }

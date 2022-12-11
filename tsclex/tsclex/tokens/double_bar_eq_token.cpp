@@ -30,6 +30,6 @@ bool double_bar_eq_token::operator!=(
 	return false;
 }
 
-std::wstring double_bar_eq_token::to_string() const {
-	return L"||=";
+std::string double_bar_eq_token::to_string() const {
+	return "||=";
 }

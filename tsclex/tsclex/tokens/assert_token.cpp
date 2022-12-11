@@ -30,6 +30,6 @@ bool assert_token::operator!=(
 	return false;
 }
 
-std::wstring assert_token::to_string() const {
-	return L"assert";
+std::string assert_token::to_string() const {
+	return "assert";
 }

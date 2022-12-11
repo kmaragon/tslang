@@ -18,12 +18,18 @@
 
 #include "multiline_comment_token.hpp"
 #include <sstream>
+#include <tsccore/utf8.hpp>
 
 using namespace tscc::lex::tokens;
 
 multiline_comment_token::multiline_comment_token(
-	std::vector<std::wstring> comment_lines)
-	: lines_(std::move(comment_lines)) {}
+	const std::span<std::u32string>& comment_lines)
+{
+	lines_.reserve(comment_lines.size());
+	for (auto& l : comment_lines) {
+		lines_.emplace_back(utf8_encode(l));
+	}
+}
 
 bool multiline_comment_token::operator==(
 	const tscc::lex::tokens::multiline_comment_token& other) const {
@@ -44,8 +50,8 @@ bool multiline_comment_token::operator!=(
 	return !operator==(other);
 }
 
-std::wstring multiline_comment_token::to_string() const {
-	std::wstringstream out;
+std::string multiline_comment_token::to_string() const {
+	std::stringstream out;
 	out << "/*";
 	for (auto& l : lines_) {
 		out << l << "\n";

@@ -30,6 +30,6 @@ bool static_token::operator!=(
 	return false;
 }
 
-std::wstring static_token::to_string() const {
-	return L"static";
+std::string static_token::to_string() const {
+	return "static";
 }

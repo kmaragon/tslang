@@ -30,6 +30,6 @@ bool catch_token::operator!=(
 	return false;
 }
 
-std::wstring catch_token::to_string() const {
-	return L"catch";
+std::string catch_token::to_string() const {
+	return "catch";
 }

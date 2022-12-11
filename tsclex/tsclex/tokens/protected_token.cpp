@@ -30,6 +30,6 @@ bool protected_token::operator!=(
 	return false;
 }
 
-std::wstring protected_token::to_string() const {
-	return L"protected";
+std::string protected_token::to_string() const {
+	return "protected";
 }

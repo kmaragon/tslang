@@ -30,6 +30,6 @@ bool keyof_token::operator!=(
 	return false;
 }
 
-std::wstring keyof_token::to_string() const {
-	return L"keyof";
+std::string keyof_token::to_string() const {
+	return "keyof";
 }

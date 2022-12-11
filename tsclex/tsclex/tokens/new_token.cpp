@@ -30,6 +30,6 @@ bool new_token::operator!=(
 	return false;
 }
 
-std::wstring new_token::to_string() const {
-	return L"new";
+std::string new_token::to_string() const {
+	return "new";
 }

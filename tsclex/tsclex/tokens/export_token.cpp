@@ -30,6 +30,6 @@ bool export_token::operator!=(
 	return false;
 }
 
-std::wstring export_token::to_string() const {
-	return L"export";
+std::string export_token::to_string() const {
+	return "export";
 }

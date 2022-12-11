@@ -21,7 +21,7 @@
 
 using namespace tscc::lex::tokens;
 
-jsdoc_token::jsdoc_token(const std::vector<std::wstring>& comment_lines) {
+jsdoc_token::jsdoc_token(const std::span<std::u32string>& comment_lines) {
 	// TODO: implement parsing jsdoc
 }
 
@@ -35,7 +35,7 @@ bool jsdoc_token::operator!=(
 	return !operator==(other);
 }
 
-std::wstring jsdoc_token::to_string() const {
+std::string jsdoc_token::to_string() const {
 	throw std::system_error(std::make_error_code(std::errc::not_supported),
 							"JSDoc type scheme not built yet");
 }

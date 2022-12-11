@@ -30,6 +30,6 @@ bool percent_token::operator!=(
 	return false;
 }
 
-std::wstring percent_token::to_string() const {
-	return L"%";
+std::string percent_token::to_string() const {
+	return "%";
 }

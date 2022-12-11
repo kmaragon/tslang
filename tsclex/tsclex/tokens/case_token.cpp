@@ -30,6 +30,6 @@ bool case_token::operator!=(
 	return false;
 }
 
-std::wstring case_token::to_string() const {
-	return L"case";
+std::string case_token::to_string() const {
+	return "case";
 }

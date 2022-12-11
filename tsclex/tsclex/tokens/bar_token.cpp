@@ -30,6 +30,6 @@ bool bar_token::operator!=(
 	return false;
 }
 
-std::wstring bar_token::to_string() const {
-	return L"|";
+std::string bar_token::to_string() const {
+	return "|";
 }

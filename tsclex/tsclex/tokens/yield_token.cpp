@@ -30,6 +30,6 @@ bool yield_token::operator!=(
 	return false;
 }
 
-std::wstring yield_token::to_string() const {
-	return L"yield";
+std::string yield_token::to_string() const {
+	return "yield";
 }

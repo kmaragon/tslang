@@ -30,6 +30,6 @@ bool package_token::operator!=(
 	return false;
 }
 
-std::wstring package_token::to_string() const {
-	return L"package";
+std::string package_token::to_string() const {
+	return "package";
 }

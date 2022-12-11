@@ -30,6 +30,6 @@ bool else_token::operator!=(
 	return false;
 }
 
-std::wstring else_token::to_string() const {
-	return L"else";
+std::string else_token::to_string() const {
+	return "else";
 }

@@ -30,6 +30,6 @@ bool open_paren_token::operator!=(
 	return false;
 }
 
-std::wstring open_paren_token::to_string() const {
-	return L"(";
+std::string open_paren_token::to_string() const {
+	return "(";
 }

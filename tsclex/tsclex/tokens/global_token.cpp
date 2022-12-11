@@ -30,6 +30,6 @@ bool global_token::operator!=(
 	return false;
 }
 
-std::wstring global_token::to_string() const {
-	return L"global";
+std::string global_token::to_string() const {
+	return "global";
 }

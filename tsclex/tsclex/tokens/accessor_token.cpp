@@ -30,6 +30,6 @@ bool accessor_token::operator!=(
 	return false;
 }
 
-std::wstring accessor_token::to_string() const {
-	return L"accessor";
+std::string accessor_token::to_string() const {
+	return "accessor";
 }

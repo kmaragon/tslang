@@ -30,6 +30,6 @@ bool bigint_token::operator!=(
 	return false;
 }
 
-std::wstring bigint_token::to_string() const {
-	return L"bigint";
+std::string bigint_token::to_string() const {
+	return "bigint";
 }

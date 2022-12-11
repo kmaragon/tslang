@@ -30,6 +30,6 @@ bool class_token::operator!=(
 	return false;
 }
 
-std::wstring class_token::to_string() const {
-	return L"class";
+std::string class_token::to_string() const {
+	return "class";
 }

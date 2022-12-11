@@ -30,6 +30,6 @@ bool intrinsic_token::operator!=(
 	return false;
 }
 
-std::wstring intrinsic_token::to_string() const {
-	return L"intrinsic";
+std::string intrinsic_token::to_string() const {
+	return "intrinsic";
 }

@@ -30,6 +30,6 @@ bool interface_token::operator!=(
 	return false;
 }
 
-std::wstring interface_token::to_string() const {
-	return L"interface";
+std::string interface_token::to_string() const {
+	return "interface";
 }

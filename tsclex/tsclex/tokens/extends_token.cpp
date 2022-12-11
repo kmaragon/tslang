@@ -30,6 +30,6 @@ bool extends_token::operator!=(
 	return false;
 }
 
-std::wstring extends_token::to_string() const {
-	return L"extends";
+std::string extends_token::to_string() const {
+	return "extends";
 }

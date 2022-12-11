@@ -30,6 +30,6 @@ bool double_asterisk_eq_token::operator!=(
 	return false;
 }
 
-std::wstring double_asterisk_eq_token::to_string() const {
-	return L"**=";
+std::string double_asterisk_eq_token::to_string() const {
+	return "**=";
 }

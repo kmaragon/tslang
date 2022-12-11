@@ -17,10 +17,11 @@
  */
 
 #include "constant_value_token.hpp"
+#include <tsccore/json.hpp>
 
 using namespace tscc::lex::tokens;
 
-constant_value_token::constant_value_token(std::wstring string_value)
+constant_value_token::constant_value_token(std::u32string string_value)
 	: value_(std::move(string_value)) {}
 
 constant_value_token::constant_value_token(long long integer_value)
@@ -39,13 +40,13 @@ bool constant_value_token::operator!=(
 	return value_ != other.value_;
 }
 
-std::wstring constant_value_token::to_string() const
+std::string constant_value_token::to_string() const
 {
-	if (std::holds_alternative<std::wstring>(value_)) {
-		throw "No proper string serializer implemented yet";
+	if (std::holds_alternative<std::u32string>(value_)) {
+		return to_json_string(std::get<std::u32string>(value_));
 	} else if (std::holds_alternative<long long>(value_)) {
-		return std::to_wstring(std::get<long long>(value_));
+		return std::to_string(std::get<long long>(value_));
 	} else {
-		return std::to_wstring(std::get<long double>(value_));
+		return std::to_string(std::get<long double>(value_));
 	}
 }

@@ -30,6 +30,6 @@ bool require_token::operator!=(
 	return false;
 }
 
-std::wstring require_token::to_string() const {
-	return L"require";
+std::string require_token::to_string() const {
+	return "require";
 }

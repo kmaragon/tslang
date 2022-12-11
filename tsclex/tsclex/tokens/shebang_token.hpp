@@ -25,15 +25,15 @@ namespace tscc::lex::tokens {
 
 class shebang_token : public basic_token {
 public:
-	shebang_token(std::wstring command);
+	shebang_token(const std::u32string& command);
 
 	bool operator==(const shebang_token& other) const;
 	bool operator!=(const shebang_token& other) const;
 
-	std::wstring to_string() const override;
+	std::string to_string() const override;
 
 private:
-	std::wstring cmd_;
+	std::string cmd_;
 };
 
 }  // namespace tscc::lex::tokens

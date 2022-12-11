@@ -30,6 +30,6 @@ bool slash_token::operator!=(
 	return false;
 }
 
-std::wstring slash_token::to_string() const {
-	return L"/";
+std::string slash_token::to_string() const {
+	return "/";
 }

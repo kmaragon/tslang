@@ -30,6 +30,6 @@ bool tilde_token::operator!=(
 	return false;
 }
 
-std::wstring tilde_token::to_string() const {
-	return L"~";
+std::string tilde_token::to_string() const {
+	return "~";
 }

@@ -30,6 +30,6 @@ bool override_token::operator!=(
 	return false;
 }
 
-std::wstring override_token::to_string() const {
-	return L"override";
+std::string override_token::to_string() const {
+	return "override";
 }

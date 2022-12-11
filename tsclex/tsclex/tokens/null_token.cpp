@@ -30,6 +30,6 @@ bool null_token::operator!=(
 	return false;
 }
 
-std::wstring null_token::to_string() const {
-	return L"null";
+std::string null_token::to_string() const {
+	return "null";
 }

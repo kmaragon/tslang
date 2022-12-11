@@ -21,18 +21,16 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
-#include <vector>
 #include "error/expected_command.hpp"
 #include "error/invalid_character.hpp"
 #include "error/invalid_identifier.hpp"
 #include "error/misplaced_shebang.hpp"
 #include "error/premature_end_of_file.hpp"
-#include "error/unexpected_token.hpp"
 #include "token.hpp"
 
 using namespace tscc::lex;
 
-std::array<wchar_t, 512> lexer::unicode_es3_identifier_start{
+std::array<char32_t, 512> lexer::unicode_es3_identifier_start{
 	170,   170,	  181,	 181,	186,   186,	  192,	 214,	216,   246,	  248,
 	543,   546,	  563,	 592,	685,   688,	  696,	 699,	705,   720,	  721,
 	736,   740,	  750,	 750,	890,   890,	  902,	 902,	904,   906,	  908,
@@ -80,7 +78,7 @@ std::array<wchar_t, 512> lexer::unicode_es3_identifier_start{
 	64467, 64829, 64848, 64911, 64914, 64967, 65008, 65019, 65136, 65138, 65140,
 	65140, 65142, 65276, 65313, 65338, 65345, 65370, 65382, 65470, 65474, 65479,
 	65482, 65487, 65490, 65495, 65498, 65500};
-std::array<wchar_t, 684> lexer::unicode_es3_identifier_part{
+std::array<char32_t, 684> lexer::unicode_es3_identifier_part{
 	170,   170,	  181,	 181,	186,   186,	  192,	 214,	216,   246,	  248,
 	543,   546,	  563,	 592,	685,   688,	  696,	 699,	705,   720,	  721,
 	736,   740,	  750,	 750,	768,   846,	  864,	 866,	890,   890,	  902,
@@ -144,7 +142,7 @@ std::array<wchar_t, 684> lexer::unicode_es3_identifier_part{
 	65136, 65138, 65140, 65140, 65142, 65276, 65296, 65305, 65313, 65338, 65343,
 	65343, 65345, 65370, 65381, 65470, 65474, 65479, 65482, 65487, 65490, 65495,
 	65498, 65500};
-std::array<wchar_t, 740> lexer::unicode_es5_identifier_start{
+std::array<char32_t, 740> lexer::unicode_es5_identifier_start{
 	170,   170,	  181,	 181,	186,   186,	  192,	 214,	216,   246,	  248,
 	705,   710,	  721,	 736,	740,   748,	  748,	 750,	750,   880,	  884,
 	886,   887,	  890,	 893,	902,   902,	  904,	 906,	908,   908,	  910,
@@ -213,7 +211,7 @@ std::array<wchar_t, 740> lexer::unicode_es5_identifier_start{
 	64829, 64848, 64911, 64914, 64967, 65008, 65019, 65136, 65140, 65142, 65276,
 	65313, 65338, 65345, 65370, 65382, 65470, 65474, 65479, 65482, 65487, 65490,
 	65495, 65498, 65500};
-std::array<wchar_t, 856> lexer::unicode_es5_identifier_part{
+std::array<char32_t, 856> lexer::unicode_es5_identifier_part{
 	170,   170,	  181,	 181,	186,   186,	  192,	 214,	216,   246,	  248,
 	705,   710,	  721,	 736,	740,   748,	  748,	 750,	750,   768,	  884,
 	886,   887,	  890,	 893,	902,   902,	  904,	 906,	908,   908,	  910,
@@ -292,7 +290,7 @@ std::array<wchar_t, 856> lexer::unicode_es5_identifier_part{
 	65019, 65024, 65039, 65056, 65062, 65075, 65076, 65101, 65103, 65136, 65140,
 	65142, 65276, 65296, 65305, 65313, 65338, 65343, 65343, 65345, 65370, 65382,
 	65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500};
-std::array<wchar_t, 1218> lexer::unicode_esnext_identifier_start{
+std::array<char32_t, 1218> lexer::unicode_esnext_identifier_start{
 	65,		90,		97,		122,	170,	170,	181,	181,	186,
 	186,	192,	214,	216,	246,	248,	705,	710,	721,
 	736,	740,	748,	748,	750,	750,	880,	884,	886,
@@ -429,7 +427,7 @@ std::array<wchar_t, 1218> lexer::unicode_esnext_identifier_start{
 	126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651,
 	131072, 173782, 173824, 177972, 177984, 178205, 178208, 183969, 183984,
 	191456, 194560, 195101};
-std::array<wchar_t, 1426> lexer::unicode_esnext_identifier_part{
+std::array<char32_t, 1426> lexer::unicode_esnext_identifier_part{
 	48,		57,		65,		90,		95,		95,		97,		122,	170,
 	170,	181,	181,	183,	183,	186,	186,	192,	214,
 	216,	246,	248,	705,	710,	721,	736,	740,	748,
@@ -653,350 +651,350 @@ lexer::iterator lexer::end() {
 	return end_;
 }
 
-std::unordered_map<std::wstring, lexer::tokfactory>
+std::unordered_map<std::u32string, lexer::tokfactory>
 	lexer::
-		keyword_lookup{{L"abstract",
+		keyword_lookup{{U"abstract",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::abstract_token>(
 								location);
 						}},
-					   {L"accessor",
+					   {U"accessor",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::accessor_token>(
 								location);
 						}},
-					   {L"any",
+					   {U"any",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::any_token>(location);
 						}},
-					   {L"as",
+					   {U"as",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::as_token>(location);
 						}},
-					   {L"asserts",
+					   {U"asserts",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::asserts_token>(location);
 						}},
-					   {L"assert",
+					   {U"assert",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::assert_token>(location);
 						}},
-					   {L"async",
+					   {U"async",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::async_token>(location);
 						}},
-					   {L"await",
+					   {U"await",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::await_token>(location);
 						}},
-					   {L"bigint",
+					   {U"bigint",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::bigint_token>(location);
 						}},
-					   {L"boolean",
+					   {U"boolean",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::boolean_token>(location);
 						}},
-					   {L"break",
+					   {U"break",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::break_token>(location);
 						}},
-					   {L"case",
+					   {U"case",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::case_token>(location);
 						}},
-					   {L"catch",
+					   {U"catch",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::catch_token>(location);
 						}},
-					   {L"class",
+					   {U"class",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::class_token>(location);
 						}},
-					   {L"continue",
+					   {U"continue",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::continue_token>(
 								location);
 						}},
-					   {L"const",
+					   {U"const",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::const_token>(location);
 						}},
-					   {L"constructor",
+					   {U"constructor",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::constructor_token>(
 								location);
 						}},
-					   {L"debugger",
+					   {U"debugger",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::debugger_token>(
 								location);
 						}},
-					   {L"declare",
+					   {U"declare",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::declare_token>(location);
 						}},
-					   {L"default",
+					   {U"default",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::default_token>(location);
 						}},
-					   {L"delete",
+					   {U"delete",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::delete_token>(location);
 						}},
-					   {L"do",
+					   {U"do",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::do_token>(location);
 						}},
-					   {L"else",
+					   {U"else",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::else_token>(location);
 						}},
-					   {L"export",
+					   {U"export",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::export_token>(location);
 						}},
-					   {L"extends",
+					   {U"extends",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::extends_token>(location);
 						}},
-					   {L"false",
+					   {U"false",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::false_token>(location);
 						}},
-					   {L"finally",
+					   {U"finally",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::finally_token>(location);
 						}},
-					   {L"for",
+					   {U"for",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::for_token>(location);
 						}},
-					   {L"from",
+					   {U"from",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::from_token>(location);
 						}},
-					   {L"function",
+					   {U"function",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::function_token>(
 								location);
 						}},
-					   {L"get",
+					   {U"get",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::get_token>(location);
 						}},
-					   {L"global",
+					   {U"global",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::global_token>(location);
 						}},
-					   {L"if",
+					   {U"if",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::if_token>(location);
 						}},
-					   {L"implements",
+					   {U"implements",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::implements_token>(
 								location);
 						}},
-					   {L"import",
+					   {U"import",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::import_token>(location);
 						}},
-					   {L"in",
+					   {U"in",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::in_token>(location);
 						}},
-					   {L"infer",
+					   {U"infer",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::infer_token>(location);
 						}},
-					   {L"instanceof",
+					   {U"instanceof",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::instanceof_token>(
 								location);
 						}},
-					   {L"interface",
+					   {U"interface",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::interface_token>(
 								location);
 						}},
-					   {L"intrinsic",
+					   {U"intrinsic",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::intrinsic_token>(
 								location);
 						}},
-					   {L"is",
+					   {U"is",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::is_token>(location);
 						}},
-					   {L"keyof",
+					   {U"keyof",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::keyof_token>(location);
 						}},
-					   {L"let",
+					   {U"let",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::let_token>(location);
 						}},
-					   {L"module",
+					   {U"module",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::module_token>(location);
 						}},
-					   {L"namespace",
+					   {U"namespace",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::namespace_token>(
 								location);
 						}},
-					   {L"never",
+					   {U"never",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::never_token>(location);
 						}},
-					   {L"new",
+					   {U"new",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::new_token>(location);
 						}},
-					   {L"null",
+					   {U"null",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::null_token>(location);
 						}},
-					   {L"number",
+					   {U"number",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::number_token>(location);
 						}},
-					   {L"of",
+					   {U"of",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::of_token>(location);
 						}},
-					   {L"object",
+					   {U"object",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::object_token>(location);
 						}},
-					   {L"package",
+					   {U"package",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::package_token>(location);
 						}},
-					   {L"private",
+					   {U"private",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::private_token>(location);
 						}},
-					   {L"protected",
+					   {U"protected",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::protected_token>(
 								location);
 						}},
-					   {L"public",
+					   {U"public",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::public_token>(location);
 						}},
-					   {L"override",
+					   {U"override",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::override_token>(
 								location);
 						}},
-					   {L"out",
+					   {U"out",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::out_token>(location);
 						}},
-					   {L"readonly",
+					   {U"readonly",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::readonly_token>(
 								location);
 						}},
-					   {L"require",
+					   {U"require",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::require_token>(location);
 						}},
-					   {L"return",
+					   {U"return",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::return_token>(location);
 						}},
-					   {L"satisfies",
+					   {U"satisfies",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::satisfies_token>(
 								location);
 						}},
-					   {L"set",
+					   {U"set",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::set_token>(location);
 						}},
-					   {L"static",
+					   {U"static",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::static_token>(location);
 						}},
-					   {L"string",
+					   {U"string",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::string_token>(location);
 						}},
-					   {L"super",
+					   {U"super",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::super_token>(location);
 						}},
-					   {L"switch",
+					   {U"switch",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::switch_token>(location);
 						}},
-					   {L"symbol",
+					   {U"symbol",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::symbol_token>(location);
 						}},
-					   {L"this",
+					   {U"this",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::this_token>(location);
 						}},
-					   {L"throw",
+					   {U"throw",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::throw_token>(location);
 						}},
-					   {L"true",
+					   {U"true",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::true_token>(location);
 						}},
-					   {L"try",
+					   {U"try",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::try_token>(location);
 						}},
-					   {L"type",
+					   {U"type",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::type_token>(location);
 						}},
-					   {L"typeof",
+					   {U"typeof",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::typeof_token>(location);
 						}},
-					   {L"undefined",
+					   {U"undefined",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::undefined_token>(
 								location);
 						}},
-					   {L"unique",
+					   {U"unique",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::unique_token>(location);
 						}},
-					   {L"unknown",
+					   {U"unknown",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::unknown_token>(location);
 						}},
-					   {L"var",
+					   {U"var",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::var_token>(location);
 						}},
-					   {L"void",
+					   {U"void",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::void_token>(location);
 						}},
-					   {L"while",
+					   {U"while",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::while_token>(location);
 						}},
-					   {L"with",
+					   {U"with",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::with_token>(location);
 						}},
-					   {L"yield",
+					   {U"yield",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::yield_token>(location);
 						}}};
 
-inline std::size_t lexer::next_code_point(wchar_t& into,
+inline std::size_t lexer::next_code_point(char32_t& into,
 										  std::size_t look_forward) {
 	auto read_more = [this](std::size_t needed) -> std::size_t {
 		if (stream_.eof())
@@ -1056,8 +1054,8 @@ inline std::size_t lexer::next_code_point(wchar_t& into,
 			return 1;
 		}
 
-		into = (static_cast<wchar_t>(chr0 & 0x1f) << 6) |
-			   static_cast<wchar_t>(chr1 & 0x3f);
+		into = (static_cast<char32_t>(chr0 & 0x1f) << 6) |
+			   static_cast<char32_t>(chr1 & 0x3f);
 		return 2;
 	}
 
@@ -1083,9 +1081,9 @@ inline std::size_t lexer::next_code_point(wchar_t& into,
 			return 1;
 		}
 
-		into = (static_cast<wchar_t>(chr0 & 0x0f) << 12) |
-			   (static_cast<wchar_t>(chr1 & 0x3f) << 6) |
-			   static_cast<wchar_t>(chr2 & 0x3f);
+		into = (static_cast<char32_t>(chr0 & 0x0f) << 12) |
+			   (static_cast<char32_t>(chr1 & 0x3f) << 6) |
+			   static_cast<char32_t>(chr2 & 0x3f);
 		return 3;
 	}
 
@@ -1118,10 +1116,10 @@ inline std::size_t lexer::next_code_point(wchar_t& into,
 			return 1;
 		}
 
-		into = (static_cast<wchar_t>(chr0 & 0x07) << 18) |
-			   (static_cast<wchar_t>(chr1 & 0x3f) << 12) |
-			   (static_cast<wchar_t>(chr2 & 0x3f) << 6) |
-			   static_cast<wchar_t>(chr3 & 0x3f);
+		into = (static_cast<char32_t>(chr0 & 0x07) << 18) |
+			   (static_cast<char32_t>(chr1 & 0x3f) << 12) |
+			   (static_cast<char32_t>(chr2 & 0x3f) << 6) |
+			   static_cast<char32_t>(chr3 & 0x3f);
 		return 4;
 	}
 
@@ -1161,11 +1159,11 @@ inline std::size_t lexer::next_code_point(wchar_t& into,
 			return 1;
 		}
 
-		into = (static_cast<wchar_t>(chr0 & 0x03) << 24) |
-			   (static_cast<wchar_t>(chr1 & 0x3f) << 18) |
-			   (static_cast<wchar_t>(chr2 & 0x3f) << 12) |
-			   (static_cast<wchar_t>(chr3 & 0x3f) << 6) |
-			   static_cast<wchar_t>(chr4 & 0x3f);
+		into = (static_cast<char32_t>(chr0 & 0x03) << 24) |
+			   (static_cast<char32_t>(chr1 & 0x3f) << 18) |
+			   (static_cast<char32_t>(chr2 & 0x3f) << 12) |
+			   (static_cast<char32_t>(chr3 & 0x3f) << 6) |
+			   static_cast<char32_t>(chr4 & 0x3f);
 		return 5;
 	}
 
@@ -1212,12 +1210,12 @@ inline std::size_t lexer::next_code_point(wchar_t& into,
 			return 1;
 		}
 
-		into = (static_cast<wchar_t>(chr0 & 0x01) << 30) |
-			   (static_cast<wchar_t>(chr1 & 0x3f) << 24) |
-			   (static_cast<wchar_t>(chr2 & 0x3f) << 18) |
-			   (static_cast<wchar_t>(chr3 & 0x3f) << 12) |
-			   (static_cast<wchar_t>(chr4 & 0x3f) << 6) |
-			   static_cast<wchar_t>(chr5 & 0x3f);
+		into = (static_cast<char32_t>(chr0 & 0x01) << 30) |
+			   (static_cast<char32_t>(chr1 & 0x3f) << 24) |
+			   (static_cast<char32_t>(chr2 & 0x3f) << 18) |
+			   (static_cast<char32_t>(chr3 & 0x3f) << 12) |
+			   (static_cast<char32_t>(chr4 & 0x3f) << 6) |
+			   static_cast<char32_t>(chr5 & 0x3f);
 		return 6;
 	}
 
@@ -1233,12 +1231,142 @@ void lexer::scan_shebang(std::size_t shebang_offset, tscc::lex::token& into) {
 	if (wbuffer_.empty())
 		throw expected_command(shebang_location);
 
-	into.emplace_token<tokens::shebang_token>(shebang_location,
-											  std::move(wbuffer_));
+	into.emplace_token<tokens::shebang_token>(shebang_location, wbuffer_);
 }
 
 void lexer::scan_string(tscc::lex::token& into) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	auto string_location = location();
+
+	char32_t quote_end;
+	char32_t first{};
+
+	advance(next_code_point(quote_end));
+	wbuffer_.clear();
+
+	// read the command until a eof or an eol
+	while (true) {
+		auto nc = next_code_point(first);
+		if (!nc) {
+			throw premature_end_of_file(string_location);
+		}
+
+		advance(nc);
+		if (first == quote_end) {
+			break;
+		}
+
+		switch (first) {
+			case '\r':
+			case '\n':
+				throw invalid_identifier(string_location);
+			case '\\': {
+				auto gc = next_code_point(first);
+				if (gc) {
+					if (first == 'u' || first == 'U') {
+						char32_t ucfirst;
+						auto scanned =
+							scan_unicode_escape(ucfirst, 4, false, false, gc);
+
+						if (scanned) {
+							advance(gc + scanned);
+							first = ucfirst;
+
+							if ((first >> 11) == 0x1b) {
+								char32_t next;
+								auto nnc = next_code_point(next);
+								if (nnc && next == '\\') {
+									char32_t checku;
+									auto checkuc = next_code_point(checku, nnc);
+									if (checkuc &&
+										(checku == 'u' || checku == 'U')) {
+										char32_t ucsecond;
+										auto nscanned = scan_unicode_escape(
+											ucsecond, 4, false, false,
+											nnc + checkuc);
+										if (nscanned &&
+											(ucsecond >> 10) == 0x37) {
+											advance(nscanned + nnc + checkuc);
+
+											first = (((ucfirst & 0x3ff) << 10) |
+													 (ucsecond & 0x3ff)) +
+													0x10000;
+										}
+									}
+								}
+							}
+						}
+					} else if (first == 'x' || first == 'X') {
+						// handle 1 byte hex identifier
+						char32_t hexfirst;
+						auto scanned =
+							scan_unicode_escape(hexfirst, 2, false, false, gc);
+
+						if (scanned) {
+							advance(scanned + gc);
+							first = hexfirst;
+						}
+					} else if (first == '0') {
+						// handle either octal or binary
+						char32_t next;
+						auto nnc = next_code_point(next, gc);
+						if (nnc == 'b' || nnc == 'B') {
+							long long number;
+							auto scanned = scan_binary_number(number, gc + nnc);
+							if (scanned && number < 0x7f000000ul) {
+								advance(scanned + gc + nc + nnc);
+								first = static_cast<char32_t>(number);
+							}
+						} else {
+							long long number;
+							auto scanned = scan_octal_number(number);
+							if (scanned && number < 0x7f000000ul) {
+								advance(scanned);
+								first = static_cast<char32_t>(number);
+							}
+						}
+					} else if (is_octal_digit(first)) {
+						long long number;
+						auto scanned = scan_octal_number(number);
+						if (scanned && number < 0x7f000000ul) {
+							advance(scanned);
+							first = static_cast<char32_t>(number);
+						}
+					} else {
+						advance(gc);
+						switch (first) {
+							case 'b':
+								first = '\b';
+								break;
+							case 'f':
+								first = '\f';
+								break;
+							case 'n':
+								first = '\n';
+								break;
+							case 'r':
+								first = '\r';
+								break;
+							case 't':
+								first = '\t';
+								break;
+							case 'v':
+								first = '\v';
+								break;
+							default:
+								break;
+						}
+					}
+				}
+			}
+		}
+
+		if (wbuffer_.capacity() == wbuffer_.size()) {
+			wbuffer_.reserve(wbuffer_.size() + buffer_size);
+		}
+		wbuffer_.push_back(first);
+	}
+
+	into.emplace_token<tokens::constant_value_token>(string_location, wbuffer_);
 }
 
 void lexer::scan_string_template(tscc::lex::token& into) {
@@ -1259,9 +1387,12 @@ void lexer::scan_line_comment(std::size_t comment_offset,
 void lexer::scan_multiline_comment(tscc::lex::token& into, bool is_jsdoc) {
 	auto comment_location = location();
 
-	std::vector<std::wstring> lines;
+	std::size_t multiline_index = 0;
+	if (multiline_buffer_.size() < 1) {
+		multiline_buffer_.resize(1);
+	}
 
-	wchar_t first{};
+	char32_t first{};
 	while (true) {
 		auto nc = next_code_point(first);
 		if (!nc) {
@@ -1279,13 +1410,19 @@ void lexer::scan_multiline_comment(tscc::lex::token& into, bool is_jsdoc) {
 			wbuffer_.erase(end);
 			gpos_.advance_line();
 
-			lines.emplace_back(std::move(wbuffer_));
+			if (multiline_buffer_.size() == multiline_index) {
+				std::size_t new_size = multiline_buffer_.size() >= 1024
+										   ? multiline_buffer_.size() + 1024
+										   : multiline_buffer_.size() * 2;
+				multiline_buffer_.resize(new_size);
+			}
+			multiline_buffer_[multiline_index++].assign(wbuffer_);
 			wbuffer_.clear();
 			continue;
 		}
 
 		if (first == '*') {
-			wchar_t second{};
+			char32_t second{};
 			auto nnc = next_code_point(second);
 			if (nnc && second == '/') {
 				advance(nnc);
@@ -1300,25 +1437,61 @@ void lexer::scan_multiline_comment(tscc::lex::token& into, bool is_jsdoc) {
 	}
 
 	if (!wbuffer_.empty()) {
-		lines.emplace_back(std::move(wbuffer_));
+		if (multiline_buffer_.size() == multiline_index) {
+			std::size_t new_size = multiline_buffer_.size() >= 1024
+									   ? multiline_buffer_.size() + 1024
+									   : multiline_buffer_.size() * 2;
+			multiline_buffer_.resize(new_size);
+		}
+
+		multiline_buffer_[multiline_index++].assign(wbuffer_);
 		wbuffer_.clear();
 	}
 
 	if (is_jsdoc) {
-		into.emplace_token<tokens::jsdoc_token>(comment_location,
-												std::move(lines));
+		into.emplace_token<tokens::jsdoc_token>(
+			comment_location,
+			std::span(multiline_buffer_.begin(), multiline_index));
 		return;
 	}
 
-	into.emplace_token<tokens::multiline_comment_token>(comment_location,
-														std::move(lines));
+	into.emplace_token<tokens::multiline_comment_token>(
+		comment_location,
+		std::span(multiline_buffer_.begin(), multiline_index));
 }
 
-void lexer::scan_binary_number(tscc::lex::token& into) {
+void lexer::scan_binary_token(tscc::lex::token& into) {
+	long long number;
+	auto scanned = scan_binary_number(number);
+	if (!scanned) {
+		throw invalid_identifier(source_location());
+	}
+
+	auto loc = location();
+	advance(scanned);
+	into.emplace_token<tokens::constant_value_token>(loc, number);
+}
+
+std::size_t lexer::scan_binary_number(long long& into, std::size_t skip) {
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
-bool lexer::scan_octal_number(tscc::lex::token& into, bool throw_on_invalid) {
+bool lexer::scan_octal_token(tscc::lex::token& into, bool throw_on_invalid) {
+	long long number;
+	auto scanned = scan_octal_number(number);
+	if (!scanned) {
+		if (throw_on_invalid)
+			throw invalid_identifier(source_location());
+		return false;
+	}
+
+	auto loc = location();
+	advance(scanned);
+	into.emplace_token<tokens::constant_value_token>(loc, number);
+	return true;
+}
+
+std::size_t lexer::scan_octal_number(long long& into, std::size_t skip) {
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
@@ -1328,7 +1501,7 @@ void lexer::scan_decimal_number(tscc::lex::token& into) {
 	long long number_part = 0;
 	std::size_t nc = 0;
 
-	wchar_t first{};
+	char32_t first{};
 	while (true) {
 		nc = next_code_point(first);
 		if (!nc) {
@@ -1369,14 +1542,35 @@ void lexer::scan_decimal_number(tscc::lex::token& into) {
 			advance(nc);
 
 			nc = next_code_point(first);
-			if (!is_decimal_digit(first)) {
+			if (!nc) {
 				throw invalid_identifier(number_location);
+			}
+
+			long long exponent = 1;
+
+			switch (first) {
+				case '-':
+					exponent = -1;
+				case '+':
+					advance(nc);
+
+					nc = next_code_point(first);
+					if (!nc || !is_decimal_digit(first)) {
+						throw invalid_identifier(number_location);
+					}
+
+					exponent *= decimal_value(first);
+					break;
+				default:
+					if (!is_decimal_digit(first)) {
+						throw invalid_identifier(number_location);
+					}
+					exponent = decimal_value(first);
 			}
 
 			advance(nc);
 
 			// this is a double with an e value
-			long long exponent = decimal_value(first);
 			while (true) {
 				nc = next_code_point(first);
 				if (!nc || !is_decimal_digit(first)) {
@@ -1399,14 +1593,35 @@ void lexer::scan_decimal_number(tscc::lex::token& into) {
 		advance(nc);
 
 		nc = next_code_point(first);
-		if (!is_decimal_digit(first)) {
+		if (!nc) {
 			throw invalid_identifier(number_location);
+		}
+
+		long long exponent = 1;
+
+		switch (first) {
+			case '-':
+				exponent = -1;
+			case '+':
+				advance(nc);
+
+				nc = next_code_point(first);
+				if (!nc || !is_decimal_digit(first)) {
+					throw invalid_identifier(number_location);
+				}
+
+				exponent *= decimal_value(first);
+				break;
+			default:
+				if (!is_decimal_digit(first)) {
+					throw invalid_identifier(number_location);
+				}
+				exponent = decimal_value(first);
 		}
 
 		advance(nc);
 
 		// this is an integer with an e value - convert to long double
-		long long exponent = decimal_value(first);
 		while (true) {
 			nc = next_code_point(first);
 			if (!nc || !is_decimal_digit(first)) {
@@ -1441,10 +1656,32 @@ bool lexer::scan_jsx_token(tscc::lex::token& into) {
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
-void lexer::scan_unicode_escape_into_wbuffer(std::size_t min_size,
-											 bool scan_as_many_as_possible,
-											 bool can_have_separators) {
+std::size_t lexer::scan_unicode_escape(char32_t& into,
+									   std::size_t min_size,
+									   bool scan_as_many_as_possible,
+									   bool can_have_separators,
+									   std::size_t skip) {
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+std::size_t lexer::scan_unicode_escape_into_wbuffer(
+	std::size_t min_size,
+	bool scan_as_many_as_possible,
+	bool can_have_separators) {
+	char32_t result;
+	auto scanned = scan_unicode_escape(
+		result, min_size, scan_as_many_as_possible, can_have_separators);
+	if (!scanned) {
+		// TODO throw a different error
+		throw invalid_identifier(location());
+	}
+
+	advance(scanned);
+	if (wbuffer_.capacity() == wbuffer_.size()) {
+		wbuffer_.reserve(wbuffer_.size() + buffer_size);
+	}
+	wbuffer_.push_back(result);
+	return scanned;
 }
 
 void lexer::scan_identifier(tscc::lex::token& into, bool is_private) {
@@ -1452,30 +1689,34 @@ void lexer::scan_identifier(tscc::lex::token& into, bool is_private) {
 	auto identifier_start = location();
 
 	while (true) {
-		wchar_t ch{};
+		char32_t ch{};
 		auto pos = next_code_point(ch);
 
 		if (!pos)
 			break;
 
 		if (ch == L'\\') {
-			wchar_t next{};
+			char32_t next{};
 			auto gs = next_code_point(next, pos);
 
 			auto loc = location();
 			if (gs > 0) {
 				wbuffer_.clear();
-				if (next == L'u') {
-					wchar_t ucnext{};
+				if (next == U'u') {
+					char32_t ucnext{};
 					auto ggs = next_code_point(ucnext, pos + gs);
-					if (ggs > 0 && ucnext == L'{') {
+					if (ggs > 0 && ucnext == U'{') {
 						advance(pos + gs + ggs);
 
-						scan_unicode_escape_into_wbuffer(1, true, false);
-						ggs = next_code_point(ucnext, 0);
+						auto scanned =
+							scan_unicode_escape_into_wbuffer(1, true, false);
+						if (!scanned)
+							throw invalid_identifier(identifier_start);
+						advance(scanned);
+						ggs = next_code_point(ucnext);
 						if (!is_identifier_part(
 								wbuffer_[wbuffer_.size() - 1]) ||
-							!ggs || ucnext != L'}') {
+							!ggs || ucnext != U'}') {
 							throw invalid_character(loc);
 						}
 
@@ -1484,7 +1725,11 @@ void lexer::scan_identifier(tscc::lex::token& into, bool is_private) {
 					}
 
 					advance(pos + gs);
-					scan_unicode_escape_into_wbuffer(4, false, false);
+					auto scanned =
+						scan_unicode_escape_into_wbuffer(4, false, false);
+					if (!scanned)
+						throw invalid_identifier(identifier_start);
+					advance(scanned);
 					if (!is_identifier_part(wbuffer_[wbuffer_.size() - 1])) {
 						throw invalid_character(loc);
 					}
@@ -1519,40 +1764,40 @@ void lexer::scan_identifier(tscc::lex::token& into, bool is_private) {
 												 std::move(wbuffer_));
 }
 
-constexpr bool lexer::is_decimal_digit(wchar_t ch) {
-	return (ch >= L'0' && ch <= L'9') || (ch >= 0xff10 && ch <= 0xff19);
+constexpr bool lexer::is_decimal_digit(char32_t ch) {
+	return (ch >= U'0' && ch <= U'9') || (ch >= 0xff10 && ch <= 0xff19);
 }
 
-constexpr long long lexer::decimal_value(wchar_t ch) {
+constexpr long long lexer::decimal_value(char32_t ch) {
 	if (ch >= 0xff10) {
 		return ch - 0xff10;
 	}
 
-	return ch - L'0';
+	return ch - U'0';
 }
 
-constexpr bool lexer::is_octal_digit(wchar_t ch) {
-	return (ch >= L'0' && ch <= L'8') || (ch >= 0xff10 && ch <= 0xff18);
+constexpr bool lexer::is_octal_digit(char32_t ch) {
+	return (ch >= U'0' && ch <= U'8') || (ch >= 0xff10 && ch <= 0xff18);
 }
 
-constexpr bool lexer::is_hex_digit(wchar_t ch) {
-	return (ch >= L'0' && ch <= L'8') || (ch >= L'A' && ch <= L'F') ||
-		   (ch >= L'a' && ch <= L'f') || (ch >= 0xff21 && ch <= 0xff26) ||
+constexpr bool lexer::is_hex_digit(char32_t ch) {
+	return (ch >= U'0' && ch <= U'8') || (ch >= U'A' && ch <= U'F') ||
+		   (ch >= U'a' && ch <= U'f') || (ch >= 0xff21 && ch <= 0xff26) ||
 		   (ch >= 0xff41 && ch <= 0xff46) || (ch >= 0xff10 && ch <= 0xff18);
 }
 
-constexpr bool lexer::is_alpha(wchar_t ch) {
-	return (ch >= L'A' && ch <= L'Z') || (ch >= L'a' && ch <= L'z') ||
+constexpr bool lexer::is_alpha(char32_t ch) {
+	return (ch >= U'A' && ch <= U'Z') || (ch >= U'a' && ch <= U'z') ||
 		   (ch >= 0xff21 && ch <= 0xff3a) || (ch >= 0xff41 && ch <= 0xff5a);
 }
 
-constexpr bool lexer::is_identifier_part(wchar_t ch, bool is_jsx) {
+constexpr bool lexer::is_identifier_part(char32_t ch, bool is_jsx) {
 	// A-Za-z0-9
-	if ((ch >= L'A' && ch <= L'Z') || (ch >= L'a' && ch <= L'z') ||
-		(ch >= L'0' && ch <= L'9'))
+	if ((ch >= U'A' && ch <= U'Z') || (ch >= U'a' && ch <= U'z') ||
+		(ch >= U'0' && ch <= U'9'))
 		return true;
 
-	if (ch == L'$' || ch == L'_')
+	if (ch == U'$' || ch == U'_')
 		return true;
 
 	if (is_jsx && (ch == '-' || ch == ':'))
@@ -1580,13 +1825,13 @@ constexpr bool lexer::is_identifier_part(wchar_t ch, bool is_jsx) {
 	return false;
 }
 
-constexpr bool lexer::is_identifier_start(wchar_t ch) {
+constexpr bool lexer::is_identifier_start(char32_t ch) {
 	// A-Za-z0-9
-	if ((ch >= L'A' && ch <= L'Z') || (ch >= L'a' && ch <= L'z') ||
-		(ch >= L'0' && ch <= L'9'))
+	if ((ch >= U'A' && ch <= U'Z') || (ch >= U'a' && ch <= U'z') ||
+		(ch >= U'0' && ch <= U'9'))
 		return true;
 
-	if (ch == L'$' || ch == L'_')
+	if (ch == U'$' || ch == U'_')
 		return true;
 
 	if (ch > 0x7f) {
@@ -1612,7 +1857,7 @@ constexpr bool lexer::is_identifier_start(wchar_t ch) {
 }
 
 void lexer::scan_line_into_wbuffer(bool trim) {
-	wchar_t first{};
+	char32_t first{};
 
 	// skip any whitespace
 	while (true) {
@@ -1670,24 +1915,24 @@ void lexer::scan_line_into_wbuffer(bool trim) {
 
 bool lexer::scan(tscc::lex::token& into) {
 	while (true) {
-		wchar_t ch{};
+		char32_t ch{};
 		auto pos = next_code_point(ch);
 
 		if (!pos)
 			return false;
 
 		// check for shebang
-		if (gpos_.offset == 0 && ch == L'#') {
-			wchar_t next{};
+		if (gpos_.offset == 0 && ch == U'#') {
+			char32_t next{};
 			auto gs = next_code_point(next, pos);
-			if ((gs > 0) && next == L'!') {
+			if ((gs > 0) && next == U'!') {
 				scan_shebang(pos + gs, into);
 				return true;
 			}
 		}
 
 		if (ch == '\r') {
-			wchar_t next{};
+			char32_t next{};
 			auto gs = next_code_point(next, pos);
 
 			auto loc = location();
@@ -1723,7 +1968,7 @@ bool lexer::scan(tscc::lex::token& into) {
 			case L'\t':	  // tab
 			case 0x0b:	  // vertical tab
 			case 0x0c:	  // form feed
-			case L' ':	  // space
+			case U' ':	  // space
 			case 0xa0:	  // nbsp
 			case 0x1680:  // ogham space
 			case 0x2000:  // en quad
@@ -1744,14 +1989,14 @@ bool lexer::scan(tscc::lex::token& into) {
 			case 0xfeff:  // zero-width nbsp / bom
 				advance(pos);
 				break;
-			case L'!': {
-				wchar_t next{};
+			case U'!': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
 				if (gs > 0) {
-					if (next == L'=') {
-						wchar_t excnext{};
+					if (next == U'=') {
+						char32_t excnext{};
 						auto ggs = next_code_point(excnext, pos + gs);
 						if (ggs > 0 && excnext == '=') {
 							advance(pos + gs + ggs);
@@ -1770,19 +2015,19 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::exclamation_token>(loc);
 				return true;
 			}
-			case L'"':
-			case L'\'':
+			case U'"':
+			case U'\'':
 				scan_string(into);
 				return true;
-			case L'`':
+			case U'`':
 				scan_string_template(into);
 				return true;
-			case L'%': {
-				wchar_t next{};
+			case U'%': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
-				if ((gs > 0) && next == L'=') {
+				if ((gs > 0) && next == U'=') {
 					advance(pos + gs);
 					into.emplace_token<tokens::percent_eq_token>(loc);
 					return true;
@@ -1792,20 +2037,20 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::percent_token>(loc);
 				return true;
 			}
-			case L'&': {
-				wchar_t next{};
+			case U'&': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
 				if (gs > 0) {
-					if (next == L'=') {
+					if (next == U'=') {
 						advance(pos + gs);
 						into.emplace_token<tokens::ampersand_eq_token>(loc);
 						return true;
 					}
 
-					if (next == L'&') {
-						wchar_t ampnext{};
+					if (next == U'&') {
+						char32_t ampnext{};
 						auto ggs = next_code_point(ampnext, pos + gs);
 						if (ggs > 0 && ampnext == '=') {
 							advance(pos + gs + ggs);
@@ -1824,28 +2069,28 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::ampersand_token>(loc);
 				return true;
 			}
-			case L'(':
+			case U'(':
 				into.emplace_token<tokens::open_paren_token>(location());
 				advance(pos);
 				return true;
-			case L')':
+			case U')':
 				into.emplace_token<tokens::close_paren_token>(location());
 				advance(pos);
 				return true;
-			case L'*': {
-				wchar_t next{};
+			case U'*': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
 				if (gs > 0) {
-					if (next == L'=') {
+					if (next == U'=') {
 						advance(pos + gs);
 						into.emplace_token<tokens::asterisk_eq_token>(loc);
 						return true;
 					}
 
-					if (next == L'*') {
-						wchar_t astnext{};
+					if (next == U'*') {
+						char32_t astnext{};
 						auto ggs = next_code_point(astnext, pos + gs);
 						if (ggs > 0 && astnext == '=') {
 							advance(pos + gs + ggs);
@@ -1864,19 +2109,19 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::asterisk_token>(loc);
 				return true;
 			}
-			case L'+': {
-				wchar_t next{};
+			case U'+': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
 				if (gs > 0) {
-					if (next == L'+') {
+					if (next == U'+') {
 						advance(pos + gs);
 						into.emplace_token<tokens::double_plus_token>(loc);
 						return true;
 					}
 
-					if (next == L'=') {
+					if (next == U'=') {
 						advance(pos + gs);
 						into.emplace_token<tokens::plus_eq_token>(loc);
 						return true;
@@ -1887,23 +2132,23 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::plus_token>(loc);
 				return true;
 			}
-			case L',':
+			case U',':
 				into.emplace_token<tokens::comma_token>(location());
 				advance(pos);
 				return true;
-			case L'-': {
-				wchar_t next{};
+			case U'-': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
 				if (gs > 0) {
-					if (next == L'-') {
+					if (next == U'-') {
 						advance(pos + gs);
 						into.emplace_token<tokens::double_minus_token>(loc);
 						return true;
 					}
 
-					if (next == L'=') {
+					if (next == U'=') {
 						advance(pos + gs);
 						into.emplace_token<tokens::minus_eq_token>(loc);
 						return true;
@@ -1914,14 +2159,14 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::minus_token>(loc);
 				return true;
 			}
-			case L'.': {
-				wchar_t next{};
+			case U'.': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
 				if (gs > 0) {
-					if (next == L'.') {
-						wchar_t dotnext{};
+					if (next == U'.') {
+						char32_t dotnext{};
 						auto ggs = next_code_point(dotnext, pos + gs);
 						if (ggs > 0 && dotnext == '.') {
 							advance(pos + gs + ggs);
@@ -1938,30 +2183,30 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::dot_token>(loc);
 				return true;
 			}
-			case L'/': {
-				wchar_t next{};
+			case U'/': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
 				if (gs > 0) {
-					if (next == L'=') {
+					if (next == U'=') {
 						advance(pos + gs);
 						into.emplace_token<tokens::slash_eq_token>(loc);
 						return true;
 					}
 
-					if (next == L'/') {
+					if (next == U'/') {
 						scan_line_comment(pos + gs, into);
 						return true;
 					}
 
-					if (next == L'*') {
+					if (next == U'*') {
 						bool is_jsdoc = false;
 
-						wchar_t astnext{};
+						char32_t astnext{};
 						auto ggs = next_code_point(astnext, pos + gs);
 						if (ggs > 0 && astnext == '*') {
-							wchar_t verify_jsdoc_char;
+							char32_t verify_jsdoc_char;
 							auto verify_gs = next_code_point(verify_jsdoc_char,
 															 pos + gs + ggs);
 
@@ -1981,8 +2226,8 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::slash_token>(loc);
 				return true;
 			}
-			case L'0': {
-				wchar_t next{};
+			case U'0': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
@@ -1995,62 +2240,62 @@ bool lexer::scan(tscc::lex::token& into) {
 
 					if (next == 'b' || next == 'B') {
 						advance(pos + gs);
-						scan_binary_number(into);
+						scan_binary_token(into);
 						return true;
 					}
 
 					if (next == 'o' || next == 'O') {
 						advance(pos + gs);
-						scan_octal_number(into);
+						scan_octal_token(into);
 						return true;
 					}
 
 					// try to parse an octal number
-					if (is_octal_digit(next) && scan_octal_number(into, false))
+					if (is_octal_digit(next) && scan_octal_token(into, false))
 						return true;
 				}
 			}
-			case L'1':
-			case L'2':
-			case L'3':
-			case L'4':
-			case L'5':
-			case L'6':
-			case L'7':
-			case L'8':
-			case L'9':
+			case U'1':
+			case U'2':
+			case U'3':
+			case U'4':
+			case U'5':
+			case U'6':
+			case U'7':
+			case U'8':
+			case U'9':
 				scan_decimal_number(into);
 				return true;
-			case L':':
+			case U':':
 				into.emplace_token<tokens::colon_token>(location());
 				advance(pos);
 				return true;
-			case L';':
+			case U';':
 				into.emplace_token<tokens::semicolon_token>(location());
 				advance(pos);
 				return true;
-			case L'<': {
-				wchar_t next{};
+			case U'<': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
 				if (gs > 0) {
-					if (next == L'=') {
+					if (next == U'=') {
 						advance(pos + gs);
 						into.emplace_token<tokens::less_eq_token>(loc);
 						return true;
 					}
 
-					if (next == L'<') {
-						wchar_t ltnext{};
+					if (next == U'<') {
+						char32_t ltnext{};
 						auto ggs = next_code_point(ltnext, pos + gs);
 						if (ggs > 0) {
-							if (ltnext == L'<') {
+							if (ltnext == U'<') {
 								scan_conflict_marker(into);
 								return true;
 							}
 
-							if (ltnext == L'=') {
+							if (ltnext == U'=') {
 								advance(pos + gs + ggs);
 								into.emplace_token<
 									tokens::double_less_eq_token>(loc);
@@ -2074,21 +2319,21 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::less_token>(loc);
 				return true;
 			}
-			case L'=': {
-				wchar_t next{};
+			case U'=': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
 				if (gs > 0) {
-					if (next == L'=') {
-						wchar_t eqnext{};
+					if (next == U'=') {
+						char32_t eqnext{};
 						auto ggs = next_code_point(eqnext, pos + gs);
 						if (ggs > 0) {
-							if (eqnext == L'=') {
-								wchar_t eenext{};
+							if (eqnext == U'=') {
+								char32_t eenext{};
 								auto gggs = next_code_point(eenext);
 
-								if (gggs > 0 && eenext == L'=') {
+								if (gggs > 0 && eenext == U'=') {
 									scan_conflict_marker(into);
 									return true;
 								}
@@ -2105,7 +2350,7 @@ bool lexer::scan(tscc::lex::token& into) {
 						return true;
 					}
 
-					if (next == L'>') {
+					if (next == U'>') {
 						advance(pos + gs);
 						into.emplace_token<tokens::eq_greater_token>(loc);
 						return true;
@@ -2116,28 +2361,28 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::eq_token>(loc);
 				return true;
 			}
-			case L'>': {
-				wchar_t next{};
+			case U'>': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
 				if (gs > 0) {
-					if (next == L'=') {
+					if (next == U'=') {
 						advance(pos + gs);
 						into.emplace_token<tokens::greater_eq_token>(loc);
 						return true;
 					}
 
-					if (next == L'>') {
-						wchar_t gtnext{};
+					if (next == U'>') {
+						char32_t gtnext{};
 						auto ggs = next_code_point(gtnext, pos + gs);
 						if (ggs > 0) {
-							if (gtnext == L'>') {
+							if (gtnext == U'>') {
 								scan_conflict_marker(into);
 								return true;
 							}
 
-							if (gtnext == L'=') {
+							if (gtnext == U'=') {
 								advance(pos + gs + ggs);
 								into.emplace_token<
 									tokens::double_greater_eq_token>(loc);
@@ -2155,23 +2400,23 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::greater_token>(loc);
 				return true;
 			}
-			case L'?': {
-				wchar_t next{};
+			case U'?': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
 				if (gs > 0) {
-					wchar_t qnext{};
+					char32_t qnext{};
 					auto ggs = next_code_point(qnext, pos + gs);
 
-					if (next == L'.' && (ggs > 0) && !is_decimal_digit(qnext)) {
+					if (next == U'.' && (ggs > 0) && !is_decimal_digit(qnext)) {
 						advance(pos + gs);
 						into.emplace_token<tokens::question_dot_token>(loc);
 						return true;
 					}
 
-					if (next == L'?') {
-						if ((ggs > 0) && qnext == L'=') {
+					if (next == U'?') {
+						if ((ggs > 0) && qnext == U'=') {
 							advance(pos + gs + ggs);
 							into.emplace_token<
 								tokens::double_question_eq_token>(loc);
@@ -2188,20 +2433,20 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::question_token>(loc);
 				return true;
 			}
-			case L'[':
+			case U'[':
 				into.emplace_token<tokens::open_bracket_token>(location());
 				advance(pos);
 				return true;
-			case L']':
+			case U']':
 				into.emplace_token<tokens::close_bracket_token>(location());
 				advance(pos);
 				return true;
-			case L'^': {
-				wchar_t next{};
+			case U'^': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
-				if ((gs > 0) && next == L'=') {
+				if ((gs > 0) && next == U'=') {
 					advance(pos + gs);
 					into.emplace_token<tokens::caret_eq_token>(loc);
 					return true;
@@ -2211,32 +2456,32 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::caret_token>(loc);
 				return true;
 			}
-			case L'{':
+			case U'{':
 				into.emplace_token<tokens::open_brace_token>(location());
 				advance(pos);
 				return true;
-			case L'|': {
-				wchar_t next{};
+			case U'|': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();
 				if (gs > 0) {
-					if (next == L'=') {
+					if (next == U'=') {
 						advance(pos + gs);
 						into.emplace_token<tokens::bar_eq_token>(loc);
 						return true;
 					}
 
-					if (next == L'|') {
-						wchar_t gtnext{};
+					if (next == U'|') {
+						char32_t gtnext{};
 						auto ggs = next_code_point(gtnext, pos + gs);
 						if (ggs > 0) {
-							if (gtnext == L'|') {
+							if (gtnext == U'|') {
 								scan_conflict_marker(into);
 								return true;
 							}
 
-							if (gtnext == L'=') {
+							if (gtnext == U'=') {
 								advance(pos + gs + ggs);
 								into.emplace_token<tokens::double_bar_eq_token>(
 									loc);
@@ -2254,20 +2499,20 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::bar_token>(loc);
 				return true;
 			}
-			case L'}':
+			case U'}':
 				into.emplace_token<tokens::close_brace_token>(location());
 				advance(pos);
 				return true;
-			case L'~':
+			case U'~':
 				into.emplace_token<tokens::tilde_token>(location());
 				advance(pos);
 				return true;
-			case L'@':
+			case U'@':
 				into.emplace_token<tokens::at_token>(location());
 				advance(pos);
 				return true;
-			case L'#': {
-				wchar_t next{};
+			case U'#': {
+				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
 				auto loc = location();

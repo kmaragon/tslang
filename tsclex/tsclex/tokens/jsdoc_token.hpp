@@ -19,7 +19,7 @@
 #pragma once
 
 #include <string>
-#include <vector>
+#include <span>
 #include "basic_token.hpp"
 
 namespace tscc::lex::tokens {
@@ -29,12 +29,12 @@ namespace tscc::lex::tokens {
  */
 class jsdoc_token : public basic_token {
 public:
-	jsdoc_token(const std::vector<std::wstring>& comment_lines);
+	jsdoc_token(const std::span<std::u32string>& comment_lines);
 
 	bool operator==(const jsdoc_token& other) const;
 	bool operator!=(const jsdoc_token& other) const;
 
-	std::wstring to_string() const override;
+	std::string to_string() const override;
 
 private:
 };

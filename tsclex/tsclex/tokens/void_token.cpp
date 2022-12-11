@@ -30,6 +30,6 @@ bool void_token::operator!=(
 	return false;
 }
 
-std::wstring void_token::to_string() const {
-	return L"void";
+std::string void_token::to_string() const {
+	return "void";
 }

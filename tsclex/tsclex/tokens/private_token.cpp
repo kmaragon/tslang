@@ -30,6 +30,6 @@ bool private_token::operator!=(
 	return false;
 }
 
-std::wstring private_token::to_string() const {
-	return L"private";
+std::string private_token::to_string() const {
+	return "private";
 }

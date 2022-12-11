@@ -30,6 +30,6 @@ bool question_dot_token::operator!=(
 	return false;
 }
 
-std::wstring question_dot_token::to_string() const {
-	return L"?.";
+std::string question_dot_token::to_string() const {
+	return "?.";
 }

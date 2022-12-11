@@ -30,6 +30,6 @@ bool at_token::operator!=(
 	return false;
 }
 
-std::wstring at_token::to_string() const {
-	return L"@";
+std::string at_token::to_string() const {
+	return "@";
 }

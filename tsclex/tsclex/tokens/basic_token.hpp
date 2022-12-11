@@ -31,7 +31,7 @@ class basic_token
 public:
 	virtual ~basic_token() = default;
 
-	virtual std::wstring to_string() const = 0;
+	virtual std::string to_string() const = 0;
 };
 
 }

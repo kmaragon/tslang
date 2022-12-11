@@ -21,6 +21,7 @@
 #include <istream>
 #include <optional>
 #include <unordered_map>
+#include <vector>
 #include "source_location.hpp"
 
 namespace tscc::lex {
@@ -132,15 +133,15 @@ public:
 	iterator end();
 
 private:
-	static std::array<wchar_t, 512> unicode_es3_identifier_start;
-	static std::array<wchar_t, 684> unicode_es3_identifier_part;
-	static std::array<wchar_t, 740> unicode_es5_identifier_start;
-	static std::array<wchar_t, 856> unicode_es5_identifier_part;
-	static std::array<wchar_t, 1218> unicode_esnext_identifier_start;
-	static std::array<wchar_t, 1426> unicode_esnext_identifier_part;
+	static std::array<char32_t, 512> unicode_es3_identifier_start;
+	static std::array<char32_t, 684> unicode_es3_identifier_part;
+	static std::array<char32_t, 740> unicode_es5_identifier_start;
+	static std::array<char32_t, 856> unicode_es5_identifier_part;
+	static std::array<char32_t, 1218> unicode_esnext_identifier_start;
+	static std::array<char32_t, 1426> unicode_esnext_identifier_part;
 
-	using tokfactory = void(*)(token& into, const source_location& location);
-	static std::unordered_map<std::wstring, tokfactory> keyword_lookup;
+	using tokfactory = void (*)(token& into, const source_location& location);
+	static std::unordered_map<std::u32string, tokfactory> keyword_lookup;
 
 	struct position_t {
 		struct line_t {
@@ -167,7 +168,7 @@ private:
 	}
 
 	// read more data from the stream into the buffer
-	std::size_t next_code_point(wchar_t& into, std::size_t look_forward = 0);
+	std::size_t next_code_point(char32_t& into, std::size_t look_forward = 0);
 
 	// read the next token from the stream
 	void scan_line_into_wbuffer(bool trim = true);
@@ -178,28 +179,36 @@ private:
 	void scan_string_template(token& into);
 	void scan_line_comment(std::size_t comment_offset, token& into);
 	void scan_multiline_comment(token& into, bool is_jsdoc);
-	void scan_binary_number(token& into);
-	bool scan_octal_number(token& into, bool throw_on_invalid = true);
+	std::size_t scan_binary_number(long long& into, std::size_t skip = 0);
+	void scan_binary_token(token& into);
+	std::size_t scan_octal_number(long long& into, std::size_t skip = 0);
+	bool scan_octal_token(token& into, bool throw_on_invalid = true);
 	void scan_decimal_number(token& into);
 	void scan_hex_number(token& into);
 	void scan_conflict_marker(token& into);
 	bool scan_jsx_token(token& into);
 
 	// must scan one value or throw
-	void scan_unicode_escape_into_wbuffer(std::size_t min_size,
-										  bool scan_as_many_as_possible,
-										  bool can_have_separators);
+	std::size_t scan_unicode_escape_into_wbuffer(std::size_t min_size,
+												 bool scan_as_many_as_possible,
+												 bool can_have_separators);
+
+	std::size_t scan_unicode_escape(char32_t& into,
+									std::size_t min_size,
+									bool scan_as_many_as_possible,
+									bool can_have_separators,
+									std::size_t skip = 0);
 
 	// consider unicode and is identifier start
 	void scan_identifier(token& into, bool is_private = false);
 
-	static constexpr bool is_decimal_digit(wchar_t ch);
-	static constexpr long long decimal_value(wchar_t ch);
-	static constexpr bool is_octal_digit(wchar_t ch);
-	static constexpr bool is_hex_digit(wchar_t ch);
-	static constexpr bool is_alpha(wchar_t ch);
-	constexpr bool is_identifier_part(wchar_t ch, bool is_jsx = false);
-	constexpr bool is_identifier_start(wchar_t ch);
+	static constexpr bool is_decimal_digit(char32_t ch);
+	static constexpr long long decimal_value(char32_t ch);
+	static constexpr bool is_octal_digit(char32_t ch);
+	static constexpr bool is_hex_digit(char32_t ch);
+	static constexpr bool is_alpha(char32_t ch);
+	constexpr bool is_identifier_part(char32_t ch, bool is_jsx = false);
+	constexpr bool is_identifier_start(char32_t ch);
 
 	source_location location() const;
 
@@ -211,7 +220,8 @@ private:
 	std::size_t buffer_offset_;
 
 	// output buffer
-	std::wstring wbuffer_;
+	std::u32string wbuffer_;
+	std::vector<std::u32string> multiline_buffer_;
 	position_t gpos_;
 	const iterator end_;
 	bool pnewline_;

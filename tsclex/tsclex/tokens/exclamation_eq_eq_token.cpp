@@ -30,6 +30,6 @@ bool exclamation_eq_eq_token::operator!=(
 	return false;
 }
 
-std::wstring exclamation_eq_eq_token::to_string() const {
-	return L"!==";
+std::string exclamation_eq_eq_token::to_string() const {
+	return "!==";
 }

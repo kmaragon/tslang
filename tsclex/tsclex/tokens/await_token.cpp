@@ -30,6 +30,6 @@ bool await_token::operator!=(
 	return false;
 }
 
-std::wstring await_token::to_string() const {
-	return L"await";
+std::string await_token::to_string() const {
+	return "await";
 }

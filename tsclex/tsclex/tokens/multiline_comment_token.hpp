@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <span>
 #include <string>
 #include <vector>
 #include "basic_token.hpp"
@@ -29,15 +30,15 @@ namespace tscc::lex::tokens {
  */
 class multiline_comment_token : public basic_token {
 public:
-	multiline_comment_token(std::vector<std::wstring> comment_lines);
+	multiline_comment_token(const std::span<std::u32string>& comment_lines);
 
 	bool operator==(const multiline_comment_token& other) const;
 	bool operator!=(const multiline_comment_token& other) const;
 
-	std::wstring to_string() const override;
+	std::string to_string() const override;
 
 private:
-	std::vector<std::wstring> lines_;
+	std::vector<std::string> lines_;
 };
 
 }  // namespace tscc::lex::tokens

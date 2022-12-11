@@ -30,6 +30,6 @@ bool debugger_token::operator!=(
 	return false;
 }
 
-std::wstring debugger_token::to_string() const {
-	return L"debugger";
+std::string debugger_token::to_string() const {
+	return "debugger";
 }

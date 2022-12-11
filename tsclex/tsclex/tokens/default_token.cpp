@@ -30,6 +30,6 @@ bool default_token::operator!=(
 	return false;
 }
 
-std::wstring default_token::to_string() const {
-	return L"default";
+std::string default_token::to_string() const {
+	return "default";
 }

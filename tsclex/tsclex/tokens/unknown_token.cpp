@@ -30,6 +30,6 @@ bool unknown_token::operator!=(
 	return false;
 }
 
-std::wstring unknown_token::to_string() const {
-	return L"unknown";
+std::string unknown_token::to_string() const {
+	return "unknown";
 }

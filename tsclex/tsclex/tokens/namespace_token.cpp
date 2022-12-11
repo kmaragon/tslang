@@ -30,6 +30,6 @@ bool namespace_token::operator!=(
 	return false;
 }
 
-std::wstring namespace_token::to_string() const {
-	return L"namespace";
+std::string namespace_token::to_string() const {
+	return "namespace";
 }

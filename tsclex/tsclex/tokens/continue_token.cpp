@@ -30,6 +30,6 @@ bool continue_token::operator!=(
 	return false;
 }
 
-std::wstring continue_token::to_string() const {
-	return L"continue";
+std::string continue_token::to_string() const {
+	return "continue";
 }

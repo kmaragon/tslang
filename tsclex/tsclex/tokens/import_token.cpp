@@ -30,6 +30,6 @@ bool import_token::operator!=(
 	return false;
 }
 
-std::wstring import_token::to_string() const {
-	return L"import";
+std::string import_token::to_string() const {
+	return "import";
 }

@@ -30,6 +30,6 @@ bool abstract_token::operator!=(
 	return false;
 }
 
-std::wstring abstract_token::to_string() const {
-	return L"abstract";
+std::string abstract_token::to_string() const {
+	return "abstract";
 }

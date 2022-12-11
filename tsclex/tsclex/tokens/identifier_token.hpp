@@ -25,15 +25,15 @@ namespace tscc::lex::tokens {
 class identifier_token : public basic_token
 {
 public:
-	explicit identifier_token(std::wstring identifier);
+	explicit identifier_token(const std::u32string& identifier);
 
 	bool operator==(const identifier_token& other) const;
 	bool operator!=(const identifier_token& other) const;
 
-	std::wstring to_string() const override;
+	std::string to_string() const override;
 
 private:
-	std::wstring id_;
+	std::string id_;
 };
 
 }

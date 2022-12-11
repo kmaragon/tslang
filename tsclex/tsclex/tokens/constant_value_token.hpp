@@ -29,17 +29,17 @@ namespace tscc::lex::tokens {
  */
 class constant_value_token : public basic_token {
 public:
-	constant_value_token(std::wstring string_value);
+	constant_value_token(std::u32string string_value);
 	constant_value_token(long long integer_value);
 	constant_value_token(long double decimal_value);
 
 	bool operator==(const constant_value_token& other) const;
 	bool operator!=(const constant_value_token& other) const;
 
-	std::wstring to_string() const override;
+	std::string to_string() const override;
 
 private:
-	std::variant<std::wstring, long long, long double> value_;
+	std::variant<std::u32string, long long, long double> value_;
 };
 
 }  // namespace tscc::lex::tokens

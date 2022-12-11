@@ -30,6 +30,6 @@ bool double_less_token::operator!=(
 	return false;
 }
 
-std::wstring double_less_token::to_string() const {
-	return L"<<";
+std::string double_less_token::to_string() const {
+	return "<<";
 }

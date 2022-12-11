@@ -30,6 +30,6 @@ bool instanceof_token::operator!=(
 	return false;
 }
 
-std::wstring instanceof_token::to_string() const {
-	return L"instanceof";
+std::string instanceof_token::to_string() const {
+	return "instanceof";
 }

@@ -30,6 +30,6 @@ bool less_eq_token::operator!=(
 	return false;
 }
 
-std::wstring less_eq_token::to_string() const {
-	return L"<=";
+std::string less_eq_token::to_string() const {
+	return "<=";
 }

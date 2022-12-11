@@ -30,7 +30,7 @@ public:
 	bool operator==(const question_dot_token& other) const;
 	bool operator!=(const question_dot_token& other) const;
 
-	std::wstring to_string() const override;
+	std::string to_string() const override;
 };
 
 }

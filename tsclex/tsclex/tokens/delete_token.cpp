@@ -30,6 +30,6 @@ bool delete_token::operator!=(
 	return false;
 }
 
-std::wstring delete_token::to_string() const {
-	return L"delete";
+std::string delete_token::to_string() const {
+	return "delete";
 }

@@ -30,6 +30,6 @@ bool declare_token::operator!=(
 	return false;
 }
 
-std::wstring declare_token::to_string() const {
-	return L"declare";
+std::string declare_token::to_string() const {
+	return "declare";
 }

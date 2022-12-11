@@ -30,6 +30,6 @@ bool while_token::operator!=(
 	return false;
 }
 
-std::wstring while_token::to_string() const {
-	return L"while";
+std::string while_token::to_string() const {
+	return "while";
 }

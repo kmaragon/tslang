@@ -31,7 +31,7 @@ TEST_CASE("Lexer", "[lexer]") {
 			std::vector<tscc::lex::token> tokens{subject.begin(),
 												 subject.end()};
 			REQUIRE(tokens.size() == 1);
-			REQUIRE(tokens[0]->to_string() == L"#!/bin/bash");
+			REQUIRE(tokens[0]->to_string() == "#!/bin/bash");
 		}
 
 		SECTION("Single line shebang with spaces and newline") {
@@ -42,7 +42,7 @@ TEST_CASE("Lexer", "[lexer]") {
 			std::vector<tscc::lex::token> tokens{subject.begin(),
 												 subject.end()};
 			REQUIRE(tokens.size() == 1);
-			REQUIRE(tokens[0]->to_string() == L"#!/bin/bash");
+			REQUIRE(tokens[0]->to_string() == "#!/bin/bash");
 		}
 	}
 
@@ -55,7 +55,7 @@ TEST_CASE("Lexer", "[lexer]") {
 			std::vector<tscc::lex::token> tokens{subject.begin(),
 												 subject.end()};
 			REQUIRE(tokens.size() == 1);
-			REQUIRE(tokens[0]->to_string() == L"//this is a comment");
+			REQUIRE(tokens[0]->to_string() == "//this is a comment");
 		}
 
 		SECTION("Single line comment with spaces and newline") {
@@ -66,7 +66,7 @@ TEST_CASE("Lexer", "[lexer]") {
 			std::vector<tscc::lex::token> tokens{subject.begin(),
 												 subject.end()};
 			REQUIRE(tokens.size() == 1);
-			REQUIRE(tokens[0]->to_string() == L"//~ this is a comment");
+			REQUIRE(tokens[0]->to_string() == "//~ this is a comment");
 		}
 	}
 
@@ -93,13 +93,13 @@ class MyClass extends MyBase implements IMyInterface
 			REQUIRE(tokens[0].is<tscc::lex::tokens::newline_token>());
 			REQUIRE(tokens[1].is<tscc::lex::tokens::class_token>());
 			REQUIRE(tokens[2].is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(tokens[2]->to_string() == L"MyClass");
+			REQUIRE(tokens[2]->to_string() == "MyClass");
 			REQUIRE(tokens[3].is<tscc::lex::tokens::extends_token>());
 			REQUIRE(tokens[4].is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(tokens[4]->to_string() == L"MyBase");
+			REQUIRE(tokens[4]->to_string() == "MyBase");
 			REQUIRE(tokens[5].is<tscc::lex::tokens::implements_token>());
 			REQUIRE(tokens[6].is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(tokens[6]->to_string() == L"IMyInterface");
+			REQUIRE(tokens[6]->to_string() == "IMyInterface");
 			REQUIRE(tokens[7].is<tscc::lex::tokens::newline_token>());
 			REQUIRE(tokens[8].is<tscc::lex::tokens::open_brace_token>());
 			REQUIRE(tokens[9].is<tscc::lex::tokens::newline_token>());
@@ -112,15 +112,15 @@ class MyClass extends MyBase implements IMyInterface
 			REQUIRE(tokens[16].is<tscc::lex::tokens::close_brace_token>());
 			REQUIRE(tokens[17].is<tscc::lex::tokens::newline_token>());
 			REQUIRE(tokens[18].is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(tokens[18]->to_string() == L"interfaceMethod");
+			REQUIRE(tokens[18]->to_string() == "interfaceMethod");
 			REQUIRE(tokens[19].is<tscc::lex::tokens::open_paren_token>());
 			REQUIRE(tokens[20].is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(tokens[20]->to_string() == L"a");
+			REQUIRE(tokens[20]->to_string() == "a");
 			REQUIRE(tokens[21].is<tscc::lex::tokens::colon_token>());
 			REQUIRE(tokens[22].is<tscc::lex::tokens::string_token>());
 			REQUIRE(tokens[23].is<tscc::lex::tokens::comma_token>());
 			REQUIRE(tokens[24].is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(tokens[24]->to_string() == L"b");
+			REQUIRE(tokens[24]->to_string() == "b");
 			REQUIRE(tokens[25].is<tscc::lex::tokens::colon_token>());
 			REQUIRE(tokens[26].is<tscc::lex::tokens::number_token>());
 			REQUIRE(tokens[27].is<tscc::lex::tokens::close_paren_token>());
@@ -163,7 +163,7 @@ And some more
 			REQUIRE(tokens.size() == 2);
 			REQUIRE(tokens[0].is<tscc::lex::tokens::multiline_comment_token>());
 			REQUIRE(tokens[0]->to_string() ==
-					L"/*\nthis is a comment\nAnd some more\n*/");
+					"/*\nthis is a comment\nAnd some more\n*/");
 			REQUIRE(tokens[1].is<tscc::lex::tokens::newline_token>());
 		}
 	}
@@ -179,16 +179,16 @@ And some more
 			REQUIRE(tokens.size() == 5);
 			REQUIRE(tokens[0].is<tscc::lex::tokens::const_token>());
 			REQUIRE(tokens[1].is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(tokens[1]->to_string() == L"varµ");
+			REQUIRE(tokens[1]->to_string() == "varµ");
 			REQUIRE(tokens[2].is<tscc::lex::tokens::eq_token>());
 			REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(tokens[3]->to_string() == L"12");
+			REQUIRE(tokens[3]->to_string() == "12");
 			REQUIRE(tokens[4].is<tscc::lex::tokens::semicolon_token>());
 		}
 
 		SECTION("Three-byte sequence") {
 			auto source = std::make_shared<fake_source>(__FILE_NAME__);
-			std::stringstream file{R"( const varァ = 3.14195; )"};
+			std::stringstream file{R"( const varァ = 314.195e-2; )"};
 			tscc::lex::lexer subject(file, source);
 
 			std::vector<tscc::lex::token> tokens{subject.begin(),
@@ -196,10 +196,27 @@ And some more
 			REQUIRE(tokens.size() == 5);
 			REQUIRE(tokens[0].is<tscc::lex::tokens::const_token>());
 			REQUIRE(tokens[1].is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(tokens[1]->to_string() == L"varァ");
+			REQUIRE(tokens[1]->to_string() == "varァ");
 			REQUIRE(tokens[2].is<tscc::lex::tokens::eq_token>());
 			REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(tokens[3]->to_string().substr(0, 7) == L"3.14195");
+			REQUIRE(tokens[3]->to_string().substr(0, 7) == "3.14195");
+			REQUIRE(tokens[4].is<tscc::lex::tokens::semicolon_token>());
+		}
+
+		SECTION("Four-byte sequence") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{R"( const unistr = "String with native 😀"; )"};
+			tscc::lex::lexer subject(file, source);
+
+			std::vector<tscc::lex::token> tokens{subject.begin(),
+												 subject.end()};
+			REQUIRE(tokens.size() == 5);
+			REQUIRE(tokens[0].is<tscc::lex::tokens::const_token>());
+			REQUIRE(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[1]->to_string() == "unistr");
+			REQUIRE(tokens[2].is<tscc::lex::tokens::eq_token>());
+			REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(tokens[3]->to_string() == "\"String with native \\ud83d\\ude00\"");
 			REQUIRE(tokens[4].is<tscc::lex::tokens::semicolon_token>());
 		}
 	}

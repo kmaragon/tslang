@@ -30,6 +30,6 @@ bool switch_token::operator!=(
 	return false;
 }
 
-std::wstring switch_token::to_string() const {
-	return L"switch";
+std::string switch_token::to_string() const {
+	return "switch";
 }

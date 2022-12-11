@@ -30,6 +30,6 @@ bool var_token::operator!=(
 	return false;
 }
 
-std::wstring var_token::to_string() const {
-	return L"var";
+std::string var_token::to_string() const {
+	return "var";
 }

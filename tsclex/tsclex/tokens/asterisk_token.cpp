@@ -30,6 +30,6 @@ bool asterisk_token::operator!=(
 	return false;
 }
 
-std::wstring asterisk_token::to_string() const {
-	return L"*";
+std::string asterisk_token::to_string() const {
+	return "*";
 }

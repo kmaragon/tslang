@@ -30,6 +30,6 @@ bool comma_token::operator!=(
 	return false;
 }
 
-std::wstring comma_token::to_string() const {
-	return L",";
+std::string comma_token::to_string() const {
+	return ",";
 }

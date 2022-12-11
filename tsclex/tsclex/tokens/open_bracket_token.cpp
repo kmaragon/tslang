@@ -30,6 +30,6 @@ bool open_bracket_token::operator!=(
 	return false;
 }
 
-std::wstring open_bracket_token::to_string() const {
-	return L"[";
+std::string open_bracket_token::to_string() const {
+	return "[";
 }

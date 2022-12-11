@@ -17,11 +17,12 @@
  */
 
 #include "shebang_token.hpp"
+#include <tsccore/utf8.hpp>
 
 using namespace tscc::lex::tokens;
 
-shebang_token::shebang_token(std::wstring command)
-	: cmd_(std::move(command)) {}
+shebang_token::shebang_token(const std::u32string& command)
+	: cmd_(utf8_encode(command)) {}
 
 bool shebang_token::operator==(
 	const tscc::lex::tokens::shebang_token& other) const {
@@ -33,6 +34,6 @@ bool shebang_token::operator!=(
 	return cmd_ != other.cmd_;
 }
 
-std::wstring shebang_token::to_string() const {
-	return L"#!" + cmd_;
+std::string shebang_token::to_string() const {
+	return "#!" + cmd_;
 }

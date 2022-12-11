@@ -194,6 +194,7 @@ set(HEADERS
         tsclex/tokens/comma_token.hpp
         tsclex/tokens/comment_token.hpp
         tsclex/tokens/const_token.hpp
+        tsclex/tokens/constant_value_token.hpp
         tsclex/tokens/constructor_token.hpp
         tsclex/tokens/continue_token.hpp
         tsclex/tokens/debugger_token.hpp
@@ -251,6 +252,7 @@ set(HEADERS
         tsclex/tokens/minus_eq_token.hpp
         tsclex/tokens/minus_token.hpp
         tsclex/tokens/module_token.hpp
+        tsclex/tokens/multiline_comment_token.hpp
         tsclex/tokens/namespace_token.hpp
         tsclex/tokens/never_token.hpp
         tsclex/tokens/new_token.hpp
@@ -313,6 +315,7 @@ set(HEADERS
 
 add_library(tsclex ${SOURCES})
 target_include_directories(tsclex INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(tsclex tsccore)
 
 add_subdirectory(test)
 

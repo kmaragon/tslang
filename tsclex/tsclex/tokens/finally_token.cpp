@@ -30,6 +30,6 @@ bool finally_token::operator!=(
 	return false;
 }
 
-std::wstring finally_token::to_string() const {
-	return L"finally";
+std::string finally_token::to_string() const {
+	return "finally";
 }

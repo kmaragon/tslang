@@ -30,6 +30,6 @@ bool readonly_token::operator!=(
 	return false;
 }
 
-std::wstring readonly_token::to_string() const {
-	return L"readonly";
+std::string readonly_token::to_string() const {
+	return "readonly";
 }

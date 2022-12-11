@@ -30,6 +30,6 @@ bool set_token::operator!=(
 	return false;
 }
 
-std::wstring set_token::to_string() const {
-	return L"set";
+std::string set_token::to_string() const {
+	return "set";
 }

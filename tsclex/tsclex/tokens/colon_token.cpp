@@ -30,6 +30,6 @@ bool colon_token::operator!=(
 	return false;
 }
 
-std::wstring colon_token::to_string() const {
-	return L":";
+std::string colon_token::to_string() const {
+	return ":";
 }

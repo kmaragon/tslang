@@ -17,11 +17,12 @@
  */
 
 #include "comment_token.hpp"
+#include <tsccore/utf8.hpp>
 
 using namespace tscc::lex::tokens;
 
-comment_token::comment_token(std::wstring comment_body)
-	: body_(std::move(comment_body)) {}
+comment_token::comment_token(const std::u32string& comment_body)
+	: body_(utf8_encode(comment_body)) {}
 
 bool comment_token::operator==(
 	const tscc::lex::tokens::comment_token& other) const {
@@ -33,7 +34,7 @@ bool comment_token::operator!=(
 	return body_ != other.body_;
 }
 
-std::wstring comment_token::to_string() const
+std::string comment_token::to_string() const
 {
-	return L"//" + body_;
+	return "//" + body_;
 }

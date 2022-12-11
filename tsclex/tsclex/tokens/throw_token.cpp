@@ -30,6 +30,6 @@ bool throw_token::operator!=(
 	return false;
 }
 
-std::wstring throw_token::to_string() const {
-	return L"throw";
+std::string throw_token::to_string() const {
+	return "throw";
 }

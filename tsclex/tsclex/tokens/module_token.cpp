@@ -30,6 +30,6 @@ bool module_token::operator!=(
 	return false;
 }
 
-std::wstring module_token::to_string() const {
-	return L"module";
+std::string module_token::to_string() const {
+	return "module";
 }

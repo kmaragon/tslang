@@ -30,6 +30,6 @@ bool async_token::operator!=(
 	return false;
 }
 
-std::wstring async_token::to_string() const {
-	return L"async";
+std::string async_token::to_string() const {
+	return "async";
 }

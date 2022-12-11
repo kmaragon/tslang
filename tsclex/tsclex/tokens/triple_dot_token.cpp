@@ -30,6 +30,6 @@ bool triple_dot_token::operator!=(
 	return false;
 }
 
-std::wstring triple_dot_token::to_string() const {
-	return L"...";
+std::string triple_dot_token::to_string() const {
+	return "...";
 }
