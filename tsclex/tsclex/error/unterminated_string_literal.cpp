@@ -16,15 +16,18 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "premature_end_of_file.hpp"
+#include "unterminated_string_literal.hpp"
 
 using namespace tscc::lex;
 
-premature_end_of_file::premature_end_of_file(
+unterminated_string_literal::unterminated_string_literal(
 	const tscc::lex::source_location& location) noexcept
 	: lex_error(location) {}
 
-const char* premature_end_of_file::what() const noexcept {
-	return "Premature end of file while processing the token starting at the "
-		   "given location";
+const char* unterminated_string_literal::what() const noexcept {
+	return "Unterminated string literal";
+}
+
+error_code unterminated_string_literal::code() const noexcept {
+	return error_code::ts1002;
 }

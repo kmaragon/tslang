@@ -18,15 +18,42 @@
 
 #pragma once
 
-#include "../lexer.hpp"
+#include <exception>
+#include "source_location.hpp"
 
-namespace tscc::lex {
+namespace tscc::lex
+{
 
-class premature_end_of_file : public lex_error {
-public:
-	premature_end_of_file(const source_location& location) noexcept;
-
-	const char* what() const noexcept override;
+enum class error_code : std::uint16_t
+{
+	ts999 = 999,
+	ts1002 = 1002,
+	ts1003 = 1003,
+	ts1010 = 1010,
+	ts1127 = 1127,
+	ts18026 = 18026,
 };
 
-}  // namespace tscc::lex
+/**
+ * \brief A generic exception while lexing
+ */
+class lex_error : public std::exception {
+public:
+	lex_error(const source_location& location) noexcept;
+
+	/**
+	 * @brief Get the location where the error occurred
+	 */
+	const source_location& location() const noexcept;
+
+	/**
+	 * @brief Get the error code
+	 */
+	virtual error_code code() const noexcept = 0;
+
+private:
+	source_location location_;
+};
+
+
+}

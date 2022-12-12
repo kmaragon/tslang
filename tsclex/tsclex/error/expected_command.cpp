@@ -28,3 +28,6 @@ const char* expected_command::what() const noexcept {
 	return "Command missing after special #! shebang line";
 }
 
+error_code expected_command::code() const noexcept {
+	return error_code::ts999;
+}

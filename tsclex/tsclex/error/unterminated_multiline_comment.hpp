@@ -16,14 +16,22 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "unexpected_token.hpp"
+#pragma once
 
-using namespace tscc::lex;
+#include "../error.hpp"
 
-unexpected_token::unexpected_token(
-	const tscc::lex::source_location& location) noexcept
-	: lex_error(location) {}
+namespace tscc::lex {
 
-const char* unexpected_token::what() const noexcept {
-	return "An unexpected token was encountered";
-}
+/**
+ * \brief A lex error thrown when an invalid token was found at the location
+ */
+class unterminated_multiline_comment : public lex_error {
+public:
+	unterminated_multiline_comment(const source_location& location) noexcept;
+
+	const char* what() const noexcept override;
+
+	error_code code() const noexcept override;
+};
+
+}  // namespace tscc::lex

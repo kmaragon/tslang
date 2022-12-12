@@ -25,5 +25,9 @@ misplaced_shebang::misplaced_shebang(
 	: lex_error(location) {}
 
 const char* misplaced_shebang::what() const noexcept {
-	return "Shebang Command (#!) is only valid at the beginning of the file";
+	return "'#!' can only be used at the start of a file.";
+}
+
+error_code misplaced_shebang::code() const noexcept {
+	return error_code::ts18026;
 }

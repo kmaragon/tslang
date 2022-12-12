@@ -25,7 +25,8 @@
 #include "error/invalid_character.hpp"
 #include "error/invalid_identifier.hpp"
 #include "error/misplaced_shebang.hpp"
-#include "error/premature_end_of_file.hpp"
+#include "error/unterminated_multiline_comment.hpp"
+#include "error/unterminated_string_literal.hpp"
 #include "token.hpp"
 
 using namespace tscc::lex;
@@ -1247,7 +1248,7 @@ void lexer::scan_string(tscc::lex::token& into) {
 	while (true) {
 		auto nc = next_code_point(first);
 		if (!nc) {
-			throw premature_end_of_file(string_location);
+			throw unterminated_string_literal(string_location);
 		}
 
 		advance(nc);
@@ -1258,115 +1259,135 @@ void lexer::scan_string(tscc::lex::token& into) {
 		switch (first) {
 			case '\r':
 			case '\n':
-				throw invalid_identifier(string_location);
-			case '\\': {
-				auto gc = next_code_point(first);
-				if (gc) {
-					if (first == 'u' || first == 'U') {
-						char32_t ucfirst;
-						auto scanned =
-							scan_unicode_escape(ucfirst, 4, false, false, gc);
-
-						if (scanned) {
-							advance(gc + scanned);
-							first = ucfirst;
-
-							if ((first >> 11) == 0x1b) {
-								char32_t next;
-								auto nnc = next_code_point(next);
-								if (nnc && next == '\\') {
-									char32_t checku;
-									auto checkuc = next_code_point(checku, nnc);
-									if (checkuc &&
-										(checku == 'u' || checku == 'U')) {
-										char32_t ucsecond;
-										auto nscanned = scan_unicode_escape(
-											ucsecond, 4, false, false,
-											nnc + checkuc);
-										if (nscanned &&
-											(ucsecond >> 10) == 0x37) {
-											advance(nscanned + nnc + checkuc);
-
-											first = (((ucfirst & 0x3ff) << 10) |
-													 (ucsecond & 0x3ff)) +
-													0x10000;
-										}
-									}
-								}
-							}
-						}
-					} else if (first == 'x' || first == 'X') {
-						// handle 1 byte hex identifier
-						char32_t hexfirst;
-						auto scanned =
-							scan_unicode_escape(hexfirst, 2, false, false, gc);
-
-						if (scanned) {
-							advance(scanned + gc);
-							first = hexfirst;
-						}
-					} else if (first == '0') {
-						// handle either octal or binary
-						char32_t next;
-						auto nnc = next_code_point(next, gc);
-						if (nnc == 'b' || nnc == 'B') {
-							long long number;
-							auto scanned = scan_binary_number(number, gc + nnc);
-							if (scanned && number < 0x7f000000ul) {
-								advance(scanned + gc + nc + nnc);
-								first = static_cast<char32_t>(number);
-							}
-						} else {
-							long long number;
-							auto scanned = scan_octal_number(number);
-							if (scanned && number < 0x7f000000ul) {
-								advance(scanned);
-								first = static_cast<char32_t>(number);
-							}
-						}
-					} else if (is_octal_digit(first)) {
-						long long number;
-						auto scanned = scan_octal_number(number);
-						if (scanned && number < 0x7f000000ul) {
-							advance(scanned);
-							first = static_cast<char32_t>(number);
-						}
-					} else {
-						advance(gc);
-						switch (first) {
-							case 'b':
-								first = '\b';
-								break;
-							case 'f':
-								first = '\f';
-								break;
-							case 'n':
-								first = '\n';
-								break;
-							case 'r':
-								first = '\r';
-								break;
-							case 't':
-								first = '\t';
-								break;
-							case 'v':
-								first = '\v';
-								break;
-							default:
-								break;
-						}
-					}
-				}
-			}
+				throw unterminated_string_literal(string_location);
+			case '\\':
+				advance(scan_escape_sequence(first));
 		}
 
-		if (wbuffer_.capacity() == wbuffer_.size()) {
-			wbuffer_.reserve(wbuffer_.size() + buffer_size);
-		}
-		wbuffer_.push_back(first);
+		append_wbuffer(first);
 	}
 
 	into.emplace_token<tokens::constant_value_token>(string_location, wbuffer_);
+}
+
+std::size_t lexer::scan_escape_sequence(char32_t& into, std::size_t skip) {
+	auto gc = next_code_point(into, skip);
+	if (!gc)
+		return 0;
+
+	if (into == 'u' || into == 'U') {
+		char32_t ucfirst;
+		auto scanned = scan_unicode_escape(ucfirst, 4, false, false, gc + skip);
+
+		if (!scanned) {
+			return gc;
+		}
+
+		if ((ucfirst >> 11) != 0x1b) {
+			into = ucfirst;
+			return scanned;
+		}
+
+		char32_t next;
+		auto nnc = next_code_point(next, scanned);
+		if (!nnc || next != '\\') {
+			into = ucfirst;
+			return scanned;
+		}
+
+		char32_t checku;
+		auto checkuc = next_code_point(checku, nnc + scanned);
+		if (!checkuc || (checku != 'u' && checku != 'U')) {
+			into = ucfirst;
+			return scanned;
+		}
+
+		char32_t ucsecond;
+		auto nscanned = scan_unicode_escape(ucsecond, 4, false, false,
+											checkuc + nnc + scanned);
+		if (nscanned && (ucsecond >> 10) == 0x37) {
+			into = (((ucfirst & 0x3ff) << 10) | (ucsecond & 0x3ff)) + 0x10000;
+			return nscanned;
+		}
+
+		into = ucfirst;
+		return scanned;
+	}
+
+	if (into == 'x' || into == 'X') {
+		// handle 1 byte hex identifier
+		char32_t hexfirst;
+		auto scanned =
+			scan_unicode_escape(hexfirst, 2, false, false, gc + skip);
+
+		if (!scanned) {
+			return gc + skip;
+		}
+
+		into = hexfirst;
+		return scanned;
+	}
+
+	if (into == '0') {
+		// handle either octal or binary
+		char32_t next;
+		auto nnc = next_code_point(next, gc + skip);
+		if (nnc == 'b' || nnc == 'B') {
+			long long number;
+			auto scanned = scan_binary_number(number, gc + nnc + skip);
+			if (scanned && number < 0x7f000000ul) {
+				into = static_cast<char32_t>(number);
+				return scanned;
+			}
+
+			return gc + skip;
+		}
+
+		long long number;
+		auto scanned = scan_octal_number(number, gc + skip);
+		if (scanned && number < 0x7f000000ul) {
+			into = static_cast<char32_t>(number);
+			return scanned;
+		}
+
+		return gc + skip;
+	}
+
+	if (is_octal_digit(into)) {
+		long long number;
+		auto scanned = scan_octal_number(number, gc + skip);
+		if (scanned && number < 0x7f000000ul) {
+			into = static_cast<char32_t>(number);
+			return scanned;
+		}
+
+		return gc + skip;
+	}
+
+	switch (into) {
+		case 'b':
+			into = '\b';
+			break;
+		case 'f':
+			into = '\f';
+			break;
+		case 'n':
+			into = '\n';
+			break;
+		case 'r':
+			into = '\r';
+			break;
+		case 't':
+			into = '\t';
+			break;
+		case 'v':
+			into = '\v';
+			break;
+		default:
+			break;
+	}
+
+	return gc + skip;
 }
 
 void lexer::scan_string_template(tscc::lex::token& into) {
@@ -1396,7 +1417,7 @@ void lexer::scan_multiline_comment(tscc::lex::token& into, bool is_jsdoc) {
 	while (true) {
 		auto nc = next_code_point(first);
 		if (!nc) {
-			throw premature_end_of_file(comment_location);
+			throw unterminated_multiline_comment(comment_location);
 		}
 
 		advance(nc);
@@ -1430,10 +1451,7 @@ void lexer::scan_multiline_comment(tscc::lex::token& into, bool is_jsdoc) {
 			}
 		}
 
-		if (wbuffer_.capacity() == wbuffer_.size()) {
-			wbuffer_.reserve(wbuffer_.size() + buffer_size);
-		}
-		wbuffer_.push_back(first);
+		append_wbuffer(first);
 	}
 
 	if (!wbuffer_.empty()) {
@@ -1656,11 +1674,19 @@ bool lexer::scan_jsx_token(tscc::lex::token& into) {
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
+void lexer::append_wbuffer(char32_t ch) {
+	if (wbuffer_.capacity() == wbuffer_.size()) {
+		wbuffer_.reserve(wbuffer_.size() + buffer_size);
+	}
+	wbuffer_.push_back(ch);
+}
+
 std::size_t lexer::scan_unicode_escape(char32_t& into,
 									   std::size_t min_size,
 									   bool scan_as_many_as_possible,
 									   bool can_have_separators,
 									   std::size_t skip) {
+	// TODO this should throw if min_size is not met
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
@@ -1671,16 +1697,10 @@ std::size_t lexer::scan_unicode_escape_into_wbuffer(
 	char32_t result;
 	auto scanned = scan_unicode_escape(
 		result, min_size, scan_as_many_as_possible, can_have_separators);
-	if (!scanned) {
-		// TODO throw a different error
-		throw invalid_identifier(location());
-	}
 
+	assert(scanned);
 	advance(scanned);
-	if (wbuffer_.capacity() == wbuffer_.size()) {
-		wbuffer_.reserve(wbuffer_.size() + buffer_size);
-	}
-	wbuffer_.push_back(result);
+	append_wbuffer(result);
 	return scanned;
 }
 
@@ -1743,10 +1763,7 @@ void lexer::scan_identifier(tscc::lex::token& into, bool is_private) {
 			break;
 		}
 
-		if (wbuffer_.capacity() == wbuffer_.size()) {
-			wbuffer_.reserve(wbuffer_.size() + buffer_size);
-		}
-		wbuffer_.push_back(ch);
+		append_wbuffer(ch);
 		advance(pos);
 	}
 
@@ -1906,10 +1923,7 @@ void lexer::scan_line_into_wbuffer(bool trim) {
 			return;
 		}
 
-		if (wbuffer_.capacity() == wbuffer_.size()) {
-			wbuffer_.reserve(wbuffer_.size() + buffer_size);
-		}
-		wbuffer_.push_back(first);
+		append_wbuffer(first);
 	}
 }
 

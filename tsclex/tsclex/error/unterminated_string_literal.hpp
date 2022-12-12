@@ -18,20 +18,20 @@
 
 #pragma once
 
-#include "../lexer.hpp"
+#include "../error.hpp"
 
 namespace tscc::lex {
 
 /**
  * \brief A lex error thrown when an invalid token was found at the location
  */
-class unexpected_token : public lex_error {
-	std::string what_;
-
+class unterminated_string_literal : public lex_error {
 public:
-	unexpected_token(const source_location& location) noexcept;
+	unterminated_string_literal(const source_location& location) noexcept;
 
 	const char* what() const noexcept override;
+
+	error_code code() const noexcept override;
 };
 
 }  // namespace tscc::lex

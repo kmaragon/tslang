@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "../lexer.hpp"
+#include "../error.hpp"
 
 namespace tscc::lex {
 
@@ -27,6 +27,8 @@ public:
 	invalid_identifier(const source_location& location) noexcept;
 
 	const char* what() const noexcept override;
+
+	error_code code() const noexcept override;
 };
 
 }  // namespace tscc::lex

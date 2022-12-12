@@ -27,3 +27,7 @@ invalid_identifier::invalid_identifier(
 const char* invalid_identifier::what() const noexcept {
 	return "Invalid Identifier";
 }
+
+error_code invalid_identifier::code() const noexcept {
+	return error_code::ts1003;
+}

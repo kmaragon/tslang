@@ -4,8 +4,8 @@ set(SOURCES
         tsclex/error/invalid_character.cpp
         tsclex/error/invalid_identifier.cpp
         tsclex/error/misplaced_shebang.cpp
-        tsclex/error/premature_end_of_file.cpp
-        tsclex/error/unexpected_token.cpp
+        tsclex/error/unterminated_multiline_comment.cpp
+        tsclex/error/unterminated_string_literal.cpp
         tsclex/tokens/abstract_token.cpp
         tsclex/tokens/accessor_token.cpp
         tsclex/tokens/ampersand_eq_token.cpp
@@ -162,7 +162,8 @@ set(HEADERS
         tsclex/error/invalid_character.hpp
         tsclex/error/invalid_identifier.hpp
         tsclex/error/misplaced_shebang.hpp
-        tsclex/error/unexpected_token.hpp
+        tsclex/error/unterminated_multiline_comment.hpp
+        tsclex/error/unterminated_string_literal.hpp
         tsclex/tokens/abstract_token.hpp
         tsclex/tokens/accessor_token.hpp
         tsclex/tokens/ampersand_eq_token.hpp

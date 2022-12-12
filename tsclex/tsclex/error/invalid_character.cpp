@@ -27,3 +27,7 @@ invalid_character::invalid_character(
 const char* invalid_character::what() const noexcept {
 	return "Invalid Character";
 }
+
+error_code invalid_character::code() const noexcept {
+	return error_code::ts1127;
+}

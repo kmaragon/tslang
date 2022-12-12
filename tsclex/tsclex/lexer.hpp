@@ -22,7 +22,7 @@
 #include <optional>
 #include <unordered_map>
 #include <vector>
-#include "source_location.hpp"
+#include "error.hpp"
 
 namespace tscc::lex {
 
@@ -47,22 +47,6 @@ enum class language_version : std::uint8_t {
 	es_next = 99,
 	json = 100,
 	latest = es_next
-};
-
-/**
- * \brief A generic exception while lexing
- */
-class lex_error : public std::exception {
-public:
-	lex_error(const source_location& location) noexcept;
-
-	/**
-	 * \brief Get the location where the error occurred
-	 */
-	const source_location& location() const noexcept;
-
-private:
-	source_location location_;
 };
 
 /**
@@ -176,6 +160,7 @@ private:
 	bool scan(token& into);
 	void scan_shebang(std::size_t shebang_offset, token& into);
 	void scan_string(token& into);
+	std::size_t scan_escape_sequence(char32_t& into, std::size_t skip = 0);
 	void scan_string_template(token& into);
 	void scan_line_comment(std::size_t comment_offset, token& into);
 	void scan_multiline_comment(token& into, bool is_jsdoc);
@@ -187,6 +172,7 @@ private:
 	void scan_hex_number(token& into);
 	void scan_conflict_marker(token& into);
 	bool scan_jsx_token(token& into);
+	void append_wbuffer(char32_t ch);
 
 	// must scan one value or throw
 	std::size_t scan_unicode_escape_into_wbuffer(std::size_t min_size,

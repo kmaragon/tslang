@@ -16,24 +16,18 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "unterminated_multiline_comment.hpp"
 
-#include "../error.hpp"
+using namespace tscc::lex;
 
-namespace tscc::lex {
+unterminated_multiline_comment::unterminated_multiline_comment(
+	const tscc::lex::source_location& location) noexcept
+	: lex_error(location) {}
 
-/**
- * \brief A lex error thrown when there is a shebang but no command
- */
-class expected_command : public lex_error {
-	std::string what_;
+const char* unterminated_multiline_comment::what() const noexcept {
+	return "'*/' expected.";
+}
 
-public:
-	expected_command(const source_location& location) noexcept;
-
-	const char* what() const noexcept override;
-
-	error_code code() const noexcept override;
-};
-
-}  // namespace tscc::lex
+error_code unterminated_multiline_comment::code() const noexcept {
+	return error_code::ts1010;
+}
