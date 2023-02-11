@@ -9,3 +9,7 @@ include(${CMAKE_BINARY_DIR}/conan.cmake)
 
 set(ENV{CXX} "${CMAKE_CXX_COMPILER}")
 set(ENV{CC} "${CMAKE_C_COMPILER}")
+
+conan_cmake_autodetect(CONAN_CMAKE_SETTINGS
+        BUILD missing
+        BUILD_TYPE ${CMAKE_BUILD_TYPE})

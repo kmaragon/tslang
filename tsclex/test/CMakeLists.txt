@@ -6,13 +6,10 @@ conan_cmake_configure(
         GENERATORS cmake_find_package_multi
 )
 
-conan_cmake_autodetect(settings
-        BUILD missing
-        BUILD_TYPE ${CMAKE_BUILD_TYPE})
 conan_cmake_install(
         PATH_OR_REFERENCE .
         BUILD missing
-        SETTINGS ${settings}
+        SETTINGS ${CONAN_CMAKE_SETTINGS}
         OUTPUT_FOLDER "${CMAKE_BINARY_DIR}/conan_modules")
 
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}")

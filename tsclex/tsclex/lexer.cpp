@@ -1487,7 +1487,16 @@ void lexer::scan_binary_token(tscc::lex::token& into) {
 
 	auto loc = location();
 	advance(scanned);
-	into.emplace_token<tokens::constant_value_token>(loc, number);
+	into.emplace_token<tokens::constant_value_token>(
+		loc, number, tokens::integer_base::binary);
+}
+
+std::size_t lexer::scan_decimal_number(long long& into, std::size_t skip) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+std::size_t lexer::scan_octal_number(long long& into, std::size_t skip) {
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
 std::size_t lexer::scan_binary_number(long long& into, std::size_t skip) {
@@ -1505,15 +1514,40 @@ bool lexer::scan_octal_token(tscc::lex::token& into, bool throw_on_invalid) {
 
 	auto loc = location();
 	advance(scanned);
-	into.emplace_token<tokens::constant_value_token>(loc, number);
+	into.emplace_token<tokens::constant_value_token>(
+		loc, number, tokens::integer_base::octal);
 	return true;
 }
 
-std::size_t lexer::scan_octal_number(long long& into, std::size_t skip) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+std::size_t lexer::scan_binary_or_octal_number(long long& into,
+											   std::size_t base,
+											   std::size_t skip) {
+	auto number_location = location();
+
+	bool separator_allowed = false;
+	bool got_separator = false;
+
+	std::size_t nc = 0;
+	std::size_t taken = 0;
+
+	char32_t first{};
+	while (true) {
+		nc = next_code_point(first, skip);
+		if (!nc) {
+			return taken;
+		}
+
+		if (!is_octal_digit(first))
+			break;
+
+		advance(nc);
+		break;
+	}
+
+	throw "implementation truncated";
 }
 
-void lexer::scan_decimal_number(tscc::lex::token& into) {
+void lexer::scan_decimal_token(tscc::lex::token& into) {
 	auto number_location = location();
 
 	long long number_part = 0;
@@ -1523,8 +1557,8 @@ void lexer::scan_decimal_number(tscc::lex::token& into) {
 	while (true) {
 		nc = next_code_point(first);
 		if (!nc) {
-			into.emplace_token<tokens::constant_value_token>(number_location,
-															 number_part);
+			into.emplace_token<tokens::constant_value_token>(
+				number_location, number_part, tokens::integer_base::decimal);
 			return;
 		}
 
@@ -1658,11 +1692,11 @@ void lexer::scan_decimal_number(tscc::lex::token& into) {
 		return;
 	}
 
-	into.emplace_token<tokens::constant_value_token>(number_location,
-													 number_part);
+	into.emplace_token<tokens::constant_value_token>(
+		number_location, number_part, tokens::integer_base::decimal);
 }
 
-void lexer::scan_hex_number(tscc::lex::token& into) {
+void lexer::scan_hex_token(tscc::lex::token& into) {
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
@@ -2188,7 +2222,7 @@ bool lexer::scan(tscc::lex::token& into) {
 							return true;
 						}
 					} else if (is_decimal_digit(next)) {
-						scan_decimal_number(into);
+						scan_decimal_token(into);
 						return true;
 					}
 				}
@@ -2248,7 +2282,7 @@ bool lexer::scan(tscc::lex::token& into) {
 				if (gs > 0) {
 					if (next == 'x' || next == 'X') {
 						advance(pos + gs);
-						scan_hex_number(into);
+						scan_hex_token(into);
 						return true;
 					}
 
@@ -2278,7 +2312,7 @@ bool lexer::scan(tscc::lex::token& into) {
 			case U'7':
 			case U'8':
 			case U'9':
-				scan_decimal_number(into);
+				scan_decimal_token(into);
 				return true;
 			case U':':
 				into.emplace_token<tokens::colon_token>(location());
