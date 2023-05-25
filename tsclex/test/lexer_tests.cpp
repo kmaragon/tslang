@@ -20,6 +20,11 @@
 #include <tsclex/lexer.hpp>
 #include <tsclex/token.hpp>
 #include "fake_source.hpp"
+#include <sstream>
+
+#ifndef __FILE_NAME__
+#  define __FILE_NAME__ __FILE__
+#endif
 
 TEST_CASE("Lexer", "[lexer]") {
 	SECTION("Shebang") {
