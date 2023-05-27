@@ -9,10 +9,10 @@ set(HEADERS
         tsccore/json.hpp
         )
 
-add_library(tsccore ${SOURCES} ${HEADERS})
+add_library(tsccore ${SOURCES})
 target_include_directories(tsccore INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 
-#add_subdirectory(test)
+add_subdirectory(test)
 
 foreach(header_path ${HEADERS})
     # Convert the header to its absolute path
