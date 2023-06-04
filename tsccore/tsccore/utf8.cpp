@@ -33,7 +33,6 @@ std::size_t tscc::utf8_size(const std::u32string& str) noexcept {
 			continue;
 
 		len += 1;
-
 		if (str[i] <= 0x1fffff)
 			continue;
 
