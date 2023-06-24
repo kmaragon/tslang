@@ -1479,14 +1479,13 @@ void lexer::scan_multiline_comment(tscc::lex::token& into, bool is_jsdoc) {
 }
 
 void lexer::scan_binary_token(tscc::lex::token& into) {
-	long long number;
+	long long number = 0;
 	auto scanned = scan_binary_number(number);
 	if (!scanned) {
 		throw invalid_identifier(source_location());
 	}
 
 	auto loc = location();
-	advance(scanned);
 	into.emplace_token<tokens::constant_value_token>(
 		loc, number, tokens::integer_base::binary);
 }
@@ -1500,7 +1499,36 @@ std::size_t lexer::scan_octal_number(long long& into, std::size_t skip) {
 }
 
 std::size_t lexer::scan_binary_number(long long& into, std::size_t skip) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	std::size_t current_bit = 0;
+	std::size_t nc = 0;
+	char32_t first{};
+	// TODO: check no numeric separator at beginning
+	nc = next_code_point(first);
+	if (!nc) {
+		return current_bit; // eof so this must be end of binary sequence
+	}
+
+	if (first == '_')
+
+
+	while (true) {
+		nc = next_code_point(first);
+		if (!nc) {
+			return current_bit;
+		}
+
+		if (first != '1' && first != '0') { // TODO: not a digit
+			return current_bit;
+		}
+
+		into <<= 1;
+		if (first == '1') {
+			into |= 1;
+		}
+
+		current_bit++;
+		advance(nc);
+	}
 }
 
 bool lexer::scan_octal_token(tscc::lex::token& into, bool throw_on_invalid) {
