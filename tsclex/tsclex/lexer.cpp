@@ -27,6 +27,7 @@
 #include "error/misplaced_shebang.hpp"
 #include "error/unterminated_multiline_comment.hpp"
 #include "error/unterminated_string_literal.hpp"
+#include "error/numeric_separators_are_not_allowed_here.hpp"
 #include "token.hpp"
 
 using namespace tscc::lex;
@@ -1499,21 +1500,27 @@ std::size_t lexer::scan_octal_number(long long& into, std::size_t skip) {
 }
 
 std::size_t lexer::scan_binary_number(long long& into, std::size_t skip) {
+	auto loc = location();
+
 	std::size_t current_bit = 0;
 	std::size_t nc = 0;
 	char32_t first{};
-	// TODO: check no numeric separator at beginning
 	nc = next_code_point(first);
-	if (!nc) {
-		return current_bit; // eof so this must be end of binary sequence
+	if (!nc) { // eof so this must be end of binary sequence
+		return current_bit;
 	}
 
 	if (first == '_')
+		throw numeric_separators_are_not_allowed_here(loc);
 
+	// NOTE: we do not parse the first non '_' char. We wait for our while loop
+
+	auto separatorAllowed = true;
+	auto isPreviousCharSeparator = false;
 
 	while (true) {
 		nc = next_code_point(first);
-		if (!nc) {
+		if (!nc) { // eof so this must be end of binary sequence
 			return current_bit;
 		}
 

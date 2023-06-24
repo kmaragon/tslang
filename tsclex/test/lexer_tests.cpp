@@ -21,13 +21,14 @@
 #include <tsclex/token.hpp>
 #include "fake_source.hpp"
 #include <sstream>
+#include <tsclex/error/numeric_separators_are_not_allowed_here.hpp>
 
 #ifndef __FILE_NAME__
 #  define __FILE_NAME__ __FILE__
 #endif
 
 TEST_CASE("Lexer") {
-	SECTION("Binary number") {
+	SECTION("Valid binary sequence") {
 		auto source = std::make_shared<fake_source>(__FILE_NAME__);
 		std::stringstream file{"const result = 0b01000"};
 		tscc::lex::lexer subject(file, source);
@@ -41,6 +42,15 @@ TEST_CASE("Lexer") {
 		REQUIRE(tokens[1]->to_string() == "result");
 		REQUIRE(tokens[2].is<tscc::lex::tokens::eq_token>());
 		REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
+	}
+
+	SECTION("Invalid binary sequence starts with numeric separator") {
+		auto source = std::make_shared<fake_source>(__FILE_NAME__);
+		std::stringstream file{"const result = 0b_01000"};
+		tscc::lex::lexer subject(file, source);
+
+		REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+					   tscc::lex::numeric_separators_are_not_allowed_here);
 	}
 }
 

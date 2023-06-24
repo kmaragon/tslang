@@ -155,7 +155,7 @@ set(SOURCES
         tsclex/source.cpp
         tsclex/source_location.cpp
         tsclex/token.cpp
-        )
+        tsclex/error/numeric_separators_are_not_allowed_here.cpp tsclex/error/numeric_separators_are_not_allowed_here.hpp)
 
 set(HEADERS
         tsclex/error/expected_command.hpp
