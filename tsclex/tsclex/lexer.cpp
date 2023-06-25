@@ -28,6 +28,7 @@
 #include "error/unterminated_multiline_comment.hpp"
 #include "error/unterminated_string_literal.hpp"
 #include "error/numeric_separators_are_not_allowed_here.hpp"
+#include "error/multiple_consecutive_numeric_separators_are_not_permitted.hpp"
 #include "token.hpp"
 
 using namespace tscc::lex;
@@ -1501,31 +1502,47 @@ std::size_t lexer::scan_octal_number(long long& into, std::size_t skip) {
 
 std::size_t lexer::scan_binary_number(long long& into, std::size_t skip) {
 	auto loc = location();
-
 	std::size_t current_bit = 0;
 	std::size_t nc = 0;
 	char32_t first{};
 	nc = next_code_point(first);
-	if (!nc) { // eof so this must be end of binary sequence
+	if (!nc) {
 		return current_bit;
 	}
 
+	// Numeric separator not allowed in the beginning of a binary literal
+	// We also do not advance the buffer offset, byte consumption occurs in
+	// the while loop
 	if (first == '_')
 		throw numeric_separators_are_not_allowed_here(loc);
 
-	// NOTE: we do not parse the first non '_' char. We wait for our while loop
-
-	auto separatorAllowed = true;
-	auto isPreviousCharSeparator = false;
-
+	auto separator_allowed = true;
+	auto is_previous_char_separator = false;
 	while (true) {
 		nc = next_code_point(first);
-		if (!nc) { // eof so this must be end of binary sequence
+		if (!nc) {
 			return current_bit;
 		}
 
-		if (first != '1' && first != '0') { // TODO: not a digit
-			return current_bit;
+		if (first == '_') {
+			if (separator_allowed) {
+				separator_allowed = false;
+				is_previous_char_separator = true;
+			} else if (is_previous_char_separator) {
+				throw multiple_consecutive_numeric_separators_are_not_permitted(loc);
+			} else {
+				throw numeric_separators_are_not_allowed_here(loc);
+			}
+
+			advance(nc);
+			continue;
+		}
+
+		separator_allowed = true;
+
+		// If not a digit...Or if it is, it's not in binary.
+		if (!is_decimal_digit(first) || first - '0' >= 2) {
+			break;
 		}
 
 		into <<= 1;
@@ -1535,7 +1552,13 @@ std::size_t lexer::scan_binary_number(long long& into, std::size_t skip) {
 
 		current_bit++;
 		advance(nc);
+		is_previous_char_separator = false;
 	}
+
+	if (is_previous_char_separator)
+		throw numeric_separators_are_not_allowed_here(loc);
+
+	return current_bit;
 }
 
 bool lexer::scan_octal_token(tscc::lex::token& into, bool throw_on_invalid) {

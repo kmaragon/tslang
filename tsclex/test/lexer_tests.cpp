@@ -22,19 +22,20 @@
 #include "fake_source.hpp"
 #include <sstream>
 #include <tsclex/error/numeric_separators_are_not_allowed_here.hpp>
+#include <tsclex/error/multiple_consecutive_numeric_separators_are_not_permitted.hpp>
 
 #ifndef __FILE_NAME__
 #  define __FILE_NAME__ __FILE__
 #endif
 
-TEST_CASE("Lexer") {
+TEST_CASE("Lexer", "[lexer]") {
 	SECTION("Valid binary sequence") {
 		auto source = std::make_shared<fake_source>(__FILE_NAME__);
 		std::stringstream file{"const result = 0b01000"};
 		tscc::lex::lexer subject(file, source);
 
 		std::vector<tscc::lex::token> tokens{subject.begin(),
-											subject.end()};
+											 subject.end()};
 
 		REQUIRE(tokens.size() == 4);
 		REQUIRE(tokens[0].is<tscc::lex::tokens::const_token>());
@@ -50,11 +51,27 @@ TEST_CASE("Lexer") {
 		tscc::lex::lexer subject(file, source);
 
 		REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
-					   tscc::lex::numeric_separators_are_not_allowed_here);
+						  tscc::lex::numeric_separators_are_not_allowed_here);
 	}
-}
 
-TEST_CASE("Lexer", "[lexer]") {
+	SECTION("Invalid binary sequence has consecutive numeric separators") {
+		auto source = std::make_shared<fake_source>(__FILE_NAME__);
+		std::stringstream file{"const result = 0b01__000"};
+		tscc::lex::lexer subject(file, source);
+
+		REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+						  tscc::lex::multiple_consecutive_numeric_separators_are_not_permitted);
+	}
+
+	SECTION("Invalid binary sequence ends in numeric separator") {
+		auto source = std::make_shared<fake_source>(__FILE_NAME__);
+		std::stringstream file{"const result = 0b1_;"};
+		tscc::lex::lexer subject(file, source);
+
+		REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+						  tscc::lex::numeric_separators_are_not_allowed_here);
+	}
+
 	SECTION("Shebang") {
 		SECTION("Single line shebang") {
 			auto source = std::make_shared<fake_source>(__FILE_NAME__);
