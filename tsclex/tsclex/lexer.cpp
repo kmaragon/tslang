@@ -1497,72 +1497,15 @@ std::size_t lexer::scan_decimal_number(long long& into, std::size_t skip) {
 }
 
 std::size_t lexer::scan_octal_number(long long& into, std::size_t skip) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	return scan_binary_or_octal_number(into, 8, skip);
 }
 
 std::size_t lexer::scan_binary_number(long long& into, std::size_t skip) {
-	auto loc = location();
-	std::size_t current_bit = 0;
-	std::size_t nc = 0;
-	char32_t first{};
-	nc = next_code_point(first);
-	if (!nc) {
-		return current_bit;
-	}
-
-	// Numeric separator not allowed in the beginning of a binary literal
-	// We also do not advance the buffer offset, byte consumption occurs in
-	// the while loop
-	if (first == '_')
-		throw numeric_separators_are_not_allowed_here(loc);
-
-	auto separator_allowed = true;
-	auto is_previous_char_separator = false;
-	while (true) {
-		nc = next_code_point(first);
-		if (!nc) {
-			return current_bit;
-		}
-
-		if (first == '_') {
-			if (separator_allowed) {
-				separator_allowed = false;
-				is_previous_char_separator = true;
-			} else if (is_previous_char_separator) {
-				throw multiple_consecutive_numeric_separators_are_not_permitted(loc);
-			} else {
-				throw numeric_separators_are_not_allowed_here(loc);
-			}
-
-			advance(nc);
-			continue;
-		}
-
-		separator_allowed = true;
-
-		// If not a digit...Or if it is, it's not in binary.
-		if (!is_decimal_digit(first) || first - '0' >= 2) {
-			break;
-		}
-
-		into <<= 1;
-		if (first == '1') {
-			into |= 1;
-		}
-
-		current_bit++;
-		advance(nc);
-		is_previous_char_separator = false;
-	}
-
-	if (is_previous_char_separator)
-		throw numeric_separators_are_not_allowed_here(loc);
-
-	return current_bit;
+	return scan_binary_or_octal_number(into, 2, skip);
 }
 
 bool lexer::scan_octal_token(tscc::lex::token& into, bool throw_on_invalid) {
-	long long number;
+	long long number = 0;
 	auto scanned = scan_octal_number(number);
 	if (!scanned) {
 		if (throw_on_invalid)
@@ -1571,7 +1514,6 @@ bool lexer::scan_octal_token(tscc::lex::token& into, bool throw_on_invalid) {
 	}
 
 	auto loc = location();
-	advance(scanned);
 	into.emplace_token<tokens::constant_value_token>(
 		loc, number, tokens::integer_base::octal);
 	return true;
@@ -1581,28 +1523,62 @@ std::size_t lexer::scan_binary_or_octal_number(long long& into,
 											   std::size_t base,
 											   std::size_t skip) {
 	auto number_location = location();
-
-	bool separator_allowed = false;
-	bool got_separator = false;
-
+	std::size_t current_bit = 0;
 	std::size_t nc = 0;
-	std::size_t taken = 0;
-
-	char32_t first{};
-	while (true) {
-		nc = next_code_point(first, skip);
-		if (!nc) {
-			return taken;
-		}
-
-		if (!is_octal_digit(first))
-			break;
-
-		advance(nc);
-		break;
+	char32_t digit{};
+	nc = next_code_point(digit);
+	if (!nc) {
+		return current_bit;
 	}
 
-	throw "implementation truncated";
+	// Numeric separator not allowed in the beginning of a binary literal
+	// We also do not advance the buffer offset, byte consumption occurs in
+	// the while loop
+	if (digit == '_')
+		throw numeric_separators_are_not_allowed_here(number_location);
+
+	auto separator_allowed = true;
+	auto is_previous_char_separator = false;
+	while (true) {
+		nc = next_code_point(digit);
+		if (!nc) {
+			return current_bit;
+		}
+
+		if (digit == '_') {
+			if (separator_allowed) {
+				separator_allowed = false;
+				is_previous_char_separator = true;
+			} else if (is_previous_char_separator) {
+				throw multiple_consecutive_numeric_separators_are_not_permitted(
+					number_location);
+			} else {
+				throw numeric_separators_are_not_allowed_here(number_location);
+			}
+
+			advance(nc);
+			continue;
+		}
+
+		separator_allowed = true;
+
+		if (!is_decimal_digit(digit) || digit - '0' >= base) {
+			break;
+		}
+
+		if (digit >= '0' && digit - '0' < base) {
+			into = into * base + (digit - '0');
+		}
+
+		current_bit++;
+		advance(nc);
+		is_previous_char_separator = false;
+	}
+
+	if (is_previous_char_separator)
+		throw numeric_separators_are_not_allowed_here(number_location);
+
+	return current_bit;
 }
 
 void lexer::scan_decimal_token(tscc::lex::token& into) {
