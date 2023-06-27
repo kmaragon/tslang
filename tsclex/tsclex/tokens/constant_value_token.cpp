@@ -66,8 +66,10 @@ std::string constant_value_token::to_string() const {
 		switch (d.base) {
 			case integer_base::binary:
 				str << "0b" << std::bitset<sizeof(d.value) * 8>(d.value);
+				break;
 			case integer_base::octal:
 				str << "0o" << std::oct << d.value;
+				break;
 			case integer_base::hex:
 				str << std::hex << "0x" << d.value;
 				break;
