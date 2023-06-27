@@ -1560,15 +1560,12 @@ std::size_t lexer::scan_binary_or_octal_number(long long& into,
 			continue;
 		}
 
-		separator_allowed = true;
-
-		if (!is_decimal_digit(digit) || digit - '0' >= base) {
+		if (!is_decimal_digit(digit) || (digit - '0' >= base || digit - '0' < 0)) {
 			break;
 		}
+		separator_allowed = true;
 
-		if (digit >= '0' && digit - '0' < base) {
-			into = into * base + (digit - '0');
-		}
+		into = into * base + (digit - '0');
 
 		current_bit++;
 		advance(nc);
