@@ -22,13 +22,15 @@
 #include <cmath>
 #include <cstring>
 #include "error/expected_command.hpp"
+#include "error/hexadecimal_digit_expected.hpp"
 #include "error/invalid_character.hpp"
 #include "error/invalid_identifier.hpp"
 #include "error/misplaced_shebang.hpp"
+#include "error/multiple_consecutive_numeric_separators_are_not_permitted.hpp"
+#include "error/numeric_separators_are_not_allowed_here.hpp"
 #include "error/unterminated_multiline_comment.hpp"
 #include "error/unterminated_string_literal.hpp"
-#include "error/numeric_separators_are_not_allowed_here.hpp"
-#include "error/multiple_consecutive_numeric_separators_are_not_permitted.hpp"
+#include "error/hexadecimal_digit_expected.hpp"
 #include "token.hpp"
 
 using namespace tscc::lex;
@@ -1524,9 +1526,8 @@ std::size_t lexer::scan_binary_or_octal_number(long long& into,
 											   std::size_t skip) {
 	auto number_location = location();
 	std::size_t current_bit = 0;
-	std::size_t nc = 0;
 	char32_t digit{};
-	nc = next_code_point(digit);
+	std::size_t nc = next_code_point(digit);
 	if (!nc) {
 		return current_bit;
 	}
@@ -1728,7 +1729,88 @@ void lexer::scan_decimal_token(tscc::lex::token& into) {
 }
 
 void lexer::scan_hex_token(tscc::lex::token& into) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	long long number = 0;
+	auto scanned = scan_minimum_number_of_hex_digits(number, true);
+	if (!scanned) {
+		throw hexadecimal_digit_expected(source_location());
+	}
+
+	auto loc = location();
+	into.emplace_token<tokens::constant_value_token>(
+		loc, number, tokens::integer_base::hex);
+}
+
+std::size_t lexer::scan_minimum_number_of_hex_digits(long long& into, bool can_have_separators) {
+	return scan_hex_number(into, 1, true, can_have_separators);
+}
+
+std::size_t lexer::scan_hex_number(long long& into, std::size_t min_count,
+								   bool scan_as_many_as_possible,
+								   bool can_have_separators) {
+	auto number_location = location();
+	std::size_t current_bit = 0;
+
+	char32_t digit{};
+	std::size_t nc = next_code_point(digit);
+	if (!nc)
+		return current_bit;
+
+	if (digit == '_')
+		throw numeric_separators_are_not_allowed_here(number_location);
+
+	auto is_previous_char_separator = false;
+	auto separator_allowed = false;
+	while (current_bit < min_count || scan_as_many_as_possible) {
+		nc = next_code_point(digit);
+		if (!nc) {
+			return current_bit;
+		}
+
+		// Example: "\u{DD_DD}"
+		if (can_have_separators && digit == '_') {
+			if (separator_allowed) {
+				separator_allowed = false;
+				is_previous_char_separator = true;
+			} else if (is_previous_char_separator) {
+				throw multiple_consecutive_numeric_separators_are_not_permitted(
+					number_location);
+			} else {
+				throw numeric_separators_are_not_allowed_here(number_location);
+			}
+
+			advance(nc);
+			continue;
+		}
+		separator_allowed = can_have_separators;
+
+		if (!is_hex_digit(digit))
+			break;
+
+		std::uint8_t hex_value = 0;
+		if (digit >= '0' && digit <= '9') {
+			hex_value = digit - '0';
+		} else if (digit >= 'A' && digit <= 'F') {
+			hex_value = 10 + (digit - 'A');
+		} else if (digit >= 'a' && digit <= 'f') {
+			hex_value = 10 + (digit - 'a');
+		}
+		into = (into << 4) + hex_value;
+
+		current_bit++;
+		advance(nc);
+		is_previous_char_separator = false;
+	}
+
+	// 0x123K will throw a hex_digit_expected error if we expected to read 4 bytes
+	if (current_bit < min_count) {
+		into = -1;
+		return 0;  // Upstream will handle error case
+	}
+
+	if (is_previous_char_separator)
+		throw numeric_separators_are_not_allowed_here(number_location);
+
+	return current_bit;
 }
 
 void lexer::scan_conflict_marker(tscc::lex::token& into) {
