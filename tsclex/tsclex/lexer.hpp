@@ -176,7 +176,8 @@ private:
 	std::size_t scan_decimal_number(long long& into, std::size_t skip = 0);
 	std::size_t scan_octal_number(long long& into, std::size_t skip = 0);
 	std::size_t scan_binary_number(long long& into, std::size_t skip = 0);
-
+	std::size_t scan_minimum_number_of_hex_digits(long long& into, bool can_have_separators);
+	std::size_t scan_hex_number(long long& into, std::size_t min_count = 4, bool scan_as_many_as_possible = false, bool can_have_separators = false);
 	// must scan one value or throw
 	std::size_t scan_unicode_escape_into_wbuffer(std::size_t min_size,
 												 bool scan_as_many_as_possible,
@@ -188,9 +189,13 @@ private:
 									bool can_have_separators,
 									std::size_t skip = 0);
 
+	bool is_conflict_marker_trivia();
+	void scan_conflict_marker_trivia(token& into);
+
 	// consider unicode and is identifier start
 	void scan_identifier(token& into, bool is_private = false);
 
+	static constexpr bool is_line_break(char32_t ch);
 	static constexpr bool is_decimal_digit(char32_t ch);
 	static constexpr long long decimal_value(char32_t ch);
 	static constexpr bool is_octal_digit(char32_t ch);

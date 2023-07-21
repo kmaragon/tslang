@@ -50,6 +50,7 @@
 #include "tokens/colon_token.hpp"
 #include "tokens/comma_token.hpp"
 #include "tokens/comment_token.hpp"
+#include "tokens/conflict_marker_token.hpp"
 #include "tokens/const_token.hpp"
 #include "tokens/constant_value_token.hpp"
 #include "tokens/constructor_token.hpp"
@@ -308,6 +309,7 @@ private:
 									  tokens::colon_token,
 									  tokens::comma_token,
 									  tokens::comment_token,
+									  tokens::conflict_marker_token,
 									  tokens::const_token,
 									  tokens::constant_value_token,
 									  tokens::constructor_token,

@@ -21,12 +21,195 @@
 #include <tsclex/token.hpp>
 #include "fake_source.hpp"
 #include <sstream>
+#include <tsclex/error/numeric_separators_are_not_allowed_here.hpp>
+#include <tsclex/error/multiple_consecutive_numeric_separators_are_not_permitted.hpp>
 
 #ifndef __FILE_NAME__
 #  define __FILE_NAME__ __FILE__
 #endif
 
+TEST_CASE("Lexer", "[binary]") {
+	SECTION("Binary") {
+		SECTION("Valid binary sequence") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0b01000"};
+			tscc::lex::lexer subject(file, source);
+
+			std::vector<tscc::lex::token> tokens{subject.begin(),
+												 subject.end()};
+
+			REQUIRE(tokens.size() == 4);
+			REQUIRE(tokens[0].is<tscc::lex::tokens::const_token>());
+			REQUIRE(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[1]->to_string() == "result");
+			REQUIRE(tokens[2].is<tscc::lex::tokens::eq_token>());
+			REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(tokens[3]->to_string() == "0b0000000000000000000000000000000000000000000000000000000000001000");
+		}
+
+		SECTION("Invalid binary sequence starts with numeric separator") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0b_01000"};
+			tscc::lex::lexer subject(file, source);
+
+			REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+							  tscc::lex::numeric_separators_are_not_allowed_here);
+		}
+
+		SECTION("Invalid binary sequence has consecutive numeric separators") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0b01__000"};
+			tscc::lex::lexer subject(file, source);
+
+			REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+							  tscc::lex::multiple_consecutive_numeric_separators_are_not_permitted);
+		}
+
+		SECTION("Invalid binary sequence ends in numeric separator") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0b1_;"};
+			tscc::lex::lexer subject(file, source);
+
+			REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+							  tscc::lex::numeric_separators_are_not_allowed_here);
+		}
+	}
+}
+
+TEST_CASE("Lexer", "[hex]") {
+	SECTION("Hex") {
+		SECTION("Valid hex sequence with prefix 'x'") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0x1234"};
+			tscc::lex::lexer subject(file, source);
+
+			std::vector<tscc::lex::token> tokens{subject.begin(), subject.end()};
+
+			REQUIRE(tokens.size() == 4);
+			REQUIRE(tokens[0].is<tscc::lex::tokens::const_token>());
+			REQUIRE(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[1]->to_string() == "result");
+			REQUIRE(tokens[2].is<tscc::lex::tokens::eq_token>());
+			REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(tokens[3]->to_string() == "0x1234");
+		}
+
+		SECTION("Valid hex sequence with prefix 'X'") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0X1234"};
+			tscc::lex::lexer subject(file, source);
+
+			std::vector<tscc::lex::token> tokens{subject.begin(), subject.end()};
+
+			REQUIRE(tokens.size() == 4);
+			REQUIRE(tokens[0].is<tscc::lex::tokens::const_token>());
+			REQUIRE(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[1]->to_string() == "result");
+			REQUIRE(tokens[2].is<tscc::lex::tokens::eq_token>());
+			REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(tokens[3]->to_string() == "0x1234");
+		}
+
+		SECTION("Valid hex sequence with numeric separator") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0X12_34"};
+			tscc::lex::lexer subject(file, source);
+
+			std::vector<tscc::lex::token> tokens{subject.begin(), subject.end()};
+
+			REQUIRE(tokens.size() == 4);
+			REQUIRE(tokens[0].is<tscc::lex::tokens::const_token>());
+			REQUIRE(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[1]->to_string() == "result");
+			REQUIRE(tokens[2].is<tscc::lex::tokens::eq_token>());
+			REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(tokens[3]->to_string() == "0x1234");
+		}
+
+		SECTION("Invalid hex sequence with consecutive numeric separators") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0X12__34"};
+			tscc::lex::lexer subject(file, source);
+
+			REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+							  tscc::lex::multiple_consecutive_numeric_separators_are_not_permitted);
+		}
+
+		SECTION("Invalid hex sequence starts with numeric separator") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0X_1234"};
+			tscc::lex::lexer subject(file, source);
+
+			REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+							  tscc::lex::numeric_separators_are_not_allowed_here);
+		}
+
+		SECTION("Invalid hex sequence ends in numeric separator") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0X1234_;"};
+			tscc::lex::lexer subject(file, source);
+
+			REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+							  tscc::lex::numeric_separators_are_not_allowed_here);
+		}
+
+		SECTION("Invalid hex sequence contains invalid hex digit") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0X1234_;"};
+			tscc::lex::lexer subject(file, source);
+
+			REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+							  tscc::lex::numeric_separators_are_not_allowed_here);
+		}
+	}
+}
+
 TEST_CASE("Lexer", "[lexer]") {
+	SECTION("Octal") {
+		SECTION("Valid octal sequence") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0o1234"};
+			tscc::lex::lexer subject(file, source);
+
+			std::vector<tscc::lex::token> tokens{subject.begin(), subject.end()};
+
+			REQUIRE(tokens.size() == 4);
+			REQUIRE(tokens[0].is<tscc::lex::tokens::const_token>());
+			REQUIRE(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(tokens[1]->to_string() == "result");
+			REQUIRE(tokens[2].is<tscc::lex::tokens::eq_token>());
+			REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(tokens[3]->to_string() == "0o1234");
+		}
+
+		SECTION("Invalid octal sequence starts with numeric separator") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0o_1234"};
+			tscc::lex::lexer subject(file, source);
+
+			REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+							  tscc::lex::numeric_separators_are_not_allowed_here);
+		}
+
+		SECTION("Invalid octal sequence has consecutive numeric separators") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0o12__34"};
+			tscc::lex::lexer subject(file, source);
+
+			REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+							  tscc::lex::multiple_consecutive_numeric_separators_are_not_permitted);
+		}
+
+		SECTION("Invalid octal sequence ends in numeric separator") {
+			auto source = std::make_shared<fake_source>(__FILE_NAME__);
+			std::stringstream file{"const result = 0o1234_;"};
+			tscc::lex::lexer subject(file, source);
+
+			REQUIRE_THROWS_AS((std::vector<tscc::lex::token>{subject.begin(), subject.end()}),
+							  tscc::lex::numeric_separators_are_not_allowed_here);
+		}
+	}
+
 	SECTION("Shebang") {
 		SECTION("Single line shebang") {
 			auto source = std::make_shared<fake_source>(__FILE_NAME__);

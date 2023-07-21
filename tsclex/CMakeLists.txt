@@ -155,7 +155,10 @@ set(SOURCES
         tsclex/source.cpp
         tsclex/source_location.cpp
         tsclex/token.cpp
-        )
+        tsclex/error/numeric_separators_are_not_allowed_here.cpp
+        tsclex/error/multiple_consecutive_numeric_separators_are_not_permitted.cpp
+        tsclex/error/hexadecimal_digit_expected.cpp
+        tsclex/tokens/conflict_marker_token.cpp)
 
 set(HEADERS
         tsclex/error/expected_command.hpp
@@ -312,6 +315,10 @@ set(HEADERS
         tsclex/source.hpp
         tsclex/source_location.hpp
         tsclex/token.hpp
+        tsclex/error/multiple_consecutive_numeric_separators_are_not_permitted.hpp
+        tsclex/error/numeric_separators_are_not_allowed_here.hpp
+        tsclex/error/hexadecimal_digit_expected.hpp
+        tsclex/tokens/conflict_marker_token.hpp
         )
 
 add_library(tsclex ${SOURCES})

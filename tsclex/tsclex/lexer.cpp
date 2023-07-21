@@ -22,9 +22,12 @@
 #include <cmath>
 #include <cstring>
 #include "error/expected_command.hpp"
+#include "error/hexadecimal_digit_expected.hpp"
 #include "error/invalid_character.hpp"
 #include "error/invalid_identifier.hpp"
 #include "error/misplaced_shebang.hpp"
+#include "error/multiple_consecutive_numeric_separators_are_not_permitted.hpp"
+#include "error/numeric_separators_are_not_allowed_here.hpp"
 #include "error/unterminated_multiline_comment.hpp"
 #include "error/unterminated_string_literal.hpp"
 #include "token.hpp"
@@ -1479,14 +1482,13 @@ void lexer::scan_multiline_comment(tscc::lex::token& into, bool is_jsdoc) {
 }
 
 void lexer::scan_binary_token(tscc::lex::token& into) {
-	long long number;
+	long long number = 0;
 	auto scanned = scan_binary_number(number);
 	if (!scanned) {
 		throw invalid_identifier(source_location());
 	}
 
 	auto loc = location();
-	advance(scanned);
 	into.emplace_token<tokens::constant_value_token>(
 		loc, number, tokens::integer_base::binary);
 }
@@ -1496,15 +1498,15 @@ std::size_t lexer::scan_decimal_number(long long& into, std::size_t skip) {
 }
 
 std::size_t lexer::scan_octal_number(long long& into, std::size_t skip) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	return scan_binary_or_octal_number(into, 8, skip);
 }
 
 std::size_t lexer::scan_binary_number(long long& into, std::size_t skip) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	return scan_binary_or_octal_number(into, 2, skip);
 }
 
 bool lexer::scan_octal_token(tscc::lex::token& into, bool throw_on_invalid) {
-	long long number;
+	long long number = 0;
 	auto scanned = scan_octal_number(number);
 	if (!scanned) {
 		if (throw_on_invalid)
@@ -1513,7 +1515,6 @@ bool lexer::scan_octal_token(tscc::lex::token& into, bool throw_on_invalid) {
 	}
 
 	auto loc = location();
-	advance(scanned);
 	into.emplace_token<tokens::constant_value_token>(
 		loc, number, tokens::integer_base::octal);
 	return true;
@@ -1523,28 +1524,58 @@ std::size_t lexer::scan_binary_or_octal_number(long long& into,
 											   std::size_t base,
 											   std::size_t skip) {
 	auto number_location = location();
-
-	bool separator_allowed = false;
-	bool got_separator = false;
-
-	std::size_t nc = 0;
-	std::size_t taken = 0;
-
-	char32_t first{};
-	while (true) {
-		nc = next_code_point(first, skip);
-		if (!nc) {
-			return taken;
-		}
-
-		if (!is_octal_digit(first))
-			break;
-
-		advance(nc);
-		break;
+	std::size_t current_bit = 0;
+	char32_t digit{};
+	std::size_t nc = next_code_point(digit);
+	if (!nc) {
+		return current_bit;
 	}
 
-	throw "implementation truncated";
+	// Numeric separator not allowed in the beginning of a binary literal
+	// We also do not advance the buffer offset, byte consumption occurs in
+	// the while loop
+	if (digit == '_')
+		throw numeric_separators_are_not_allowed_here(number_location);
+
+	auto separator_allowed = true;
+	auto is_previous_char_separator = false;
+	while (true) {
+		nc = next_code_point(digit);
+		if (!nc) {
+			return current_bit;
+		}
+
+		if (digit == '_') {
+			if (separator_allowed) {
+				separator_allowed = false;
+				is_previous_char_separator = true;
+			} else if (is_previous_char_separator) {
+				throw multiple_consecutive_numeric_separators_are_not_permitted(
+					number_location);
+			} else {
+				throw numeric_separators_are_not_allowed_here(number_location);
+			}
+
+			advance(nc);
+			continue;
+		}
+
+		if (!is_decimal_digit(digit) || (digit - '0' >= base || digit - '0' < 0)) {
+			break;
+		}
+		separator_allowed = true;
+
+		into = into * base + (digit - '0');
+
+		current_bit++;
+		advance(nc);
+		is_previous_char_separator = false;
+	}
+
+	if (is_previous_char_separator)
+		throw numeric_separators_are_not_allowed_here(number_location);
+
+	return current_bit;
 }
 
 void lexer::scan_decimal_token(tscc::lex::token& into) {
@@ -1697,11 +1728,88 @@ void lexer::scan_decimal_token(tscc::lex::token& into) {
 }
 
 void lexer::scan_hex_token(tscc::lex::token& into) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	long long number = 0;
+	auto scanned = scan_minimum_number_of_hex_digits(number, true);
+	if (!scanned) {
+		throw hexadecimal_digit_expected(source_location());
+	}
+
+	auto loc = location();
+	into.emplace_token<tokens::constant_value_token>(
+		loc, number, tokens::integer_base::hex);
 }
 
-void lexer::scan_conflict_marker(tscc::lex::token& into) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+std::size_t lexer::scan_minimum_number_of_hex_digits(long long& into, bool can_have_separators) {
+	return scan_hex_number(into, 1, true, can_have_separators);
+}
+
+std::size_t lexer::scan_hex_number(long long& into, std::size_t min_count,
+								   bool scan_as_many_as_possible,
+								   bool can_have_separators) {
+	auto number_location = location();
+	std::size_t current_bit = 0;
+
+	char32_t digit{};
+	std::size_t nc = next_code_point(digit);
+	if (!nc)
+		return current_bit;
+
+	if (digit == '_')
+		throw numeric_separators_are_not_allowed_here(number_location);
+
+	auto is_previous_char_separator = false;
+	auto separator_allowed = false;
+	while (current_bit < min_count || scan_as_many_as_possible) {
+		nc = next_code_point(digit);
+		if (!nc) {
+			return current_bit;
+		}
+
+		// Example: "\u{DD_DD}"
+		if (can_have_separators && digit == '_') {
+			if (separator_allowed) {
+				separator_allowed = false;
+				is_previous_char_separator = true;
+			} else if (is_previous_char_separator) {
+				throw multiple_consecutive_numeric_separators_are_not_permitted(
+					number_location);
+			} else {
+				throw numeric_separators_are_not_allowed_here(number_location);
+			}
+
+			advance(nc);
+			continue;
+		}
+		separator_allowed = can_have_separators;
+
+		if (!is_hex_digit(digit))
+			break;
+
+		std::uint8_t hex_value = 0;
+		if (digit >= '0' && digit <= '9') {
+			hex_value = digit - '0';
+		} else if (digit >= 'A' && digit <= 'F') {
+			hex_value = 10 + (digit - 'A');
+		} else if (digit >= 'a' && digit <= 'f') {
+			hex_value = 10 + (digit - 'a');
+		}
+		into = (into << 4) + hex_value;
+
+		current_bit++;
+		advance(nc);
+		is_previous_char_separator = false;
+	}
+
+	// 0x123K will throw a hex_digit_expected error if we expected to read 4 bytes
+	if (current_bit < min_count) {
+		into = -1;
+		return 0;  // Upstream will handle error case
+	}
+
+	if (is_previous_char_separator)
+		throw numeric_separators_are_not_allowed_here(number_location);
+
+	return current_bit;
 }
 
 bool lexer::scan_jsx_token(tscc::lex::token& into) {
@@ -1813,6 +1921,13 @@ void lexer::scan_identifier(tscc::lex::token& into, bool is_private) {
 
 	into.emplace_token<tokens::identifier_token>(identifier_start,
 												 std::move(wbuffer_));
+}
+
+constexpr bool lexer::is_line_break(char32_t ch) {
+	return (ch == '\n') ||
+		   (ch == '\r') ||
+		   (ch == 0x2028) ||
+		   (ch == 0x2029);
 }
 
 constexpr bool lexer::is_decimal_digit(char32_t ch) {
@@ -1961,6 +2076,69 @@ void lexer::scan_line_into_wbuffer(bool trim) {
 	}
 }
 
+bool lexer::is_conflict_marker_trivia() {
+	assert(gpos_.offset >= 0);
+
+	// Conflict markers must be at the start of the line
+	if (gpos_.offset != 0 || location().column() != 0)
+		return false;
+
+	// cannot be EOD because it's checked in scan(tscc::lex::token&)
+	char32_t marker{};
+	auto pos = next_code_point(marker);
+
+	static constexpr std::size_t conflict_marker_length = sizeof("<<<<<<<");
+	for (std::size_t i = 1; i < 7; i++) {
+		char32_t ch;
+		auto gs = next_code_point(ch, pos);
+		if (!gs)
+			return false;
+
+		if (marker != ch)
+			return false;
+	}
+
+	char32_t space{};
+	auto ggs = next_code_point(space, conflict_marker_length);
+	if (!ggs)
+		return false;
+
+	return marker == '=' || space == ' ';
+}
+
+void lexer::scan_conflict_marker_trivia(tscc::lex::token& into) {
+	char32_t marker{};
+	auto pos = next_code_point(marker);
+
+	if (marker == '<' || marker == '>') {
+		while (!is_line_break(marker)) {
+			pos = next_code_point(marker);
+			advance(pos);
+		}
+
+		auto loc = location();
+		into.emplace_token<tokens::conflict_marker_token>(loc);
+		return;
+	}
+
+	assert(marker == '|' || marker == '=');
+
+	char32_t equal_or_greater_than_marker{};
+	while (true) {
+		if ((equal_or_greater_than_marker == '=' || equal_or_greater_than_marker == '>') &&
+			equal_or_greater_than_marker != marker &&
+			is_conflict_marker_trivia()) {
+			break;
+		}
+
+		pos = next_code_point(equal_or_greater_than_marker);
+		advance(pos);
+	}
+
+	auto loc = location();
+	into.emplace_token<tokens::conflict_marker_token>(loc);
+}
+
 bool lexer::scan(tscc::lex::token& into) {
 	while (true) {
 		char32_t ch{};
@@ -2063,6 +2241,9 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::exclamation_token>(loc);
 				return true;
 			}
+			// TODO: Need to hook up to hex scan
+			case U'\\':
+				return true;
 			case U'"':
 			case U'\'':
 				scan_string(into);
@@ -2323,6 +2504,11 @@ bool lexer::scan(tscc::lex::token& into) {
 				advance(pos);
 				return true;
 			case U'<': {
+				if (is_conflict_marker_trivia()) {
+					scan_conflict_marker_trivia(into);
+					return true;
+				}
+
 				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
@@ -2338,11 +2524,6 @@ bool lexer::scan(tscc::lex::token& into) {
 						char32_t ltnext{};
 						auto ggs = next_code_point(ltnext, pos + gs);
 						if (ggs > 0) {
-							if (ltnext == U'<') {
-								scan_conflict_marker(into);
-								return true;
-							}
-
 							if (ltnext == U'=') {
 								advance(pos + gs + ggs);
 								into.emplace_token<
@@ -2368,6 +2549,10 @@ bool lexer::scan(tscc::lex::token& into) {
 				return true;
 			}
 			case U'=': {
+				if (is_conflict_marker_trivia()) {
+					scan_conflict_marker_trivia(into);
+					return true;
+				}
 				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
@@ -2380,11 +2565,6 @@ bool lexer::scan(tscc::lex::token& into) {
 							if (eqnext == U'=') {
 								char32_t eenext{};
 								auto gggs = next_code_point(eenext);
-
-								if (gggs > 0 && eenext == U'=') {
-									scan_conflict_marker(into);
-									return true;
-								}
 
 								advance(pos + gs + ggs);
 								into.emplace_token<tokens::triple_eq_token>(
@@ -2410,6 +2590,11 @@ bool lexer::scan(tscc::lex::token& into) {
 				return true;
 			}
 			case U'>': {
+				if (is_conflict_marker_trivia()) {
+					scan_conflict_marker_trivia(into);
+					return true;
+				}
+
 				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
@@ -2425,11 +2610,6 @@ bool lexer::scan(tscc::lex::token& into) {
 						char32_t gtnext{};
 						auto ggs = next_code_point(gtnext, pos + gs);
 						if (ggs > 0) {
-							if (gtnext == U'>') {
-								scan_conflict_marker(into);
-								return true;
-							}
-
 							if (gtnext == U'=') {
 								advance(pos + gs + ggs);
 								into.emplace_token<
@@ -2509,6 +2689,11 @@ bool lexer::scan(tscc::lex::token& into) {
 				advance(pos);
 				return true;
 			case U'|': {
+				if (is_conflict_marker_trivia()) {
+					scan_conflict_marker_trivia(into);
+					return true;
+				}
+
 				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
@@ -2524,11 +2709,6 @@ bool lexer::scan(tscc::lex::token& into) {
 						char32_t gtnext{};
 						auto ggs = next_code_point(gtnext, pos + gs);
 						if (ggs > 0) {
-							if (gtnext == U'|') {
-								scan_conflict_marker(into);
-								return true;
-							}
-
 							if (gtnext == U'=') {
 								advance(pos + gs + ggs);
 								into.emplace_token<tokens::double_bar_eq_token>(
