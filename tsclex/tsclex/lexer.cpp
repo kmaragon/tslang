@@ -30,7 +30,6 @@
 #include "error/numeric_separators_are_not_allowed_here.hpp"
 #include "error/unterminated_multiline_comment.hpp"
 #include "error/unterminated_string_literal.hpp"
-#include "error/hexadecimal_digit_expected.hpp"
 #include "token.hpp"
 
 using namespace tscc::lex;
@@ -1813,10 +1812,6 @@ std::size_t lexer::scan_hex_number(long long& into, std::size_t min_count,
 	return current_bit;
 }
 
-void lexer::scan_conflict_marker(tscc::lex::token& into) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
-}
-
 bool lexer::scan_jsx_token(tscc::lex::token& into) {
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
@@ -1926,6 +1921,13 @@ void lexer::scan_identifier(tscc::lex::token& into, bool is_private) {
 
 	into.emplace_token<tokens::identifier_token>(identifier_start,
 												 std::move(wbuffer_));
+}
+
+constexpr bool lexer::is_line_break(char32_t ch) {
+	return (ch == '\n') ||
+		   (ch == '\r') ||
+		   (ch == 0x2028) ||
+		   (ch == 0x2029);
 }
 
 constexpr bool lexer::is_decimal_digit(char32_t ch) {
@@ -2074,6 +2076,69 @@ void lexer::scan_line_into_wbuffer(bool trim) {
 	}
 }
 
+bool lexer::is_conflict_marker_trivia() {
+	assert(gpos_.offset >= 0);
+
+	// Conflict markers must be at the start of the line
+	if (gpos_.offset != 0 || location().column() != 0)
+		return false;
+
+	// cannot be EOD because it's checked in scan(tscc::lex::token&)
+	char32_t marker{};
+	auto pos = next_code_point(marker);
+
+	static constexpr std::size_t conflict_marker_length = sizeof("<<<<<<<");
+	for (std::size_t i = 1; i < 7; i++) {
+		char32_t ch;
+		auto gs = next_code_point(ch, pos);
+		if (!gs)
+			return false;
+
+		if (marker != ch)
+			return false;
+	}
+
+	char32_t space{};
+	auto ggs = next_code_point(space, conflict_marker_length);
+	if (!ggs)
+		return false;
+
+	return marker == '=' || space == ' ';
+}
+
+void lexer::scan_conflict_marker_trivia(tscc::lex::token& into) {
+	char32_t marker{};
+	auto pos = next_code_point(marker);
+
+	if (marker == '<' || marker == '>') {
+		while (!is_line_break(marker)) {
+			pos = next_code_point(marker);
+			advance(pos);
+		}
+
+		auto loc = location();
+		into.emplace_token<tokens::conflict_marker_token>(loc);
+		return;
+	}
+
+	assert(marker == '|' || marker == '=');
+
+	char32_t equal_or_greater_than_marker{};
+	while (true) {
+		if ((equal_or_greater_than_marker == '=' || equal_or_greater_than_marker == '>') &&
+			equal_or_greater_than_marker != marker &&
+			is_conflict_marker_trivia()) {
+			break;
+		}
+
+		pos = next_code_point(equal_or_greater_than_marker);
+		advance(pos);
+	}
+
+	auto loc = location();
+	into.emplace_token<tokens::conflict_marker_token>(loc);
+}
+
 bool lexer::scan(tscc::lex::token& into) {
 	while (true) {
 		char32_t ch{};
@@ -2176,6 +2241,9 @@ bool lexer::scan(tscc::lex::token& into) {
 				into.emplace_token<tokens::exclamation_token>(loc);
 				return true;
 			}
+			// TODO: Need to hook up to hex scan
+			case U'\\':
+				return true;
 			case U'"':
 			case U'\'':
 				scan_string(into);
@@ -2436,6 +2504,11 @@ bool lexer::scan(tscc::lex::token& into) {
 				advance(pos);
 				return true;
 			case U'<': {
+				if (is_conflict_marker_trivia()) {
+					scan_conflict_marker_trivia(into);
+					return true;
+				}
+
 				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
@@ -2451,11 +2524,6 @@ bool lexer::scan(tscc::lex::token& into) {
 						char32_t ltnext{};
 						auto ggs = next_code_point(ltnext, pos + gs);
 						if (ggs > 0) {
-							if (ltnext == U'<') {
-								scan_conflict_marker(into);
-								return true;
-							}
-
 							if (ltnext == U'=') {
 								advance(pos + gs + ggs);
 								into.emplace_token<
@@ -2481,6 +2549,10 @@ bool lexer::scan(tscc::lex::token& into) {
 				return true;
 			}
 			case U'=': {
+				if (is_conflict_marker_trivia()) {
+					scan_conflict_marker_trivia(into);
+					return true;
+				}
 				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
@@ -2493,11 +2565,6 @@ bool lexer::scan(tscc::lex::token& into) {
 							if (eqnext == U'=') {
 								char32_t eenext{};
 								auto gggs = next_code_point(eenext);
-
-								if (gggs > 0 && eenext == U'=') {
-									scan_conflict_marker(into);
-									return true;
-								}
 
 								advance(pos + gs + ggs);
 								into.emplace_token<tokens::triple_eq_token>(
@@ -2523,6 +2590,11 @@ bool lexer::scan(tscc::lex::token& into) {
 				return true;
 			}
 			case U'>': {
+				if (is_conflict_marker_trivia()) {
+					scan_conflict_marker_trivia(into);
+					return true;
+				}
+
 				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
@@ -2538,11 +2610,6 @@ bool lexer::scan(tscc::lex::token& into) {
 						char32_t gtnext{};
 						auto ggs = next_code_point(gtnext, pos + gs);
 						if (ggs > 0) {
-							if (gtnext == U'>') {
-								scan_conflict_marker(into);
-								return true;
-							}
-
 							if (gtnext == U'=') {
 								advance(pos + gs + ggs);
 								into.emplace_token<
@@ -2622,6 +2689,11 @@ bool lexer::scan(tscc::lex::token& into) {
 				advance(pos);
 				return true;
 			case U'|': {
+				if (is_conflict_marker_trivia()) {
+					scan_conflict_marker_trivia(into);
+					return true;
+				}
+
 				char32_t next{};
 				auto gs = next_code_point(next, pos);
 
@@ -2637,11 +2709,6 @@ bool lexer::scan(tscc::lex::token& into) {
 						char32_t gtnext{};
 						auto ggs = next_code_point(gtnext, pos + gs);
 						if (ggs > 0) {
-							if (gtnext == U'|') {
-								scan_conflict_marker(into);
-								return true;
-							}
-
 							if (gtnext == U'=') {
 								advance(pos + gs + ggs);
 								into.emplace_token<tokens::double_bar_eq_token>(

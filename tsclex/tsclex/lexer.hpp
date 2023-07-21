@@ -189,9 +189,13 @@ private:
 									bool can_have_separators,
 									std::size_t skip = 0);
 
+	bool is_conflict_marker_trivia();
+	void scan_conflict_marker_trivia(token& into);
+
 	// consider unicode and is identifier start
 	void scan_identifier(token& into, bool is_private = false);
 
+	static constexpr bool is_line_break(char32_t ch);
 	static constexpr bool is_decimal_digit(char32_t ch);
 	static constexpr long long decimal_value(char32_t ch);
 	static constexpr bool is_octal_digit(char32_t ch);

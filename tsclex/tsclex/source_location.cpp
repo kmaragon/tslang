@@ -28,3 +28,17 @@ source_location::source_location(std::shared_ptr<source> source,
 	  line_(line),
 	  column_(column),
 	  offset_(offset) {}
+
+
+std::size_t source_location::line() const noexcept {
+	return line_;
+}
+
+std::size_t source_location::column() const noexcept {
+	return column_;
+}
+
+
+std::size_t source_location::offset() const noexcept {
+	return offset_;
+}
