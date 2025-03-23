@@ -1,6 +1,6 @@
 /*
  * TSCC - a Typescript Compiler
- * Copyright (c) 2022. Keef Aragon
+ * Copyright (c) 2025. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -26,38 +26,64 @@
 
 using namespace tscc::lex::tokens;
 
-constant_value_token::constant_value_token(std::u32string string_value)
-	: value_(std::move(string_value)) {}
+constant_value_token::constant_value_token(std::u32string string_value, char quote)
+	: value_(string_data{std::move(string_value), quote}) {
+}
 
 constant_value_token::constant_value_token(long long integer_value,
-										   integer_base base)
-	: value_(integer_data(integer_value, base)) {}
+                                           integer_base base)
+	: value_(integer_data(integer_value, base)) {
+}
 
 constant_value_token::constant_value_token(long double decimal_value)
-	: value_(decimal_value) {}
+	: value_(decimal_value) {
+}
 
 constant_value_token::constant_value_token(long double decimal_value,
-										   int scientific_notation_e,
-										   bool upper)
-	: value_(float_data(decimal_value, scientific_notation_e, upper)) {}
+                                           int scientific_notation_e,
+                                           bool upper)
+	: value_(float_data(decimal_value, scientific_notation_e, upper)) {
+}
 
 bool constant_value_token::operator==(
-	const tscc::lex::tokens::constant_value_token& other) const {
+	const tscc::lex::tokens::constant_value_token &other) const {
 	return value_ == other.value_;
 }
 
 bool constant_value_token::operator!=(
-	const tscc::lex::tokens::constant_value_token& other) const {
+	const tscc::lex::tokens::constant_value_token &other) const {
 	return value_ != other.value_;
+}
+
+std::optional<std::u32string_view> constant_value_token::string_value() const noexcept {
+	if (!std::holds_alternative<string_data>(value_))
+		return std::nullopt;
+
+	return std::get<string_data>(value_).value;
+}
+
+std::optional<long long> constant_value_token::integer_value() const noexcept {
+	if (!std::holds_alternative<integer_data>(value_))
+		return std::nullopt;
+
+	return std::get<integer_data>(value_).value;
+}
+
+std::optional<long double> constant_value_token::decimal_value() const noexcept {
+	if (!std::holds_alternative<float_data>(value_))
+		return std::nullopt;
+
+	return std::get<float_data>(value_).value;
 }
 
 std::string constant_value_token::to_string() const {
 	static thread_local std::stringstream str;
 
-	if (std::holds_alternative<std::u32string>(value_)) {
-		return to_json_string(std::get<std::u32string>(value_));
+	if (std::holds_alternative<string_data>(value_)) {
+		auto &d = std::get<string_data>(value_);
+		return to_json_string(d.value, d.quote);
 	} else if (std::holds_alternative<integer_data>(value_)) {
-		auto& d = std::get<integer_data>(value_);
+		auto &d = std::get<integer_data>(value_);
 
 		str.clear();
 		str.seekp(0, std::ios::beg);
@@ -77,20 +103,20 @@ std::string constant_value_token::to_string() const {
 
 		return str.str();
 	} else {
-		auto& d = std::get<float_data>(value_);
+		auto &d = std::get<float_data>(value_);
 
 		str.clear();
 		str.seekp(0, std::ios::beg);
 		str.str(std::string{});
 
 		constexpr auto precision =
-			std::numeric_limits<decltype(d.value)>::max_digits10 + 2;
+				std::numeric_limits<decltype(d.value)>::max_digits10 + 2;
 		if (d.scientific_exponent) {
 			auto value =
-				d.value / std::pow(10.0l, d.scientific_exponent->exponent);
+					d.value / std::pow(10.0l, d.scientific_exponent->exponent);
 			str << std::setprecision(precision - 3) << value
-				<< (d.scientific_exponent->upper_case_e ? 'E' : 'e')
-				<< d.scientific_exponent->exponent;
+					<< (d.scientific_exponent->upper_case_e ? 'E' : 'e')
+					<< d.scientific_exponent->exponent;
 		} else {
 			str << std::setprecision(precision) << d.value;
 		}

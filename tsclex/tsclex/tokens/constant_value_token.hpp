@@ -1,6 +1,6 @@
 /*
  * TSCC - a Typescript Compiler
- * Copyright (c) 2022. Keef Aragon
+ * Copyright (c) 2025. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -32,7 +32,7 @@ enum class integer_base { binary, octal, decimal, hex };
  */
 class constant_value_token : public basic_token {
 public:
-	constant_value_token(std::u32string string_value);
+	constant_value_token(std::u32string string_value, char quote_char);
 	constant_value_token(long long integer_value, integer_base base);
 	constant_value_token(long double decimal_value);
 	constant_value_token(long double decimal_value,
@@ -44,7 +44,27 @@ public:
 
 	std::string to_string() const override;
 
+	std::optional<long long> integer_value() const noexcept;
+	std::optional<long double> decimal_value() const noexcept;
+	std::optional<std::u32string_view> string_value() const noexcept;
+
 private:
+	struct string_data {
+		std::u32string value;
+		char quote;
+
+		string_data(std::u32string string_value, char quote)
+			: value(std::move(string_value)), quote(quote) {}
+
+		bool operator==(const string_data& other) const noexcept {
+			return value == other.value && quote == other.quote;
+		}
+
+		bool operator!=(const string_data& other) const noexcept {
+			return !operator==(other);
+		}
+	};
+
 	struct integer_data {
 		long long value;
 		integer_base base;
@@ -97,7 +117,7 @@ private:
 		}
 	};
 
-	std::variant<std::u32string, integer_data, float_data> value_;
+	std::variant<string_data, integer_data, float_data> value_;
 };
 
 }  // namespace tscc::lex::tokens

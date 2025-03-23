@@ -1,6 +1,6 @@
 /*
  * TSCC - a Typescript Compiler
- * Copyright (c) 2022. Keef Aragon
+ * Copyright (c) 2025. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -50,6 +50,14 @@ public:
 	 * @brief Get the offset for the location
 	 */
 	std::size_t offset() const noexcept;
+
+	/**
+	 * @brief Get a source location on the same line but
+	 *
+	 * @param offset
+	 * @return
+	 */
+	source_location operator+(std::size_t offset) const noexcept;
 
 private:
 	std::shared_ptr<source> source_;

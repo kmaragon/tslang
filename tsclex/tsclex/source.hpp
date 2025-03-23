@@ -1,6 +1,6 @@
 /*
  * TSCC - a Typescript Compiler
- * Copyright (c) 2022. Keef Aragon
+ * Copyright (c) 2025. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free

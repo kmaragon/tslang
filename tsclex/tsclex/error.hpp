@@ -1,6 +1,6 @@
 /*
  * TSCC - a Typescript Compiler
- * Copyright (c) 2022. Keef Aragon
+ * Copyright (c) 2025. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -30,7 +30,13 @@ enum class error_code : std::uint16_t
 	ts1002 = 1002,
 	ts1003 = 1003,
 	ts1010 = 1010,
+	ts1125 = 1125,
+	ts1126 = 1126,
 	ts1127 = 1127,
+	ts1198 = 1198,
+	ts1199 = 1199,
+	ts6188 = 6188,
+	ts6189 = 6189,
 	ts18026 = 18026,
 };
 

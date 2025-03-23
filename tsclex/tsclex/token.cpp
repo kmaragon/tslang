@@ -1,6 +1,6 @@
 /*
  * TSCC - a Typescript Compiler
- * Copyright (c) 2022. Keef Aragon
+ * Copyright (c) 2025. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -34,6 +34,16 @@ struct basic_token_extractor {
 };
 
 }  // namespace
+
+tokens::basic_token& token::operator*() noexcept {
+	basic_token_extractor ex;
+	return *std::visit(ex, *token_);
+}
+
+const tokens::basic_token& token::operator*() const noexcept {
+	basic_token_extractor ex;
+	return *std::visit(ex, *token_);
+}
 
 tokens::basic_token* token::operator->() noexcept {
 	if (!token_)

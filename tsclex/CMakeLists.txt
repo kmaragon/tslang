@@ -1,11 +1,17 @@
 
 set(SOURCES
         tsclex/error/expected_command.cpp
+        tsclex/error/hexidecimal_digit_expected.cpp
         tsclex/error/invalid_character.cpp
         tsclex/error/invalid_identifier.cpp
         tsclex/error/misplaced_shebang.cpp
+        tsclex/error/multiple_separators_not_allowed.cpp
+        tsclex/error/separators_not_allowed_here.cpp
+        tsclex/error/unexpected_end_of_text.cpp
+        tsclex/error/unicode_value_out_of_range.cpp
         tsclex/error/unterminated_multiline_comment.cpp
         tsclex/error/unterminated_string_literal.cpp
+        tsclex/error/unterminated_unicode_escape_sequence.cpp
         tsclex/tokens/abstract_token.cpp
         tsclex/tokens/accessor_token.cpp
         tsclex/tokens/ampersand_eq_token.cpp
@@ -159,11 +165,17 @@ set(SOURCES
 
 set(HEADERS
         tsclex/error/expected_command.hpp
+        tsclex/error/hexidecimal_digit_expected.hpp
         tsclex/error/invalid_character.hpp
         tsclex/error/invalid_identifier.hpp
         tsclex/error/misplaced_shebang.hpp
+        tsclex/error/multiple_separators_not_allowed.hpp
+        tsclex/error/separators_not_allowed_here.hpp
+        tsclex/error/unexpected_end_of_text.hpp
+        tsclex/error/unicode_value_out_of_range.hpp
         tsclex/error/unterminated_multiline_comment.hpp
         tsclex/error/unterminated_string_literal.hpp
+        tsclex/error/unterminated_unicode_escape_sequence.hpp
         tsclex/tokens/abstract_token.hpp
         tsclex/tokens/accessor_token.hpp
         tsclex/tokens/ampersand_eq_token.hpp

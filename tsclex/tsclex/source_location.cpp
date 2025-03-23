@@ -1,6 +1,6 @@
 /*
  * TSCC - a Typescript Compiler
- * Copyright (c) 2022. Keef Aragon
+ * Copyright (c) 2025. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,10 +21,17 @@
 using namespace tscc::lex;
 
 source_location::source_location(std::shared_ptr<source> source,
-								 std::size_t line,
-								 std::size_t column,
-								 std::size_t offset) noexcept
+                                 std::size_t line,
+                                 std::size_t column,
+                                 std::size_t offset) noexcept
 	: source_(std::move(source)),
 	  line_(line),
 	  column_(column),
-	  offset_(offset) {}
+	  offset_(offset) {
+}
+
+source_location source_location::operator+(std::size_t offset) const noexcept {
+	auto result = *this;
+	result.offset_ += offset;
+	return result;
+}

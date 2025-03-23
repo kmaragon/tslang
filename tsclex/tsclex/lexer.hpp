@@ -1,6 +1,6 @@
 /*
  * TSCC - a Typescript Compiler
- * Copyright (c) 2022. Keef Aragon
+ * Copyright (c) 2025. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -182,7 +182,7 @@ private:
 												 bool scan_as_many_as_possible,
 												 bool can_have_separators);
 
-	std::size_t scan_unicode_escape(char32_t& into,
+	std::size_t scan_unicode_digits(char32_t& into,
 									std::size_t min_size,
 									bool scan_as_many_as_possible,
 									bool can_have_separators,

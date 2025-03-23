@@ -1,6 +1,6 @@
 /*
  * TSCC - a Typescript Compiler
- * Copyright (c) 2022. Keef Aragon
+ * Copyright (c) 2025. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -22,11 +22,17 @@
 #include <cmath>
 #include <cstring>
 #include "error/expected_command.hpp"
+#include "error/hexidecimal_digit_expected.hpp"
 #include "error/invalid_character.hpp"
 #include "error/invalid_identifier.hpp"
 #include "error/misplaced_shebang.hpp"
+#include "error/multiple_separators_not_allowed.hpp"
+#include "error/separators_not_allowed_here.hpp"
+#include "error/unexpected_end_of_text.hpp"
+#include "error/unicode_value_out_of_range.hpp"
 #include "error/unterminated_multiline_comment.hpp"
 #include "error/unterminated_string_literal.hpp"
+#include "error/unterminated_unicode_escape_sequence.hpp"
 #include "token.hpp"
 
 using namespace tscc::lex;
@@ -1260,14 +1266,39 @@ void lexer::scan_string(tscc::lex::token& into) {
 			case '\r':
 			case '\n':
 				throw unterminated_string_literal(string_location);
-			case '\\':
+			case '\\': {
+				char32_t second{};
+				auto nnc = next_code_point(second);
+				if (nnc) {
+					if (second == '\r') {
+						char32_t third{};
+						auto nnnc = next_code_point(third);
+						if (nc && third == '\n') {
+							advance(nnc + nnnc);
+							gpos_.advance_line();
+							goto scan_next_char;
+						}
+
+						advance(nc + nnc);
+						goto scan_next_char;
+					}
+
+					if (second == '\n') {
+						advance(nnc);
+						gpos_.advance_line();
+						goto scan_next_char;
+					}
+				}
+
 				advance(scan_escape_sequence(first));
+			}
 		}
 
 		append_wbuffer(first);
+	scan_next_char:
 	}
 
-	into.emplace_token<tokens::constant_value_token>(string_location, wbuffer_);
+	into.emplace_token<tokens::constant_value_token>(string_location, wbuffer_, static_cast<char>(quote_end));
 }
 
 std::size_t lexer::scan_escape_sequence(char32_t& into, std::size_t skip) {
@@ -1276,49 +1307,75 @@ std::size_t lexer::scan_escape_sequence(char32_t& into, std::size_t skip) {
 		return 0;
 
 	if (into == 'u' || into == 'U') {
+		bool is_curly_braced = false;
+		char32_t check_curly;
+		auto cc = next_code_point(check_curly, skip + gc);
+		if (cc && check_curly == '{') {
+			gc += cc;
+			is_curly_braced = true;
+		}
+
 		char32_t ucfirst;
-		auto scanned = scan_unicode_escape(ucfirst, 4, false, false, gc + skip);
+		auto scanned = scan_unicode_digits(ucfirst, is_curly_braced ? 1 : 4, is_curly_braced, false, gc + skip);
 
 		if (!scanned) {
-			return gc;
+			return gc - is_curly_braced ? cc : 0;
+		}
+
+		if (is_curly_braced) {
+			cc = next_code_point(check_curly, skip + gc + scanned);
+			if (!cc) {
+				throw unexpected_end_of_text(location() + gc);
+			}
+
+			if (check_curly != '}') {
+				throw unterminated_unicode_escape_sequence(location() + gc);
+			}
+
+			into = ucfirst;
+			return gc + scanned + cc;
 		}
 
 		if ((ucfirst >> 11) != 0x1b) {
 			into = ucfirst;
-			return scanned;
+			return gc + scanned;
 		}
 
 		char32_t next;
-		auto nnc = next_code_point(next, scanned);
+		auto nnc = next_code_point(next, gc + skip + scanned);
 		if (!nnc || next != '\\') {
 			into = ucfirst;
-			return scanned;
+			return gc + scanned;
 		}
 
 		char32_t checku;
-		auto checkuc = next_code_point(checku, nnc + scanned);
+		auto checkuc = next_code_point(checku, gc + skip + scanned + nnc);
 		if (!checkuc || (checku != 'u' && checku != 'U')) {
 			into = ucfirst;
-			return scanned;
+			return gc + scanned;
 		}
 
-		char32_t ucsecond;
-		auto nscanned = scan_unicode_escape(ucsecond, 4, false, false,
-											checkuc + nnc + scanned);
-		if (nscanned && (ucsecond >> 10) == 0x37) {
-			into = (((ucfirst & 0x3ff) << 10) | (ucsecond & 0x3ff)) + 0x10000;
-			return nscanned;
+		try {
+			char32_t ucsecond;
+			auto nscanned = scan_unicode_digits(ucsecond, 4, false, false,
+												gc + skip + scanned + nnc + checkuc);
+			if (nscanned && (ucsecond >> 10) == 0x37) {
+				into = (((ucfirst & 0x3ff) << 10) | (ucsecond & 0x3ff)) + 0x10000;
+				return gc + scanned + nnc + checkuc + nscanned;
+			}
+		} catch (...) {
+			// ignore errors in the subsequent section at this scope
 		}
 
 		into = ucfirst;
-		return scanned;
+		return gc + scanned;
 	}
 
 	if (into == 'x' || into == 'X') {
 		// handle 1 byte hex identifier
 		char32_t hexfirst;
 		auto scanned =
-			scan_unicode_escape(hexfirst, 2, false, false, gc + skip);
+			scan_unicode_digits(hexfirst, 2, false, false, gc + skip);
 
 		if (!scanned) {
 			return gc + skip;
@@ -1715,13 +1772,86 @@ void lexer::append_wbuffer(char32_t ch) {
 	wbuffer_.push_back(ch);
 }
 
-std::size_t lexer::scan_unicode_escape(char32_t& into,
+std::size_t lexer::scan_unicode_digits(char32_t& into,
 									   std::size_t min_size,
 									   bool scan_as_many_as_possible,
 									   bool can_have_separators,
 									   std::size_t skip) {
-	// TODO this should throw if min_size is not met
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	char32_t ch{};
+	std::size_t total_skip = skip;
+	std::size_t hex_digits = 0;
+	bool prior_was_separator = false;
+	char32_t value = 0;
+
+	// Read hex digits until we have enough or hit a non-hex character
+	while (true) {
+		auto nc = next_code_point(ch, total_skip);
+		if (!nc) {
+			break;
+		}
+
+		// Skip optional separators if allowed
+		if (ch == '_') {
+			if (!can_have_separators) {
+				throw separators_not_allowed_here(location());
+			}
+
+			if (prior_was_separator) {
+				throw multiple_separators_not_allowed(location());
+			}
+
+			prior_was_separator = true;
+			total_skip += nc;
+			continue;
+		}
+
+		prior_was_separator = false;
+
+		// Check if we have a valid hex digit
+		if (!is_hex_digit(ch)) {
+			break;
+		}
+
+		// Convert hex digit to value
+		if (ch >= '0' && ch <= '9') {
+			value = (value << 4) | (ch - '0');
+		} else if (ch >= 'A' && ch <= 'F') {
+			value = (value << 4) | (ch - 'A' + 10);
+		} else if (ch >= 'a' && ch <= 'f') {
+			value = (value << 4) | (ch - 'a' + 10);
+		} else if (ch >= 0xff10 && ch <= 0xff19) {
+			value = (value << 4) | (ch - 0xff10);
+		} else if (ch >= 0xff21 && ch <= 0xff26) {
+			value = (value << 4) | (ch - 0xff21 + 10);
+		} else if (ch >= 0xff41 && ch <= 0xff46) {
+			value = (value << 4) | (ch - 0xff41 + 10);
+		}
+
+		hex_digits++;
+		total_skip += nc;
+
+		// If we have enough digits and aren't scanning for more, stop
+		if (hex_digits >= min_size && !scan_as_many_as_possible) {
+			break;
+		}
+	}
+
+	if (prior_was_separator) {
+		throw separators_not_allowed_here(location());
+	}
+
+	// If we didn't get enough hex digits, return 0 to indicate failure
+	if (hex_digits < min_size) {
+		throw hexidecimal_digit_expected(location() + total_skip);
+	}
+
+	// Validate the Unicode code point
+	if (value > 0x10FFFF) {
+		throw unicode_value_out_of_range(location());
+	}
+
+	into = value;
+	return total_skip - skip;
 }
 
 std::size_t lexer::scan_unicode_escape_into_wbuffer(
@@ -1729,7 +1859,7 @@ std::size_t lexer::scan_unicode_escape_into_wbuffer(
 	bool scan_as_many_as_possible,
 	bool can_have_separators) {
 	char32_t result;
-	auto scanned = scan_unicode_escape(
+	auto scanned = scan_unicode_digits(
 		result, min_size, scan_as_many_as_possible, can_have_separators);
 
 	assert(scanned);
@@ -2379,7 +2509,7 @@ bool lexer::scan(tscc::lex::token& into) {
 						if (ggs > 0) {
 							if (eqnext == U'=') {
 								char32_t eenext{};
-								auto gggs = next_code_point(eenext);
+								auto gggs = next_code_point(eenext, pos + gs + ggs);
 
 								if (gggs > 0 && eenext == U'=') {
 									scan_conflict_marker(into);
@@ -2457,7 +2587,7 @@ bool lexer::scan(tscc::lex::token& into) {
 					char32_t qnext{};
 					auto ggs = next_code_point(qnext, pos + gs);
 
-					if (next == U'.' && (ggs > 0) && !is_decimal_digit(qnext)) {
+					if (next == U'.' && (ggs == 0 || is_identifier_start(qnext) && !is_decimal_digit(qnext))) {
 						advance(pos + gs);
 						into.emplace_token<tokens::question_dot_token>(loc);
 						return true;
