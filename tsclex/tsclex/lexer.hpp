@@ -168,13 +168,19 @@ private:
 	std::size_t scan_binary_or_octal_number(long long& into, std::size_t base, std::size_t skip = 0);
 	bool scan_octal_token(token& into, bool throw_on_invalid = true);
 	void scan_decimal_token(token& into);
+	void scan_big_integer_token(token& into);
 	void scan_hex_token(token& into);
 	void scan_conflict_marker(token& into);
 	bool scan_jsx_token(token& into);
 	void append_wbuffer(char32_t ch);
 
+	std::size_t scan_hex_number(long long& into,
+									std::size_t min_size,
+									bool scan_as_many_as_possible,
+									bool can_have_separators,
+									std::size_t skip = 0);
 	std::size_t scan_decimal_number(long long& into, std::size_t skip = 0);
-	std::size_t scan_octal_number(long long& into, std::size_t skip = 0);
+	std::size_t scan_octal_number(long long& into, bool bail_on_decimal, std::size_t skip = 0);
 	std::size_t scan_binary_number(long long& into, std::size_t skip = 0);
 
 	// must scan one value or throw
@@ -182,11 +188,6 @@ private:
 												 bool scan_as_many_as_possible,
 												 bool can_have_separators);
 
-	std::size_t scan_unicode_digits(char32_t& into,
-									std::size_t min_size,
-									bool scan_as_many_as_possible,
-									bool can_have_separators,
-									std::size_t skip = 0);
 
 	// consider unicode and is identifier start
 	void scan_identifier(token& into, bool is_private = false);

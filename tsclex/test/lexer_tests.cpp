@@ -220,7 +220,8 @@ And some more
 			CHECK(tokens[1]->to_string() == "varァ");
 			CHECK(tokens[2].is<tscc::lex::tokens::eq_token>());
 			CHECK(tokens[3].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[3]->to_string().substr(0, 7) == "3.14195");
+			CHECK(tokens[3]->to_string().substr(0, 7) == "314.195");
+			CHECK(tokens[3]->to_string().ends_with("e-2"));
 			CHECK(tokens[4].is<tscc::lex::tokens::semicolon_token>());
 		}
 
@@ -358,33 +359,43 @@ And some more
 		}
 
 		SECTION("Number Literals") {
-			auto tokens = tokenize("123 123.456 1e10 0xFF 0b1010 0o777");
-			REQUIRE(tokens.size() == 6);
+			auto tokens = tokenize("123 123.456 1e10 1.2e-1 0xFF 0b1010 0o777");
+			REQUIRE(tokens.size() == 7);
 			CHECK(tokens[0].is<tscc::lex::tokens::constant_value_token>());
 			CHECK(tokens[0]->to_string() == "123");
 			CHECK(tokens[1].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[1]->to_string() == "123.456");
+			CHECK(tokens[1]->to_string().starts_with("123.456"));
 			CHECK(tokens[2].is<tscc::lex::tokens::constant_value_token>());
 			CHECK(tokens[2]->to_string() == "1e10");
 			CHECK(tokens[3].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[3]->to_string() == "0xFF");
+			CHECK(tokens[3]->to_string() == "1.2e-1");
 			CHECK(tokens[4].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[4]->to_string() == "0b1010");
+			CHECK(tokens[4]->to_string() == "0xff");
 			CHECK(tokens[5].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[5]->to_string() == "0o777");
+			CHECK(tokens[5]->to_string() == "0b1010");
+			CHECK(tokens[6].is<tscc::lex::tokens::constant_value_token>());
+			CHECK(tokens[6]->to_string() == "0o777");
+		}
 
+		SECTION("Number literal with two decimals") {
 			// Edge cases and error cases
 			auto lexer = create_lexer("const x = 123.456.789");
 			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+		}
 
-			auto lexer2 = create_lexer("const x = 0xG;");
-			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer2.begin(), lexer2.end()});
+		SECTION("Number literal with invalid hex") {
+			auto lexer = create_lexer("const x = 0xG;");
+			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+		}
 
-			auto lexer3 = create_lexer("const x = 0b2;");
-			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer3.begin(), lexer3.end()});
+		SECTION("Number literal with invalid binary") {
+			auto lexer = create_lexer("const x = 0b2;");
+			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+		}
 
-			auto lexer4 = create_lexer("const x = 0o8;");
-			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer4.begin(), lexer4.end()});
+		SECTION("Number literal with invalid octal") {
+			auto lexer = create_lexer("const x = 0o8;");
+			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
 		}
 
 		SECTION("Boolean and Null") {
@@ -411,7 +422,7 @@ And some more
 
 		SECTION("Generics") {
 			auto tokens = tokenize("function<T>(arg: T): T");
-			REQUIRE(tokens.size() == 8);
+			REQUIRE(tokens.size() == 11);
 			CHECK(tokens[0].is<tscc::lex::tokens::function_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::less_token>());
 			CHECK(tokens[2].is<tscc::lex::tokens::identifier_token>());

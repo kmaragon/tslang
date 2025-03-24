@@ -73,7 +73,10 @@ std::optional<long double> constant_value_token::decimal_value() const noexcept 
 	if (!std::holds_alternative<float_data>(value_))
 		return std::nullopt;
 
-	return std::get<float_data>(value_).value;
+	auto &fd = std::get<float_data>(value_);
+	if (fd.scientific_exponent)
+		return fd.value * std::pow(1.0l, fd.scientific_exponent->exponent);
+	return fd.value;
 }
 
 std::string constant_value_token::to_string() const {
@@ -90,10 +93,21 @@ std::string constant_value_token::to_string() const {
 		str.str(std::string{});
 
 		switch (d.base) {
-			case integer_base::binary:
-				str << "0b" << std::bitset<sizeof(d.value) * 8>(d.value);
+			case integer_base::binary: {
+				auto bstr =  std::bitset<sizeof(d.value) * 8>(d.value).to_string();
+				auto f1 = bstr.find('1');
+				if (f1 == std::string::npos) {
+					str << "0b0";
+				} else {
+					std::string_view view = bstr;
+					str << "0b" << view.substr(f1);
+				}
+
+				break;
+			}
 			case integer_base::octal:
 				str << "0o" << std::oct << d.value;
+				break;
 			case integer_base::hex:
 				str << std::hex << "0x" << d.value;
 				break;
@@ -112,9 +126,7 @@ std::string constant_value_token::to_string() const {
 		constexpr auto precision =
 				std::numeric_limits<decltype(d.value)>::max_digits10 + 2;
 		if (d.scientific_exponent) {
-			auto value =
-					d.value / std::pow(10.0l, d.scientific_exponent->exponent);
-			str << std::setprecision(precision - 3) << value
+			str << std::setprecision(precision - 3) << d.value
 					<< (d.scientific_exponent->upper_case_e ? 'E' : 'e')
 					<< d.scientific_exponent->exponent;
 		} else {
