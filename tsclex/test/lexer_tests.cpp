@@ -226,7 +226,7 @@ And some more
 
 		SECTION("Four-byte sequence") {
 			auto source = std::make_shared<fake_source>(__FILE__);
-			std::stringstream file{R"( const unistr = "String with native ?"; )"};
+			std::stringstream file{R"( const unistr = "String with native 😀"; )"};
 			tscc::lex::lexer subject(file, source);
 
 			std::vector<tscc::lex::token> tokens{subject.begin(),
@@ -342,7 +342,7 @@ And some more
 			CHECK(tokens[2].is<tscc::lex::tokens::eq_token>());
 			REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
 			auto constant_value = static_cast<tscc::lex::tokens::constant_value_token&>(*tokens[3]);
-			CHECK(constant_value.string_value() == U"?");
+			CHECK(constant_value.string_value() == U"😀");
 			CHECK(tokens[4].is<tscc::lex::tokens::semicolon_token>());
 		}
 
