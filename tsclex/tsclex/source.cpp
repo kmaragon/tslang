@@ -17,3 +17,16 @@
  */
 
 #include "source.hpp"
+
+using namespace tscc::lex;
+
+ts_language_variant source::language_variant() const {
+	auto n = name();
+	if (n.ends_with(".tsx")) {
+		return ts_language_variant::tsx;
+	} else if (n.ends_with(".jsx")) {
+		return ts_language_variant::jsx;
+	}
+
+	return ts_language_variant::ts;
+}

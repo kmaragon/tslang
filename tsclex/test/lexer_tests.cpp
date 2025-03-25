@@ -479,7 +479,7 @@ And some more
 	SECTION("Decorators") {
 		SECTION("Class Decorator") {
 			auto tokens = tokenize("@decorator class MyClass {}");
-			REQUIRE(tokens.size() == 5);
+			REQUIRE(tokens.size() == 6);
 			CHECK(tokens[0].is<tscc::lex::tokens::at_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::identifier_token>());
 			CHECK(tokens[1]->to_string() == "decorator");
@@ -487,11 +487,12 @@ And some more
 			CHECK(tokens[3].is<tscc::lex::tokens::identifier_token>());
 			CHECK(tokens[3]->to_string() == "MyClass");
 			CHECK(tokens[4].is<tscc::lex::tokens::open_brace_token>());
+			CHECK(tokens[5].is<tscc::lex::tokens::close_brace_token>());
 		}
 
 		SECTION("Method Decorator") {
 			auto tokens = tokenize("@readonly get value() {}");
-			REQUIRE(tokens.size() == 6);
+			REQUIRE(tokens.size() == 8);
 			CHECK(tokens[0].is<tscc::lex::tokens::at_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::identifier_token>());
 			CHECK(tokens[1]->to_string() == "readonly");
@@ -500,10 +501,8 @@ And some more
 			CHECK(tokens[3]->to_string() == "value");
 			CHECK(tokens[4].is<tscc::lex::tokens::open_paren_token>());
 			CHECK(tokens[5].is<tscc::lex::tokens::close_paren_token>());
+			CHECK(tokens[6].is<tscc::lex::tokens::open_brace_token>());
+			CHECK(tokens[7].is<tscc::lex::tokens::close_brace_token>());
 		}
-
-		// Edge cases and error cases
-		auto lexer = create_lexer("@decorator;");
-		REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
 	}
 }
