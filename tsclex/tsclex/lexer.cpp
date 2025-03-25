@@ -644,7 +644,8 @@ lexer::lexer(std::istream& stream,
 	  buffer_offset_(0),
 	  end_(this),
 	  pnewline_(false),
-	  vers_(version) {
+	  vers_(version),
+	  force_identifier_(false) {
 	wbuffer_.reserve(buffer_size);
 }
 
@@ -2012,10 +2013,12 @@ void lexer::scan_identifier(token& into, bool is_private) {
 		throw invalid_identifier(identifier_start);
 	}
 
-	auto kit = keyword_lookup.find(wbuffer_);
-	if (kit != keyword_lookup.end()) {
-		kit->second(into, identifier_start);
-		return;
+	if (!force_identifier_) {
+		auto kit = keyword_lookup.find(wbuffer_);
+		if (kit != keyword_lookup.end()) {
+			kit->second(into, identifier_start);
+			return;
+		}
 	}
 
 	into.emplace_token<tokens::identifier_token>(identifier_start,
@@ -2169,6 +2172,32 @@ void lexer::scan_line_into_wbuffer(bool trim) {
 }
 
 bool lexer::scan(token& into) {
+	// automatically reset one iteration flags after call
+	struct reset_one_iteration_values {
+		lexer* lexer_;
+		reset_one_iteration_values(lexer* l) : lexer_(l) {
+		}
+
+		void skip() {
+			lexer_ = nullptr;
+		}
+
+		void force_identifier() {
+			force_identifier_ = true;
+		}
+
+		~reset_one_iteration_values() {
+			if (lexer_ != nullptr) {
+				lexer_->force_identifier_ = force_identifier_;
+			}
+		}
+
+	private:
+		bool force_identifier_ = false;
+	};
+
+	reset_one_iteration_values resetter{this};
+
 	while (true) {
 		char32_t ch{};
 		auto pos = next_code_point(ch);
@@ -2242,6 +2271,7 @@ bool lexer::scan(token& into) {
 			case 0x205f:  // medium mathematical space
 			case 0x3000:  // ideographic space
 			case 0xfeff:  // zero-width nbsp / bom
+				resetter.skip();
 				advance(pos);
 				break;
 			case U'!': {
@@ -2787,6 +2817,8 @@ bool lexer::scan(token& into) {
 			case U'@':
 				into.emplace_token<tokens::at_token>(location());
 				advance(pos);
+
+				resetter.force_identifier();
 				return true;
 			case U'#': {
 				char32_t next{};

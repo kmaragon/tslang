@@ -216,6 +216,9 @@ private:
 	const iterator end_;
 	bool pnewline_;
 
+	// force identifier rather than keyword after special token
+	bool force_identifier_;
+
 	const language_version vers_;
 };
 
