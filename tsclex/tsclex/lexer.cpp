@@ -1560,10 +1560,6 @@ void lexer::scan_binary_token(token& into) {
 		loc, number, tokens::integer_base::binary);
 }
 
-std::size_t lexer::scan_decimal_number(long long& into, std::size_t skip) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
-}
-
 std::size_t lexer::scan_octal_number(long long& into,
 									 bool bail_on_decimal,
 									 std::size_t skip) {
@@ -1636,9 +1632,6 @@ std::size_t lexer::scan_binary_or_octal_number(long long& into,
 											   std::size_t skip) {
 	auto number_location = location();
 
-	bool separator_allowed = false;
-	bool got_separator = false;
-
 	std::size_t nc = 0;
 	std::size_t taken = 0;
 
@@ -1664,6 +1657,7 @@ void lexer::scan_decimal_token(token& into) {
 
 	long long number_part = 0;
 	std::size_t nc = 0;
+	bool last_was_separator = false;
 
 	char32_t first{};
 	while (true) {
@@ -1671,22 +1665,34 @@ void lexer::scan_decimal_token(token& into) {
 		if (!nc) {
 			into.emplace_token<tokens::constant_value_token>(
 				number_location, number_part, tokens::integer_base::decimal);
-			return;
+			break;
 		}
 
 		if (!is_decimal_digit(first)) {
 			// separators are allowed here
 			if (first == U'_') {
+				if (last_was_separator) {
+					throw multiple_separators_not_allowed(number_location);
+				}
+
+				last_was_separator = true;
+				advance(nc);
 				continue;
 			}
+
 			break;
 		}
 
 		advance(nc);
 		number_part = (number_part * 10) + decimal_value(first);
+		last_was_separator = false;
 	}
 
-	if (nc && first == '.') {
+	if (last_was_separator) {
+		throw separators_not_allowed_here{location()};
+	}
+
+	if (nc && first == U'.') {
 		advance(nc);
 
 		// parse as a decimal
@@ -1696,8 +1702,13 @@ void lexer::scan_decimal_token(token& into) {
 		while (true) {
 			nc = next_code_point(first);
 			if (!nc || !is_decimal_digit(first)) {
-				if (first == U'.') {
-					throw invalid_identifier(number_location);
+				if (nc) {
+					if (first == U'.') {
+						throw invalid_identifier(number_location);
+					}
+					if (first == U'_') {
+						throw separators_not_allowed_here{location()};
+					}
 				}
 				break;
 			}
@@ -1721,9 +1732,11 @@ void lexer::scan_decimal_token(token& into) {
 			long long exponent = 1;
 
 			switch (first) {
-				case '-':
+				case U'_':
+					throw separators_not_allowed_here{location()};
+				case U'-':
 					exponent = -1;
-				case '+':
+				case U'+':
 					advance(nc);
 
 					nc = next_code_point(first);
@@ -1746,6 +1759,10 @@ void lexer::scan_decimal_token(token& into) {
 			while (true) {
 				nc = next_code_point(first);
 				if (!nc || !is_decimal_digit(first)) {
+					if (nc && first == U'_') {
+						throw separators_not_allowed_here{location()};
+					}
+
 					break;
 				}
 
@@ -1800,6 +1817,10 @@ void lexer::scan_decimal_token(token& into) {
 		while (true) {
 			nc = next_code_point(first);
 			if (!nc || !is_decimal_digit(first)) {
+				if (nc && first == U'_') {
+					throw separators_not_allowed_here{location()};
+				}
+
 				break;
 			}
 
@@ -2175,16 +2196,11 @@ bool lexer::scan(token& into) {
 	// automatically reset one iteration flags after call
 	struct reset_one_iteration_values {
 		lexer* lexer_;
-		reset_one_iteration_values(lexer* l) : lexer_(l) {
-		}
+		reset_one_iteration_values(lexer* l) : lexer_(l) {}
 
-		void skip() {
-			lexer_ = nullptr;
-		}
+		void skip() { lexer_ = nullptr; }
 
-		void force_identifier() {
-			force_identifier_ = true;
-		}
+		void force_identifier() { force_identifier_ = true; }
 
 		~reset_one_iteration_values() {
 			if (lexer_ != nullptr) {

@@ -17,17 +17,16 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
+#include <sstream>
 #include <tsclex/lexer.hpp>
 #include <tsclex/token.hpp>
 #include "fake_source.hpp"
-#include <sstream>
 
 #ifndef __FILE_NAME__
-#  define __FILE_NAME__ __FILE__
+#define __FILE_NAME__ __FILE__
 #endif
 
 TEST_CASE("Lexer", "[lexer]") {
-
 	std::stringstream file;
 	auto source = std::make_shared<fake_source>(__FILE__);
 
@@ -45,23 +44,13 @@ TEST_CASE("Lexer", "[lexer]") {
 
 	SECTION("Shebang") {
 		SECTION("Single line shebang") {
-			auto source = std::make_shared<fake_source>(__FILE__);
-			std::stringstream file{"#!  /bin/bash"};
-			tscc::lex::lexer subject(file, source);
-
-			std::vector<tscc::lex::token> tokens{subject.begin(),
-												 subject.end()};
+			auto tokens = tokenize("#!  /bin/bash");
 			REQUIRE(tokens.size() == 1);
 			CHECK(tokens[0]->to_string() == "#!/bin/bash");
 		}
 
 		SECTION("Single line shebang with spaces and newline") {
-			auto source = std::make_shared<fake_source>(__FILE__);
-			std::stringstream file{"#!  /bin/bash   \n"};
-			tscc::lex::lexer subject(file, source);
-
-			std::vector<tscc::lex::token> tokens{subject.begin(),
-												 subject.end()};
+			auto tokens = tokenize("#!  /bin/bash   \n");
 			REQUIRE(tokens.size() == 1);
 			CHECK(tokens[0]->to_string() == "#!/bin/bash");
 		}
@@ -69,23 +58,13 @@ TEST_CASE("Lexer", "[lexer]") {
 
 	SECTION("Single line comment") {
 		SECTION("Single line comment at EOF") {
-			auto source = std::make_shared<fake_source>(__FILE__);
-			std::stringstream file{"  // this is a comment"};
-			tscc::lex::lexer subject(file, source);
-
-			std::vector<tscc::lex::token> tokens{subject.begin(),
-												 subject.end()};
+			auto tokens = tokenize("  // this is a comment");
 			REQUIRE(tokens.size() == 1);
 			CHECK(tokens[0]->to_string() == "//this is a comment");
 		}
 
 		SECTION("Single line comment with spaces and newline") {
-			auto source = std::make_shared<fake_source>(__FILE__);
-			std::stringstream file{"  //~ this is a comment \t \n  "};
-			tscc::lex::lexer subject(file, source);
-
-			std::vector<tscc::lex::token> tokens{subject.begin(),
-												 subject.end()};
+			auto tokens = tokenize("  //~ this is a comment \t \n  ");
 			REQUIRE(tokens.size() == 1);
 			CHECK(tokens[0]->to_string() == "//~ this is a comment");
 		}
@@ -93,8 +72,7 @@ TEST_CASE("Lexer", "[lexer]") {
 
 	SECTION("Known Keywords") {
 		SECTION("Class Declaration") {
-			auto source = std::make_shared<fake_source>(__FILE__);
-			std::stringstream file{R"(
+			auto tokens = tokenize(R"(
 class MyClass extends MyBase implements IMyInterface
 {
     constructor()
@@ -105,11 +83,7 @@ class MyClass extends MyBase implements IMyInterface
     {
     }
 }
-)"};
-			tscc::lex::lexer subject(file, source);
-
-			std::vector<tscc::lex::token> tokens{subject.begin(),
-												 subject.end()};
+)");
 			REQUIRE(tokens.size() == 37);
 			CHECK(tokens[0].is<tscc::lex::tokens::newline_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::class_token>());
@@ -159,44 +133,28 @@ class MyClass extends MyBase implements IMyInterface
 
 	SECTION("Multi line comment") {
 		SECTION("Unterminated Multi-line comment") {
-			auto source = std::make_shared<fake_source>(__FILE__);
-			std::stringstream file{"  /* this is a comment"};
-			tscc::lex::lexer subject(file, source);
-
-			auto should_throw = [&]() {
-				return std::vector<tscc::lex::token>{subject.begin(),
-													 subject.end()};
-			};
-			REQUIRE_THROWS(should_throw());
+			auto lexer = create_lexer("  /* this is a comment");
+			REQUIRE_THROWS(
+				std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
 		}
 
 		SECTION("Multi line non-jsdoc comment") {
-			auto source = std::make_shared<fake_source>(__FILE__);
-			std::stringstream file{R"(/*
+			auto tokens = tokenize(R"(/*
 this is a comment
 And some more
 */
-)"};
-			tscc::lex::lexer subject(file, source);
-
-			std::vector<tscc::lex::token> tokens{subject.begin(),
-												 subject.end()};
+)");
 			REQUIRE(tokens.size() == 2);
 			CHECK(tokens[0].is<tscc::lex::tokens::multiline_comment_token>());
 			CHECK(tokens[0]->to_string() ==
-					"/*\nthis is a comment\nAnd some more\n*/");
+				  "/*\nthis is a comment\nAnd some more\n*/");
 			CHECK(tokens[1].is<tscc::lex::tokens::newline_token>());
 		}
 	}
 
 	SECTION("Native UTF-8 Handling") {
 		SECTION("Two-byte sequence") {
-			auto source = std::make_shared<fake_source>(__FILE__);
-			std::stringstream file{R"( const varµ = 12; )"};
-			tscc::lex::lexer subject(file, source);
-
-			std::vector<tscc::lex::token> tokens{subject.begin(),
-												 subject.end()};
+			auto tokens = tokenize(R"( const varµ = 12; )");
 			REQUIRE(tokens.size() == 5);
 			CHECK(tokens[0].is<tscc::lex::tokens::const_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::identifier_token>());
@@ -208,12 +166,7 @@ And some more
 		}
 
 		SECTION("Three-byte sequence") {
-			auto source = std::make_shared<fake_source>(__FILE__);
-			std::stringstream file{R"( const varァ = 314.195e-2; )"};
-			tscc::lex::lexer subject(file, source);
-
-			std::vector<tscc::lex::token> tokens{subject.begin(),
-												 subject.end()};
+			auto tokens = tokenize(R"( const varァ = 314.195e-2; )");
 			REQUIRE(tokens.size() == 5);
 			CHECK(tokens[0].is<tscc::lex::tokens::const_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::identifier_token>());
@@ -226,19 +179,16 @@ And some more
 		}
 
 		SECTION("Four-byte sequence") {
-			auto source = std::make_shared<fake_source>(__FILE__);
-			std::stringstream file{R"( const unistr = "String with native 😀"; )"};
-			tscc::lex::lexer subject(file, source);
-
-			std::vector<tscc::lex::token> tokens{subject.begin(),
-												 subject.end()};
+			auto tokens =
+				tokenize(R"( const unistr = "String with native 😀"; )");
 			REQUIRE(tokens.size() == 5);
 			CHECK(tokens[0].is<tscc::lex::tokens::const_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::identifier_token>());
 			CHECK(tokens[1]->to_string() == "unistr");
 			CHECK(tokens[2].is<tscc::lex::tokens::eq_token>());
 			CHECK(tokens[3].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[3]->to_string() == "\"String with native \\ud83d\\ude00\"");
+			CHECK(tokens[3]->to_string() ==
+				  "\"String with native \\ud83d\\ude00\"");
 			CHECK(tokens[4].is<tscc::lex::tokens::semicolon_token>());
 		}
 	}
@@ -307,7 +257,8 @@ And some more
 		SECTION("Unterminated string literal") {
 			// Edge cases and error cases
 			auto lexer = create_lexer("const x = 'unterminated");
-			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+			REQUIRE_THROWS(
+				std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
 		}
 
 		SECTION("Escaped newline in string literal") {
@@ -342,60 +293,415 @@ And some more
 			CHECK(tokens[1]->to_string() == "x");
 			CHECK(tokens[2].is<tscc::lex::tokens::eq_token>());
 			REQUIRE(tokens[3].is<tscc::lex::tokens::constant_value_token>());
-			auto constant_value = static_cast<tscc::lex::tokens::constant_value_token&>(*tokens[3]);
+			auto constant_value =
+				static_cast<tscc::lex::tokens::constant_value_token&>(
+					*tokens[3]);
 			CHECK(constant_value.string_value() == U"😀");
 			CHECK(tokens[4].is<tscc::lex::tokens::semicolon_token>());
 		}
 
 		SECTION("Bad hex string literal") {
 			auto lexer = create_lexer("const x = '\\x';");
-			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+			REQUIRE_THROWS(
+				std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
 		}
 
-		SECTION("Bad unicode escape string literal")
-		{
+		SECTION("Bad unicode escape string literal") {
 			auto lexer = create_lexer("const x = '\\u{110000}';");
-			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+			REQUIRE_THROWS(
+				std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
 		}
 
 		SECTION("Number Literals") {
-			auto tokens = tokenize("123 123.456 1e10 1.2e-1 0xFF 0b1010 0o777");
-			REQUIRE(tokens.size() == 7);
-			CHECK(tokens[0].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[0]->to_string() == "123");
-			CHECK(tokens[1].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[1]->to_string().starts_with("123.456"));
-			CHECK(tokens[2].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[2]->to_string() == "1e10");
-			CHECK(tokens[3].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[3]->to_string() == "1.2e-1");
-			CHECK(tokens[4].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[4]->to_string() == "0xff");
-			CHECK(tokens[5].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[5]->to_string() == "0b1010");
-			CHECK(tokens[6].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[6]->to_string() == "0o777");
-		}
+			SECTION("Decimal Numbers") {
+				SECTION("Basic Integers") {
+					auto tokens = tokenize("123 456 789");
+					REQUIRE(tokens.size() == 3);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[0]->to_string() == "123");
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "456");
+					CHECK(tokens[2]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[2]->to_string() == "789");
+				}
 
-		SECTION("Number literal with two decimals") {
-			// Edge cases and error cases
-			auto lexer = create_lexer("const x = 123.456.789");
-			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
-		}
+				SECTION("Negative Integers") {
+					auto tokens = tokenize("-123 -456 -789");
+					REQUIRE(tokens.size() == 6);
+					CHECK(tokens[0].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "123");
+					CHECK(tokens[2].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[3]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[3]->to_string() == "456");
+					CHECK(tokens[4].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[5]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[5]->to_string() == "789");
+				}
 
-		SECTION("Number literal with invalid hex") {
-			auto lexer = create_lexer("const x = 0xG;");
-			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
-		}
+				SECTION("Decimal Points") {
+					auto tokens = tokenize("123.456 0.789 1.0");
+					REQUIRE(tokens.size() == 3);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(strtod(tokens[0]->to_string().c_str(), nullptr) ==
+						  123.456);
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(strtod(tokens[1]->to_string().c_str(), nullptr) ==
+						  0.789);
+					CHECK(tokens[2]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK((tokens[2]->to_string() == "1" ||
+						   tokens[2]->to_string().starts_with("1.0")));
+				}
 
-		SECTION("Number literal with invalid binary") {
-			auto lexer = create_lexer("const x = 0b2;");
-			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
-		}
+				SECTION("Negative Decimal Points") {
+					auto tokens = tokenize("-123.456 -0.789 -1.0");
+					REQUIRE(tokens.size() == 6);
+					CHECK(tokens[0].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(strtod(tokens[1]->to_string().c_str(), nullptr) ==
+						  123.456);
+					CHECK(tokens[2].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[3]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(strtod(tokens[3]->to_string().c_str(), nullptr) ==
+						  0.789);
+					CHECK(tokens[4].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[5]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK((tokens[5]->to_string() == "1" ||
+						   tokens[5]->to_string().starts_with("1.0")));
+				}
 
-		SECTION("Number literal with invalid octal") {
-			auto lexer = create_lexer("const x = 0o8;");
-			REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+				SECTION("Scientific Notation") {
+					auto tokens = tokenize("1e10 1.2e-1 0.5e+2");
+					REQUIRE(tokens.size() == 3);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[0]->to_string() == "1e10");
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "1.2e-1");
+					CHECK(tokens[2]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[2]->to_string() == "0.5e2");
+				}
+
+				SECTION("Negative Scientific Notation") {
+					auto tokens = tokenize("-1e10 -1.2e-1 -0.5e+2");
+					REQUIRE(tokens.size() == 6);
+					CHECK(tokens[0].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "1e10");
+					CHECK(tokens[2].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[3]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[3]->to_string() == "1.2e-1");
+					CHECK(tokens[4].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[5]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[5]->to_string() == "0.5e2");
+				}
+
+				SECTION("Edge Cases") {
+					auto tokens = tokenize(".123 123. 0.");
+					REQUIRE(tokens.size() == 3);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(strtod(tokens[0]->to_string().c_str(), nullptr) ==
+						  0.123);
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "123");
+					CHECK(tokens[2]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[2]->to_string() == "0");
+				}
+
+				SECTION("Negative Edge Cases") {
+					auto tokens = tokenize("-.123 -123. -0.");
+					REQUIRE(tokens.size() == 6);
+					CHECK(tokens[0].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(strtod(tokens[1]->to_string().c_str(), nullptr) ==
+						  0.123);
+					CHECK(tokens[2].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[3]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[3]->to_string() == "123");
+					CHECK(tokens[4].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[5]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[5]->to_string() == "0");
+				}
+
+				SECTION("Decimal with Separators") {
+					auto tokens = tokenize("1_234 1_234.567 1.2e4");
+					REQUIRE(tokens.size() == 3);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[0]->to_string() == "1234");
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(strtod(tokens[1]->to_string().c_str(), nullptr) ==
+						  1234.567);
+					CHECK(tokens[2]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[2]->to_string() == "1.2e4");
+				}
+
+				SECTION("Negative Decimal with Separators") {
+					auto tokens = tokenize("-1_234 -1_234.567 -1.2e4");
+					REQUIRE(tokens.size() == 6);
+					CHECK(tokens[0].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "1234");
+					CHECK(tokens[2].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[3]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(strtod(tokens[3]->to_string().c_str(), nullptr) ==
+						  1234.567);
+					CHECK(tokens[4].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[5]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[5]->to_string() == "1.2e4");
+				}
+
+				SECTION("Invalid Decimal with Multiple Decimal Points") {
+					auto lexer = create_lexer("123.456.789");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Decimal with Incomplete Scientific Notation") {
+					auto lexer = create_lexer("1e");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION(
+					"Invalid Decimal with Incomplete Scientific Notation "
+					"Exponent") {
+					auto lexer = create_lexer("1e+");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Decimal with Double Separator") {
+					auto lexer = create_lexer("1__2");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Decimal with Separator at End") {
+					auto lexer = create_lexer("1_2_");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Decimal with Separator at End of Number") {
+					auto lexer = create_lexer("123_");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Decimal with Separator After Decimal Point") {
+					auto lexer = create_lexer("1.2_3");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Decimal with Separator in Exponent") {
+					auto lexer = create_lexer("1.2e1_0");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION(
+					"Invalid Decimal with Separator Adjacent to Decimal "
+					"Point") {
+					auto lexer = create_lexer("1_.3");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+			}
+
+			SECTION("Binary Numbers") {
+				SECTION("Valid Binary") {
+					auto tokens = tokenize("0b1010 0B1111 0b0000");
+					REQUIRE(tokens.size() == 3);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[0]->to_string() == "0b1010");
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "0b1111");
+					CHECK(tokens[2]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[2]->to_string() == "0b0");
+				}
+
+				SECTION("Negative Binary") {
+					auto tokens = tokenize("-0b1010 -0B1111 -0b0000");
+					REQUIRE(tokens.size() == 6);
+					CHECK(tokens[0].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "0b1010");
+					CHECK(tokens[2].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[3]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[3]->to_string() == "0b1111");
+					CHECK(tokens[4].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[5]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[5]->to_string() == "0b0");
+				}
+
+				SECTION("Invalid Binary with Non-Binary Digit") {
+					auto lexer = create_lexer("0b2");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Binary with Missing Digits") {
+					auto lexer = create_lexer("0b");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+			}
+
+			SECTION("Octal Numbers") {
+				SECTION("Valid Octal") {
+					auto tokens = tokenize("0o777 0O123 0o0");
+					REQUIRE(tokens.size() == 3);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[0]->to_string() == "0o777");
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "0o123");
+					CHECK(tokens[2]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[2]->to_string() == "0o0");
+				}
+
+				SECTION("Negative Octal") {
+					auto tokens = tokenize("-0o777 -0O123 -0o0");
+					REQUIRE(tokens.size() == 6);
+					CHECK(tokens[0].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "0o777");
+					CHECK(tokens[2].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[3]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[3]->to_string() == "0o123");
+					CHECK(tokens[4].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[5]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[5]->to_string() == "0o0");
+				}
+
+				SECTION("Invalid Octal with Non-Octal Digit") {
+					auto lexer = create_lexer("0o8");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Octal with Missing Digits") {
+					auto lexer = create_lexer("0o");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+			}
+
+			SECTION("Hexadecimal Numbers") {
+				SECTION("Valid Hex") {
+					auto tokens = tokenize("0xFF 0x123 0X0");
+					REQUIRE(tokens.size() == 3);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[0]->to_string() == "0xff");
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "0x123");
+					CHECK(tokens[2]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[2]->to_string() == "0x0");
+				}
+
+				SECTION("Negative Hex") {
+					auto tokens = tokenize("-0xFF -0x123 -0X0");
+					REQUIRE(tokens.size() == 6);
+					CHECK(tokens[0].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "0xff");
+					CHECK(tokens[2].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[3]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[3]->to_string() == "0x123");
+					CHECK(tokens[4].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[5]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[5]->to_string() == "0x0");
+				}
+
+				SECTION("Hex with Separators") {
+					auto tokens = tokenize("0xF_F 0X1_2_3");
+					REQUIRE(tokens.size() == 2);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[0]->to_string() == "0xff");
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "0x123");
+				}
+
+				SECTION("Negative Hex with Separators") {
+					auto tokens = tokenize("-0xF_F -0X1_2_3");
+					REQUIRE(tokens.size() == 4);
+					CHECK(tokens[0].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "0xff");
+					CHECK(tokens[2].is<tscc::lex::tokens::minus_token>());
+					CHECK(tokens[3]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[3]->to_string() == "0x123");
+				}
+
+				SECTION("Invalid Hex with Non-Hex Digit") {
+					auto lexer = create_lexer("0xG");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Hex with Double Separator") {
+					auto lexer = create_lexer("0xF__F");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Hex with Missing Digits") {
+					auto lexer = create_lexer("0x");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+			}
 		}
 
 		SECTION("Boolean and Null") {
@@ -408,7 +714,7 @@ And some more
 		}
 	}
 
-	SECTION("TypeScript Specific") {
+	SECTION("TypeScript Extensions") {
 		SECTION("Type Annotations") {
 			auto tokens = tokenize("let x: string;");
 			REQUIRE(tokens.size() == 5);
@@ -434,6 +740,63 @@ And some more
 			CHECK(tokens[6].is<tscc::lex::tokens::colon_token>());
 			CHECK(tokens[7].is<tscc::lex::tokens::identifier_token>());
 			CHECK(tokens[7]->to_string() == "T");
+		}
+	}
+
+	SECTION("Lambdas") {
+		SECTION("One parameter lambdas") {
+			auto tokens = tokenize("let k = values.map(v => v.a);");
+			REQUIRE(tokens.size() == 14);
+			CHECK(tokens[0].is<tscc::lex::tokens::let_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[1]->to_string() == "k");
+			CHECK(tokens[2].is<tscc::lex::tokens::eq_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[3]->to_string() == "values");
+			CHECK(tokens[4].is<tscc::lex::tokens::dot_token>());
+			CHECK(tokens[5].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[5]->to_string() == "map");
+			CHECK(tokens[6].is<tscc::lex::tokens::open_paren_token>());
+			CHECK(tokens[7].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[7]->to_string() == "v");
+			CHECK(tokens[8].is<tscc::lex::tokens::eq_greater_token>());
+			CHECK(tokens[9].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[9]->to_string() == "v");
+			CHECK(tokens[10].is<tscc::lex::tokens::dot_token>());
+			CHECK(tokens[11].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[11]->to_string() == "a");
+			CHECK(tokens[12].is<tscc::lex::tokens::close_paren_token>());
+			CHECK(tokens[13].is<tscc::lex::tokens::semicolon_token>());
+		}
+
+		SECTION("two parameter lambdas") {
+			auto tokens = tokenize("let k = enjoin((v, b) => v.a + b);");
+			REQUIRE(tokens.size() == 18);
+			CHECK(tokens[0].is<tscc::lex::tokens::let_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[1]->to_string() == "k");
+			CHECK(tokens[2].is<tscc::lex::tokens::eq_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[3]->to_string() == "enjoin");
+			CHECK(tokens[4].is<tscc::lex::tokens::open_paren_token>());
+			CHECK(tokens[5].is<tscc::lex::tokens::open_paren_token>());
+			CHECK(tokens[6].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[6]->to_string() == "v");
+			CHECK(tokens[7].is<tscc::lex::tokens::comma_token>());
+			CHECK(tokens[8].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[8]->to_string() == "b");
+			CHECK(tokens[9].is<tscc::lex::tokens::close_paren_token>());
+			CHECK(tokens[10].is<tscc::lex::tokens::eq_greater_token>());
+			CHECK(tokens[11].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[11]->to_string() == "v");
+			CHECK(tokens[12].is<tscc::lex::tokens::dot_token>());
+			CHECK(tokens[13].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[13]->to_string() == "a");
+			CHECK(tokens[14].is<tscc::lex::tokens::plus_token>());
+			CHECK(tokens[15].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[15]->to_string() == "b");
+			CHECK(tokens[16].is<tscc::lex::tokens::close_paren_token>());
+			CHECK(tokens[17].is<tscc::lex::tokens::semicolon_token>());
 		}
 	}
 
@@ -473,7 +836,8 @@ And some more
 
 		// Edge cases and error cases
 		auto lexer = create_lexer("const x = `${");
-		REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+		REQUIRE_THROWS(
+			std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
 	}
 
 	SECTION("Decorators") {
@@ -503,6 +867,94 @@ And some more
 			CHECK(tokens[5].is<tscc::lex::tokens::close_paren_token>());
 			CHECK(tokens[6].is<tscc::lex::tokens::open_brace_token>());
 			CHECK(tokens[7].is<tscc::lex::tokens::close_brace_token>());
+		}
+	}
+
+	SECTION("Keywords") {
+		SECTION("Access Modifiers") {
+			auto tokens = tokenize("public private protected");
+			REQUIRE(tokens.size() == 3);
+			CHECK(tokens[0].is<tscc::lex::tokens::public_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::private_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::protected_token>());
+		}
+
+		SECTION("Type Keywords") {
+			auto tokens =
+				tokenize("string number boolean any void null undefined");
+			REQUIRE(tokens.size() == 7);
+			CHECK(tokens[0].is<tscc::lex::tokens::string_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::number_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::boolean_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::any_token>());
+			CHECK(tokens[4].is<tscc::lex::tokens::void_token>());
+			CHECK(tokens[5].is<tscc::lex::tokens::null_token>());
+			CHECK(tokens[6].is<tscc::lex::tokens::undefined_token>());
+		}
+
+		SECTION("Class Keywords") {
+			auto tokens =
+				tokenize("class interface extends implements abstract");
+			REQUIRE(tokens.size() == 5);
+			CHECK(tokens[0].is<tscc::lex::tokens::class_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::interface_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::extends_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::implements_token>());
+			CHECK(tokens[4].is<tscc::lex::tokens::abstract_token>());
+		}
+
+		SECTION("Function Keywords") {
+			auto tokens = tokenize("function return async await");
+			REQUIRE(tokens.size() == 4);
+			CHECK(tokens[0].is<tscc::lex::tokens::function_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::return_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::async_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::await_token>());
+		}
+
+		SECTION("Variable Keywords") {
+			auto tokens = tokenize("var let const");
+			REQUIRE(tokens.size() == 3);
+			CHECK(tokens[0].is<tscc::lex::tokens::var_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::let_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::const_token>());
+		}
+
+		SECTION("Control Flow Keywords") {
+			auto tokens = tokenize("if else switch case break continue");
+			REQUIRE(tokens.size() == 6);
+			CHECK(tokens[0].is<tscc::lex::tokens::if_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::else_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::switch_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::case_token>());
+			CHECK(tokens[4].is<tscc::lex::tokens::break_token>());
+			CHECK(tokens[5].is<tscc::lex::tokens::continue_token>());
+		}
+
+		SECTION("Loop Keywords") {
+			auto tokens = tokenize("for while do");
+			REQUIRE(tokens.size() == 3);
+			CHECK(tokens[0].is<tscc::lex::tokens::for_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::while_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::do_token>());
+		}
+
+		SECTION("Error Handling Keywords") {
+			auto tokens = tokenize("try catch finally throw");
+			REQUIRE(tokens.size() == 4);
+			CHECK(tokens[0].is<tscc::lex::tokens::try_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::catch_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::finally_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::throw_token>());
+		}
+
+		SECTION("Type System Keywords") {
+			auto tokens = tokenize("type interface extends implements");
+			REQUIRE(tokens.size() == 4);
+			CHECK(tokens[0].is<tscc::lex::tokens::type_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::interface_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::extends_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::implements_token>());
 		}
 	}
 }

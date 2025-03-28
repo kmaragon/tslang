@@ -179,7 +179,6 @@ private:
 									bool scan_as_many_as_possible,
 									bool can_have_separators,
 									std::size_t skip = 0);
-	std::size_t scan_decimal_number(long long& into, std::size_t skip = 0);
 	std::size_t scan_octal_number(long long& into, bool bail_on_decimal, std::size_t skip = 0);
 	std::size_t scan_binary_number(long long& into, std::size_t skip = 0);
 
