@@ -644,8 +644,8 @@ lexer::lexer(std::istream& stream,
 	  buffer_offset_(0),
 	  end_(this),
 	  pnewline_(false),
-	  vers_(version),
-	  force_identifier_(false) {
+	  force_identifier_(false),
+	  vers_(version) {
 	wbuffer_.reserve(buffer_size);
 }
 
@@ -1405,7 +1405,7 @@ std::size_t lexer::scan_escape_sequence(char32_t& into, std::size_t skip) {
 		if (nnc == 'b' || nnc == 'B') {
 			long long number;
 			auto scanned = scan_binary_number(number, gc + nnc + skip);
-			if (scanned && number < 0x7f000000ul) {
+			if (scanned && number < 0x7f000000ll) {
 				into = static_cast<char32_t>(number);
 				return scanned;
 			}
@@ -1415,7 +1415,7 @@ std::size_t lexer::scan_escape_sequence(char32_t& into, std::size_t skip) {
 
 		long long number;
 		auto scanned = scan_octal_number(number, false, gc + skip);
-		if (scanned && number < 0x7f000000ul) {
+		if (scanned && number < 0x7f000000ll) {
 			into = static_cast<char32_t>(number);
 			return scanned;
 		}
@@ -1426,7 +1426,7 @@ std::size_t lexer::scan_escape_sequence(char32_t& into, std::size_t skip) {
 	if (is_octal_digit(into)) {
 		long long number;
 		auto scanned = scan_octal_number(number, false, gc + skip);
-		if (scanned && number < 0x7f000000ul) {
+		if (scanned && number < 0x7f000000ll) {
 			into = static_cast<char32_t>(number);
 			return scanned;
 		}
@@ -1789,11 +1789,14 @@ void lexer::scan_decimal_token(token& into) {
 			throw invalid_identifier(number_location);
 		}
 
+		long long sign = 1;
 		long long exponent = 1;
 
 		switch (first) {
 			case '-':
+				sign = -1;
 				exponent = -1;
+				[[fallthrough]];
 			case '+':
 				advance(nc);
 
@@ -1825,7 +1828,7 @@ void lexer::scan_decimal_token(token& into) {
 			}
 
 			advance(nc);
-			exponent = (exponent * 10) + decimal_value(first);
+			exponent = (exponent * 10) + (sign * decimal_value(first));
 		}
 
 		into.emplace_token<tokens::constant_value_token>(
@@ -2521,6 +2524,8 @@ bool lexer::scan(token& into) {
 						scan_multiline_comment(into, is_jsdoc);
 						return true;
 					}
+
+					// TODO regex
 				}
 
 				advance(pos);
@@ -2561,7 +2566,7 @@ bool lexer::scan(token& into) {
 					if (is_octal_digit(next)) {
 						long long octal_value;
 						auto taken =
-							scan_octal_number(octal_value, true, pos + gs);
+							scan_octal_number(octal_value, true, pos);
 						if (taken) {
 							into.emplace_token<tokens::constant_value_token>(
 								location(), octal_value,
@@ -2731,8 +2736,8 @@ bool lexer::scan(token& into) {
 					auto ggs = next_code_point(qnext, pos + gs);
 
 					if (next == U'.' &&
-						(ggs == 0 || is_identifier_start(qnext) &&
-										 !is_decimal_digit(qnext))) {
+						(ggs == 0 || (is_identifier_start(qnext) &&
+									  !is_decimal_digit(qnext)))) {
 						advance(pos + gs);
 						into.emplace_token<tokens::question_dot_token>(loc);
 						return true;

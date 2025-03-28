@@ -45,6 +45,7 @@ set(SOURCES
         tsclex/tokens/const_token.cpp
         tsclex/tokens/constant_value_token.cpp
         tsclex/tokens/constructor_token.cpp
+        tsclex/tokens/conflict_marker_trivia_token.cpp
         tsclex/tokens/continue_token.cpp
         tsclex/tokens/debugger_token.cpp
         tsclex/tokens/declare_token.cpp
@@ -206,6 +207,7 @@ set(HEADERS
         tsclex/tokens/colon_token.hpp
         tsclex/tokens/comma_token.hpp
         tsclex/tokens/comment_token.hpp
+        tsclex/tokens/conflict_marker_trivia_token.hpp
         tsclex/tokens/const_token.hpp
         tsclex/tokens/constant_value_token.hpp
         tsclex/tokens/constructor_token.hpp

@@ -22,9 +22,9 @@
 #include "utf8.hpp"
 
 std::size_t tscc::json_string_size(const std::u32string& str, char quote_char) {
-	std::size_t len = 0;
+	std::size_t len = quote_char ? 2 : 0;
 	for (auto ch : str) {
-		if (ch == quote_char) {
+		if (quote_char && ch == static_cast<char32_t>(quote_char)) {
 			len += 2;
 			continue;
 		}
@@ -43,6 +43,7 @@ std::size_t tscc::json_string_size(const std::u32string& str, char quote_char) {
 				case '\r':
 				case '\t':
 					len += 1;
+					[[fallthrough]];
 				default:
 					len += 1;
 			}
@@ -75,14 +76,18 @@ std::string tscc::to_json_string(const std::u32string& str, char quote_char) {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-	std::size_t size = json_string_size(str, quote_char) + 2;
+	std::size_t size = json_string_size(str, quote_char);
 	std::string result;
 	result.resize(size);
-	result[0] = quote_char;
+	std::size_t wr = 0;
 
-	std::size_t wr = 1;
+	if (quote_char) {
+		result[0] = quote_char;
+		wr = 1;
+	}
+
 	for (auto ch : str) {
-		if (ch == quote_char) {
+		if (quote_char && ch == static_cast<char32_t>(quote_char)) {
 			result[wr++] = '\\';
 			result[wr++] = quote_char;
 			continue;
@@ -170,7 +175,9 @@ std::string tscc::to_json_string(const std::u32string& str, char quote_char) {
 		result[wr++] = hex_chars[low_byte & 0xf];
 	}
 
-	assert(wr + 1 == size);
-	result[wr] = quote_char;
+	assert(wr + (quote_char ? 1 : 0) == size);
+	if (quote_char) {
+		result[wr] = quote_char;
+	}
 	return result;
 }
