@@ -19,14 +19,14 @@
 
 using namespace tscc::lex::tokens;
 
-conflict_marker_trivia_token::conflict_marker_trivia_token(char prefix_char, const std::u32string& comment_body)
-	: body_(comment_body)
-	  , prefix_(prefix_char)
-	  {}
+conflict_marker_trivia_token::conflict_marker_trivia_token(
+	char prefix_char,
+	const std::u32string& comment_body)
+	: body_(comment_body), prefix_(prefix_char) {}
 
 bool conflict_marker_trivia_token::operator==(
 	const tscc::lex::tokens::conflict_marker_trivia_token& other) const {
-	return prefix_ == other.prefix_ &&  body_ == other.body_;
+	return prefix_ == other.prefix_ && body_ == other.body_;
 }
 
 bool conflict_marker_trivia_token::operator!=(
@@ -34,7 +34,12 @@ bool conflict_marker_trivia_token::operator!=(
 	return prefix_ != other.prefix_ || body_ != other.body_;
 }
 
-std::string conflict_marker_trivia_token::to_string() const
-{
-	return std::string{7, prefix_} + " " + to_json_string(body_, 0);
+std::string conflict_marker_trivia_token::to_string() const {
+	std::string result(static_cast<std::string::size_type>(7), prefix_);
+	if (!body_.empty()) {
+		result.push_back(' ');
+		result.append(to_json_string(body_, 0));
+	}
+
+	return result;
 }

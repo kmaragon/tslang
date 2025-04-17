@@ -171,15 +171,9 @@ And some more
 		}
 
 		SECTION("Conflict Markers") {
-			auto tokens = tokenize(R"(
-<<<<<<< HEAD
-=======
->>>>>>> branch
-||||||| base
-=======
->>>>>>> branch
-)");
-			REQUIRE(tokens.size() == 5);
+			// Need to put the conflict markers in one line otherwise the text editors freak out
+			auto tokens = tokenize("\n<<<<<<< HEAD\n=======\n>>>>>>> branch\n||||||| base\n=======\n>>>>>>> branch\n");
+			REQUIRE(tokens.size() == 7);
 			CHECK(tokens[0].is<tscc::lex::tokens::newline_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::conflict_marker_trivia_token>());
 			CHECK(tokens[1]->to_string() == "<<<<<<< HEAD");
@@ -187,7 +181,12 @@ And some more
 			CHECK(tokens[2]->to_string() == "=======");
 			CHECK(tokens[3].is<tscc::lex::tokens::conflict_marker_trivia_token>());
 			CHECK(tokens[3]->to_string() == ">>>>>>> branch");
-			CHECK(tokens[4].is<tscc::lex::tokens::newline_token>());
+			CHECK(tokens[4].is<tscc::lex::tokens::conflict_marker_trivia_token>());
+			CHECK(tokens[4]->to_string() == "||||||| base");
+			CHECK(tokens[5].is<tscc::lex::tokens::conflict_marker_trivia_token>());
+			CHECK(tokens[5]->to_string() == "=======");
+			CHECK(tokens[6].is<tscc::lex::tokens::conflict_marker_trivia_token>());
+			CHECK(tokens[6]->to_string() == ">>>>>>> branch");
 		}
 	}
 

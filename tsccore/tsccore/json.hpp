@@ -28,7 +28,7 @@ namespace tscc {
  * This will consider instances of the quote character as needing to be escaped.
  * But the resulting size will not include any surrounding quotes
  */
-std::size_t json_string_size(const std::u32string& str, char quote_char = '"');
+std::size_t json_string_size(const std::u32string_view& str, char quote_char = '"');
 
 /**
  * @brief Encode the string to a jsonified version of itself
@@ -36,6 +36,6 @@ std::size_t json_string_size(const std::u32string& str, char quote_char = '"');
  * The resulting string will include the quotes and will have the quote char
  * escaped.
  */
-std::string to_json_string(const std::u32string& str, char quote_char = '"');
+std::string to_json_string(const std::u32string_view& str, char quote_char = '"');
 
 }

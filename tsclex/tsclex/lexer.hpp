@@ -170,7 +170,7 @@ private:
 	void scan_decimal_token(token& into);
 	void scan_big_integer_token(token& into);
 	void scan_hex_token(token& into);
-	void scan_conflict_marker(token& into);
+	bool scan_conflict_marker(token& into);
 	bool scan_jsx_token(token& into);
 	void append_wbuffer(char32_t ch);
 

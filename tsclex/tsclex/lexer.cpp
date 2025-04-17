@@ -34,7 +34,6 @@
 #include "error/unterminated_string_literal.hpp"
 #include "error/unterminated_unicode_escape_sequence.hpp"
 #include "token.hpp"
-
 using namespace tscc::lex;
 
 std::array<char32_t, 512> lexer::unicode_es3_identifier_start{
@@ -1859,8 +1858,49 @@ void lexer::scan_hex_token(token& into) {
 		number_location, number_part, tokens::integer_base::hex);
 }
 
-void lexer::scan_conflict_marker(token& into) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+bool lexer::scan_conflict_marker(token& into) {
+	std::size_t count = 1;
+	auto start = location();
+
+	char32_t st{};
+	auto skip = next_code_point(st);
+
+	while (true) {
+		char32_t ch{};
+		auto nc = next_code_point(ch, skip);
+		if (!nc) {
+			return false;
+		}
+		if (ch != st) {
+			if (count < 7) {
+				return false;
+			}
+
+			break;
+		}
+
+		skip += nc;
+		++count;
+	}
+
+	// if the start is <<<<<<< or >>>>>>>, it needs to be followed by a space
+	if (st == U'<' || st == U'>') {
+		char32_t next{};
+		auto nc = next_code_point(next, skip);
+		if (!nc || !std::iswspace(next)) {
+			return false;
+		}
+
+		skip += nc;
+	}
+
+	advance(skip);
+	wbuffer_.clear();
+	scan_line_into_wbuffer(true);
+
+	// at this point, we will certainly return true;
+	into.emplace_token<tokens::conflict_marker_trivia_token>(start, static_cast<char>(st), std::move(wbuffer_));
+	return true;
 }
 
 bool lexer::scan_jsx_token(token& into) {
@@ -2153,6 +2193,14 @@ void lexer::scan_line_into_wbuffer(bool trim) {
 		}
 
 		advance(nc);
+
+		// special case - did we just read a newline - which is
+		// technically still whitespace but is already the end of the line
+		if (first == '\n') {
+			wbuffer_.clear();
+			return;
+		}
+
 		if (!trim || !std::iswspace(first))
 			break;
 	}
@@ -2616,9 +2664,11 @@ bool lexer::scan(token& into) {
 						auto ggs = next_code_point(ltnext, pos + gs);
 						if (ggs > 0) {
 							if (ltnext == U'<') {
-								scan_conflict_marker(into);
-								return true;
+								if (scan_conflict_marker(into)) {
+									return true;
+								}
 							}
+
 
 							if (ltnext == U'=') {
 								advance(pos + gs + ggs);
@@ -2660,8 +2710,9 @@ bool lexer::scan(token& into) {
 									next_code_point(eenext, pos + gs + ggs);
 
 								if (gggs > 0 && eenext == U'=') {
-									scan_conflict_marker(into);
-									return true;
+									if (scan_conflict_marker(into)) {
+										return true;
+									}
 								}
 
 								advance(pos + gs + ggs);
@@ -2704,8 +2755,9 @@ bool lexer::scan(token& into) {
 						auto ggs = next_code_point(gtnext, pos + gs);
 						if (ggs > 0) {
 							if (gtnext == U'>') {
-								scan_conflict_marker(into);
-								return true;
+								if (scan_conflict_marker(into)) {
+									return true;
+								}
 							}
 
 							if (gtnext == U'=') {
@@ -2805,8 +2857,9 @@ bool lexer::scan(token& into) {
 						auto ggs = next_code_point(gtnext, pos + gs);
 						if (ggs > 0) {
 							if (gtnext == U'|') {
-								scan_conflict_marker(into);
-								return true;
+								if (scan_conflict_marker(into)) {
+									return true;
+								}
 							}
 
 							if (gtnext == U'=') {

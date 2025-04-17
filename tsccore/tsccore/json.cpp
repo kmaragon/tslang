@@ -21,7 +21,7 @@
 #include <cassert>
 #include "utf8.hpp"
 
-std::size_t tscc::json_string_size(const std::u32string& str, char quote_char) {
+std::size_t tscc::json_string_size(const std::u32string_view& str, char quote_char) {
 	std::size_t len = quote_char ? 2 : 0;
 	for (auto ch : str) {
 		if (quote_char && ch == static_cast<char32_t>(quote_char)) {
@@ -71,7 +71,7 @@ std::size_t tscc::json_string_size(const std::u32string& str, char quote_char) {
 	return len;
 }
 
-std::string tscc::to_json_string(const std::u32string& str, char quote_char) {
+std::string tscc::to_json_string(const std::u32string_view& str, char quote_char) {
 	static constexpr std::array<char, 16> hex_chars{
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
