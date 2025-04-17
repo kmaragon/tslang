@@ -186,6 +186,14 @@ jsdoc_token::jsdoc_token(const std::span<std::u32string>& comment_lines) {
 		std::u32string_view current = comment_line;
 		std::size_t at = 0;
 
+		auto trim_right = [&current_value]() {
+			current_value.erase(
+				std::find_if(current_value.rbegin(), current_value.rend(),
+							 [](unsigned char ch) { return !std::isspace(ch); })
+					.base(),
+				current_value.end());
+		};
+
 		// trim any whitespace
 		while (at < current.size() && std::iswspace(current[at]))
 			++at;
@@ -233,6 +241,7 @@ jsdoc_token::jsdoc_token(const std::span<std::u32string>& comment_lines) {
 
 					if (inline_tags().contains(tag_name)) {
 						if (!current_value.empty()) {
+							trim_right();
 							line.append(
 								jsdoc_string_part(std::move(current_value)));
 						}
@@ -254,6 +263,7 @@ jsdoc_token::jsdoc_token(const std::span<std::u32string>& comment_lines) {
 						current.substr(start_type + 1, at - (start_type + 1));
 					if (!type_name.empty()) {
 						if (!current_value.empty()) {
+							trim_right();
 							line.append(
 								jsdoc_string_part(std::move(current_value)));
 						}
@@ -271,6 +281,7 @@ jsdoc_token::jsdoc_token(const std::span<std::u32string>& comment_lines) {
 		}
 
 		if (!current_value.empty()) {
+			trim_right();
 			line.append(jsdoc_string_part(std::move(current_value)));
 		}
 
@@ -303,22 +314,33 @@ std::string jsdoc_token::to_string() const {
 	if (it == lines_.end())
 		return {};
 
+	bool had_empty_end = false;
+
 	std::stringstream ss;
 	ss << "/**";
 	if (!it->empty()) {
 		ss << " ";
+	} else {
+		had_empty_end = true;
 	}
 	it->write(ss);
 	++it;
 
 	for (; it != lines_.end(); ++it) {
+		had_empty_end = false;
+
 		ss << "\n *";
 		if (!it->empty()) {
 			ss << " ";
+		} else {
+			had_empty_end = true;
 		}
 		it->write(ss);
 	}
 
+	if (!had_empty_end) {
+		ss << " *";
+	}
 	ss << "/";
 
 	return ss.str();

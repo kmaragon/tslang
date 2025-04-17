@@ -170,6 +170,19 @@ And some more
 			CHECK(tokens[1].is<tscc::lex::tokens::newline_token>());
 		}
 
+		SECTION("Inline JSDoc Comment") {
+			auto tokens = tokenize(R"(/** @returns {number} The result */ function get_result())");
+			REQUIRE(tokens.size() == 5);
+			CHECK(tokens[0].is<tscc::lex::tokens::jsdoc_token>());
+			CHECK(tokens[0]->to_string() ==
+				  "/** @returns {number} The result */");
+			CHECK(tokens[1].is<tscc::lex::tokens::function_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[2]->to_string() == "get_result");
+			CHECK(tokens[3].is<tscc::lex::tokens::open_paren_token>());
+			CHECK(tokens[4].is<tscc::lex::tokens::close_paren_token>());
+		}
+
 		SECTION("Conflict Markers") {
 			// Need to put the conflict markers in one line otherwise the text editors freak out
 			auto tokens = tokenize("\n<<<<<<< HEAD\n=======\n>>>>>>> branch\n||||||| base\n=======\n>>>>>>> branch\n");
