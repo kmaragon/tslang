@@ -253,6 +253,14 @@ And some more
 				  "\"String with native \\ud83d\\ude00\"");
 			CHECK(tokens[4].is<tscc::lex::tokens::semicolon_token>());
 		}
+
+		SECTION("Invalid Unicode Escape Sequences") {
+			// Test for invalid unicode escape sequences
+			auto lexer =
+				create_lexer("const x = '\\u{110000}';");  // Out of range
+			REQUIRE_THROWS(
+				std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+		}
 	}
 
 	SECTION("Operators") {
@@ -316,8 +324,8 @@ And some more
 		}
 
 		SECTION("Compound Operators") {
-			auto tokens =
-				tokenize("+= -= *= /= %= **= &= |= ^= <<= >>= &&= ||= ??= >>>=");
+			auto tokens = tokenize(
+				"+= -= *= /= %= **= &= |= ^= <<= >>= &&= ||= ??= >>>=");
 			REQUIRE(tokens.size() == 15);
 			CHECK(tokens[0].is<tscc::lex::tokens::plus_eq_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::minus_eq_token>());
@@ -358,6 +366,13 @@ And some more
 			CHECK(tokens[4].is<tscc::lex::tokens::close_brace_token>());
 		}
 
+		SECTION("Private Field Invalid Identifier") {
+			// Test for invalid private field names
+			auto lexer = create_lexer("class { #123; }");
+			REQUIRE_THROWS(
+				std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+		}
+
 		SECTION("Underscore as Identifier") {
 			auto tokens = tokenize("_ _unused __proto__");
 			REQUIRE(tokens.size() == 3);
@@ -376,7 +391,8 @@ And some more
 			REQUIRE(tokens.size() == 1);
 			REQUIRE(tokens[0].is<tscc::lex::tokens::constant_value_token>());
 
-			auto& cv = static_cast<tscc::lex::tokens::constant_value_token&>(*tokens[0]);
+			auto& cv = static_cast<tscc::lex::tokens::constant_value_token&>(
+				*tokens[0]);
 			auto sv = cv.string_value();
 			REQUIRE(sv);
 			REQUIRE(sv->at(0) == 0);
@@ -407,6 +423,13 @@ And some more
 			CHECK(tokens[4].is<tscc::lex::tokens::semicolon_token>());
 			CHECK(tokens[5].is<tscc::lex::tokens::comment_token>());
 			CHECK(tokens[5]->to_string() == "// final comment");
+		}
+
+		SECTION("Unterminated JSDoc") {
+			// Test for unterminated JSDoc comments
+			auto lexer = create_lexer("/** @param {string} name");
+			REQUIRE_THROWS(
+				std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
 		}
 	}
 
@@ -728,8 +751,9 @@ And some more
 
 			SECTION("Binary Numbers") {
 				SECTION("Valid Binary") {
-					auto tokens = tokenize("0b1010 0B1111 0b0000");
-					REQUIRE(tokens.size() == 3);
+					auto tokens =
+						tokenize("0b1010 0B1111 0b0000 0b0001_0000_0000");
+					REQUIRE(tokens.size() == 4);
 					CHECK(tokens[0]
 							  .is<tscc::lex::tokens::constant_value_token>());
 					CHECK(tokens[0]->to_string() == "0b1010");
@@ -739,6 +763,7 @@ And some more
 					CHECK(tokens[2]
 							  .is<tscc::lex::tokens::constant_value_token>());
 					CHECK(tokens[2]->to_string() == "0b0");
+					CHECK(tokens[3]->to_string() == "0b100000000");
 				}
 
 				SECTION("Negative Binary") {
@@ -769,12 +794,24 @@ And some more
 					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
 																 lexer.end()});
 				}
+
+				SECTION("Invalid Binary with Separator at Start") {
+					auto lexer = create_lexer("0b_101");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Binary with Separator at End") {
+					auto lexer = create_lexer("0b101_");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
 			}
 
 			SECTION("Octal Numbers") {
 				SECTION("Valid Octal") {
-					auto tokens = tokenize("0o777 0O123 0o0");
-					REQUIRE(tokens.size() == 3);
+					auto tokens = tokenize("0o777 0O123 0o0 0o1_23");
+					REQUIRE(tokens.size() == 4);
 					CHECK(tokens[0]
 							  .is<tscc::lex::tokens::constant_value_token>());
 					CHECK(tokens[0]->to_string() == "0o777");
@@ -784,6 +821,9 @@ And some more
 					CHECK(tokens[2]
 							  .is<tscc::lex::tokens::constant_value_token>());
 					CHECK(tokens[2]->to_string() == "0o0");
+					CHECK(tokens[3]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[3]->to_string() == "0o123");
 				}
 
 				SECTION("Negative Octal") {
@@ -839,6 +879,18 @@ And some more
 
 				SECTION("Invalid Octal with Missing Digits") {
 					auto lexer = create_lexer("0o");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Octal with Separator at Start") {
+					auto lexer = create_lexer("0o_123");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Octal with Separator at End") {
+					auto lexer = create_lexer("0o123_");
 					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
 																 lexer.end()});
 				}
@@ -914,6 +966,18 @@ And some more
 
 				SECTION("Invalid Hex with Missing Digits") {
 					auto lexer = create_lexer("0x");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Hex with Separator at Start") {
+					auto lexer = create_lexer("0x_123");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
+				}
+
+				SECTION("Invalid Hex with Separator at End") {
+					auto lexer = create_lexer("0x123_");
 					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
 																 lexer.end()});
 				}
@@ -1006,7 +1070,7 @@ And some more
 						static_cast<tscc::lex::tokens::constant_value_token&>(
 							*tokens[0]);
 					CHECK(constant_value0.is_bigint() == false);
-					
+
 					CHECK(tokens[1]
 							  .is<tscc::lex::tokens::constant_value_token>());
 					CHECK(tokens[1]->to_string() == "123n");
@@ -1014,7 +1078,7 @@ And some more
 						static_cast<tscc::lex::tokens::constant_value_token&>(
 							*tokens[1]);
 					CHECK(constant_value1.is_bigint() == true);
-					
+
 					CHECK(tokens[2]
 							  .is<tscc::lex::tokens::constant_value_token>());
 					CHECK(tokens[2]->to_string() == "0xff");
@@ -1022,7 +1086,7 @@ And some more
 						static_cast<tscc::lex::tokens::constant_value_token&>(
 							*tokens[2]);
 					CHECK(constant_value2.is_bigint() == false);
-					
+
 					CHECK(tokens[3]
 							  .is<tscc::lex::tokens::constant_value_token>());
 					CHECK(tokens[3]->to_string() == "0xffn");
@@ -1030,6 +1094,12 @@ And some more
 						static_cast<tscc::lex::tokens::constant_value_token&>(
 							*tokens[3]);
 					CHECK(constant_value3.is_bigint() == true);
+				}
+
+				SECTION("Invalid BigInt with Separator at End") {
+					auto lexer = create_lexer("123_n");
+					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
+																 lexer.end()});
 				}
 			}
 		}
@@ -1393,7 +1463,8 @@ And some more
 		}
 
 		SECTION("Advanced TypeScript Keywords") {
-			auto tokens = tokenize("keyof infer satisfies assert namespace enum");
+			auto tokens =
+				tokenize("keyof infer satisfies assert namespace enum");
 			REQUIRE(tokens.size() == 6);
 			CHECK(tokens[0].is<tscc::lex::tokens::keyof_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::infer_token>());

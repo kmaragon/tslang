@@ -930,7 +930,7 @@ std::size_t lexer::scan_escape_sequence(char32_t& into, std::size_t skip) {
 		auto nnc = next_code_point(next, gc + skip);
 		if (nnc == 'b' || nnc == 'B') {
 			long long number;
-			auto scanned = scan_binary_number(number, gc + nnc + skip);
+			auto scanned = scan_binary_number(number, false, gc + nnc + skip);
 			if (scanned && number < 0x7f000000ll) {
 				into = static_cast<char32_t>(number);
 				return scanned;
@@ -940,7 +940,7 @@ std::size_t lexer::scan_escape_sequence(char32_t& into, std::size_t skip) {
 		}
 
 		long long number;
-		auto scanned = scan_octal_number(number, false, skip);
+		auto scanned = scan_octal_number(number, false, false, skip);
 		if (scanned && number < 0x7f000000ll) {
 			into = static_cast<char32_t>(number);
 			return scanned;
@@ -951,7 +951,7 @@ std::size_t lexer::scan_escape_sequence(char32_t& into, std::size_t skip) {
 
 	if (is_octal_digit(into)) {
 		long long number;
-		auto scanned = scan_octal_number(number, false, gc + skip);
+		auto scanned = scan_octal_number(number, false, false, gc + skip);
 		if (scanned && number < 0x7f000000ll) {
 			into = static_cast<char32_t>(number);
 			return scanned;
@@ -1071,7 +1071,7 @@ void lexer::scan_multiline_comment(token& into, bool is_jsdoc) {
 
 void lexer::scan_binary_token(token& into) {
 	tscc_big_int number;
-	auto scanned = scan_binary_number(number);
+	auto scanned = scan_binary_number(number, true);
 	if (!scanned) {
 		throw invalid_identifier(location());
 	}
@@ -1087,60 +1087,9 @@ void lexer::scan_binary_token(token& into) {
 		loc, number, tokens::integer_base::binary, size);
 }
 
-std::size_t lexer::scan_octal_number(tscc_big_int& into,
-									 bool bail_on_decimal,
-									 std::size_t skip) {
-	auto number_location = location();
-	std::size_t nc = 0;
-	std::size_t taken = 0;
-	into = 0;
-
-	char32_t first{};
-	while (true) {
-		nc = next_code_point(first, skip + taken);
-		if (!nc) {
-			return taken;
-		}
-
-		if (!is_octal_digit(first)) {
-			if (bail_on_decimal && is_decimal_digit(first))
-				return 0;
-			break;
-		}
-
-		into = (into * 8) + decimal_value(first);
-		taken += nc;
-	}
-
-	return taken;
-}
-
-std::size_t lexer::scan_binary_number(tscc_big_int& into, std::size_t skip) {
-	auto number_location = location();
-	std::size_t nc = 0;
-	std::size_t taken = 0;
-	into = 0;
-
-	char32_t first{};
-	while (true) {
-		nc = next_code_point(first, skip + taken);
-		if (!nc) {
-			return taken;
-		}
-
-		if (first != U'0' && first != U'1')
-			break;
-
-		into = (into * 2) + (first - U'0');
-		taken += nc;
-	}
-
-	return taken;
-}
-
 bool lexer::scan_octal_token(token& into, bool throw_on_invalid) {
 	tscc_big_int number;
-	auto scanned = scan_octal_number(number, false);
+	auto scanned = scan_octal_number(number, true, true);
 	if (!scanned) {
 		if (throw_on_invalid)
 			throw invalid_identifier(location());
@@ -1189,7 +1138,10 @@ void lexer::scan_decimal_token(token& into) {
 
 	tscc_big_int number_part = 0;
 	std::size_t nc = 0;
+	bool is_first_character = true;
 	bool last_was_separator = false;
+
+	auto last_separator = location();
 
 	char32_t first{};
 	while (true) {
@@ -1207,6 +1159,11 @@ void lexer::scan_decimal_token(token& into) {
 					throw multiple_separators_not_allowed(number_location);
 				}
 
+				if (is_first_character) {
+					throw separators_not_allowed_here(location());
+				}
+
+				last_separator = location();
 				last_was_separator = true;
 				advance(nc);
 				continue;
@@ -1215,13 +1172,14 @@ void lexer::scan_decimal_token(token& into) {
 			break;
 		}
 
+		is_first_character = false;
 		advance(nc);
 		number_part = (number_part * 10) + decimal_value(first);
 		last_was_separator = false;
 	}
 
 	if (last_was_separator) {
-		throw separators_not_allowed_here{location()};
+		throw separators_not_allowed_here{last_separator};
 	}
 
 	if (nc && first == U'.') {
@@ -1467,23 +1425,25 @@ std::size_t lexer::scan_hex_number(tscc_big_int& into,
 	std::size_t total_skip = skip;
 	std::size_t hex_digits = 0;
 	bool prior_was_separator = false;
+	bool at_first_char = true;
 	char32_t value = 0;
+	size_t nc = 0;
 
 	// Read hex digits until we have enough or hit a non-hex character
 	while (true) {
-		auto nc = next_code_point(ch, total_skip);
+		nc = next_code_point(ch, total_skip);
 		if (!nc) {
 			break;
 		}
 
 		// Skip optional separators if allowed
 		if (ch == '_') {
-			if (!can_have_separators) {
-				throw separators_not_allowed_here(location());
+			if (!can_have_separators || at_first_char) {
+				throw separators_not_allowed_here(location() + total_skip);
 			}
 
 			if (prior_was_separator) {
-				throw multiple_separators_not_allowed(location());
+				throw multiple_separators_not_allowed(location() + total_skip);
 			}
 
 			prior_was_separator = true;
@@ -1491,6 +1451,7 @@ std::size_t lexer::scan_hex_number(tscc_big_int& into,
 			continue;
 		}
 
+		at_first_char = false;
 		prior_was_separator = false;
 
 		// Check if we have a valid hex digit
@@ -1523,7 +1484,7 @@ std::size_t lexer::scan_hex_number(tscc_big_int& into,
 	}
 
 	if (prior_was_separator) {
-		throw separators_not_allowed_here(location());
+		throw separators_not_allowed_here(location() + (total_skip - nc));
 	}
 
 	// If we didn't get enough hex digits, return 0 to indicate failure
@@ -1533,6 +1494,108 @@ std::size_t lexer::scan_hex_number(tscc_big_int& into,
 
 	into = value;
 	return total_skip - skip;
+}
+
+std::size_t lexer::scan_octal_number(tscc_big_int& into,
+									 bool bail_on_decimal,
+									 bool can_have_separators,
+									 std::size_t skip) {
+	auto number_location = location();
+	std::size_t nc = 0;
+	std::size_t taken = 0;
+	bool prior_was_separator = false;
+	bool at_first_char = true;
+	into = 0;
+
+	char32_t first{};
+	while (true) {
+		nc = next_code_point(first, skip + taken);
+		if (!nc) {
+			break;
+		}
+
+		if (!is_octal_digit(first)) {
+			// Skip optional separators if allowed
+			if (first == '_') {
+				if (!can_have_separators || at_first_char) {
+					throw separators_not_allowed_here(location() + skip +
+													  taken);
+				}
+
+				if (prior_was_separator) {
+					throw multiple_separators_not_allowed(location() + skip +
+														  taken);
+				}
+
+				prior_was_separator = true;
+				taken += nc;
+				continue;
+			}
+
+			if (bail_on_decimal && is_decimal_digit(first))
+				return 0;
+			break;
+		}
+
+		prior_was_separator = false;
+		at_first_char = false;
+		into = (into * 8) + decimal_value(first);
+		taken += nc;
+	}
+
+	if (prior_was_separator) {
+		throw separators_not_allowed_here(location() + (skip + taken - nc));
+	}
+
+	return taken;
+}
+
+std::size_t lexer::scan_binary_number(tscc_big_int& into,
+									  bool can_have_separators,
+									  std::size_t skip) {
+	auto number_location = location();
+	std::size_t nc = 0;
+	std::size_t taken = 0;
+	bool prior_was_separator = false;
+	bool at_first_char = true;
+	into = 0;
+
+	char32_t first{};
+	while (true) {
+		nc = next_code_point(first, skip + taken);
+		if (!nc) {
+			break;
+		}
+
+		if (first == '_') {
+			if (!can_have_separators || at_first_char) {
+				throw separators_not_allowed_here(location() + skip + taken);
+			}
+
+			if (prior_was_separator) {
+				throw multiple_separators_not_allowed(location() + skip +
+													  taken);
+			}
+
+			prior_was_separator = true;
+			taken += nc;
+			continue;
+		}
+
+		at_first_char = false;
+		prior_was_separator = false;
+		if (first != U'0' && first != U'1')
+			break;
+
+		into = (into * 2) + (first - U'0');
+		taken += nc;
+	}
+
+	if (prior_was_separator) {
+		throw separators_not_allowed_here(location() + (skip + taken - nc));
+	}
+
+	return taken;
 }
 
 std::size_t lexer::scan_unicode_escape_into_wbuffer(
@@ -1702,8 +1765,7 @@ constexpr bool lexer::is_identifier_part(char32_t ch, bool is_jsx) {
 
 constexpr bool lexer::is_identifier_start(char32_t ch) {
 	// A-Za-z0-9
-	if ((ch >= U'A' && ch <= U'Z') || (ch >= U'a' && ch <= U'z') ||
-		(ch >= U'0' && ch <= U'9'))
+	if ((ch >= U'A' && ch <= U'Z') || (ch >= U'a' && ch <= U'z'))
 		return true;
 
 	if (ch == U'$' || ch == U'_')
@@ -2180,7 +2242,8 @@ bool lexer::scan(token& into) {
 					// try to parse an octal number
 					if (is_octal_digit(next)) {
 						tscc_big_int octal_value;
-						auto taken = scan_octal_number(octal_value, true, pos);
+						auto taken =
+							scan_octal_number(octal_value, true, true, pos);
 						if (taken) {
 							advance(pos + gs + taken);
 							bool is_bigint = check_and_consume_bigint_suffix();

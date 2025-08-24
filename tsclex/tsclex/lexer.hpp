@@ -21,10 +21,10 @@
 #include <deque>
 #include <istream>
 #include <optional>
+#include <tsccore/bigint.hpp>
 #include <unordered_map>
 #include <vector>
 #include "error.hpp"
-#include <tsccore/bigint.hpp>
 
 namespace tscc::lex {
 
@@ -178,8 +178,11 @@ private:
 								std::size_t skip = 0);
 	std::size_t scan_octal_number(long long& into,
 								  bool bail_on_decimal,
+								  bool can_have_separators,
 								  std::size_t skip = 0);
-	std::size_t scan_binary_number(long long& into, std::size_t skip = 0);
+	std::size_t scan_binary_number(long long& into,
+								   bool can_have_separators,
+								   std::size_t skip = 0);
 
 	// must scan one value or throw
 	std::size_t scan_unicode_escape_into_wbuffer(std::size_t min_size,
@@ -218,13 +221,10 @@ private:
 	bool force_identifier_;
 
 	// interpolated string context
-	enum interpolation_context : int8_t {
-		in_constant,
-		in_template,
-		in_brace
-	};
+	enum interpolation_context : int8_t { in_constant, in_template, in_brace };
 
-	std::deque<std::pair<interpolation_context, source_location>> interpolation_context_;
+	std::deque<std::pair<interpolation_context, source_location>>
+		interpolation_context_;
 	const language_version vers_;
 };
 
