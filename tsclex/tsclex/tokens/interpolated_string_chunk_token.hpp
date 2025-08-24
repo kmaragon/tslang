@@ -18,30 +18,24 @@
 
 #pragma once
 
-#include <string_view>
+#include "basic_token.hpp"
 
-#include <cstdint>
+namespace tscc::lex::tokens {
 
-namespace tscc::lex {
-
-enum class ts_language_variant : std::uint8_t { ts, jsx, tsx };
-
-/**
- * \brief An object representing a source, whether a file or something else
- */
-class source {
+class interpolated_string_chunk_token : public basic_token
+{
 public:
-	virtual ~source() = default;
+	interpolated_string_chunk_token(const std::u32string& chunk);
 
-	/**
-	 * \brief Get the name of the source
-	 */
-	virtual std::string_view name() const = 0;
+	bool operator==(const interpolated_string_chunk_token& other) const;
+	bool operator!=(const interpolated_string_chunk_token& other) const;
 
-	/**
-	 * \brief get the language variant the source uses
-	 */
-	virtual ts_language_variant language_variant() const;
+	const std::u32string& value() const noexcept;
+
+	std::string to_string() const override;
+
+private:
+	std::u32string chunk_;
 };
 
-}  // namespace tscc::lex
+}

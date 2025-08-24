@@ -79,6 +79,9 @@
 									  tscc::lex::tokens::infer_token,\
 									  tscc::lex::tokens::instanceof_token,\
 									  tscc::lex::tokens::interface_token,\
+									  tscc::lex::tokens::interpolated_string_chunk_token,\
+									  tscc::lex::tokens::interpolated_string_end_token,\
+									  tscc::lex::tokens::interpolated_string_start_token,\
 									  tscc::lex::tokens::intrinsic_token,\
 									  tscc::lex::tokens::is_token,\
 									  tscc::lex::tokens::jsdoc_token,\
@@ -127,6 +130,8 @@
 									  tscc::lex::tokens::super_token,\
 									  tscc::lex::tokens::switch_token,\
 									  tscc::lex::tokens::symbol_token,\
+									  tscc::lex::tokens::template_end_token,\
+									  tscc::lex::tokens::template_start_token,\
 									  tscc::lex::tokens::this_token,\
 									  tscc::lex::tokens::throw_token,\
 									  tscc::lex::tokens::tilde_token,\

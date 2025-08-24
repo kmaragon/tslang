@@ -12,6 +12,7 @@ set(SOURCES
         tsclex/error/unterminated_multiline_comment.cpp
         tsclex/error/unterminated_string_literal.cpp
         tsclex/error/unterminated_unicode_escape_sequence.cpp
+        tsclex/private/unicode_tables.cpp
         tsclex/tokens/abstract_token.cpp
         tsclex/tokens/accessor_token.cpp
         tsclex/tokens/ampersand_eq_token.cpp
@@ -91,6 +92,9 @@ set(SOURCES
         tsclex/tokens/import_token.cpp
         tsclex/tokens/in_token.cpp
         tsclex/tokens/infer_token.cpp
+        tsclex/tokens/interpolated_string_chunk_token.cpp
+        tsclex/tokens/interpolated_string_end_token.cpp
+        tsclex/tokens/interpolated_string_start_token.cpp
         tsclex/tokens/instanceof_token.cpp
         tsclex/tokens/interface_token.cpp
         tsclex/tokens/intrinsic_token.cpp
@@ -141,6 +145,8 @@ set(SOURCES
         tsclex/tokens/super_token.cpp
         tsclex/tokens/switch_token.cpp
         tsclex/tokens/symbol_token.cpp
+        tsclex/tokens/template_end_token.cpp
+        tsclex/tokens/template_start_token.cpp
         tsclex/tokens/this_token.cpp
         tsclex/tokens/throw_token.cpp
         tsclex/tokens/tilde_token.cpp
@@ -162,7 +168,7 @@ set(SOURCES
         tsclex/source.cpp
         tsclex/source_location.cpp
         tsclex/token.cpp
-        )
+)
 
 set(HEADERS
         tsclex/error/expected_command.hpp
@@ -258,6 +264,9 @@ set(HEADERS
         tsclex/tokens/infer_token.hpp
         tsclex/tokens/instanceof_token.hpp
         tsclex/tokens/interface_token.hpp
+        tsclex/tokens/interpolated_string_chunk_token.hpp
+        tsclex/tokens/interpolated_string_end_token.hpp
+        tsclex/tokens/interpolated_string_start_token.hpp
         tsclex/tokens/intrinsic_token.hpp
         tsclex/tokens/is_token.hpp
         tsclex/tokens/keyof_token.hpp
@@ -305,6 +314,8 @@ set(HEADERS
         tsclex/tokens/super_token.hpp
         tsclex/tokens/switch_token.hpp
         tsclex/tokens/symbol_token.hpp
+        tsclex/tokens/template_end_token.hpp
+        tsclex/tokens/template_start_token.hpp
         tsclex/tokens/this_token.hpp
         tsclex/tokens/throw_token.hpp
         tsclex/tokens/tilde_token.hpp
@@ -326,7 +337,7 @@ set(HEADERS
         tsclex/source.hpp
         tsclex/source_location.hpp
         tsclex/token.hpp
-        )
+)
 
 add_library(tsclex ${SOURCES})
 target_include_directories(tsclex INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -334,7 +345,7 @@ target_link_libraries(tsclex tsccore)
 
 add_subdirectory(test)
 
-foreach(header_path ${HEADERS})
+foreach (header_path ${HEADERS})
     # Convert the header to its absolute path
     # so we can get the appropriate relative path
     get_filename_component(header_path "${header_path}" REALPATH)
@@ -350,4 +361,4 @@ foreach(header_path ${HEADERS})
             DESTINATION "include/${install_location}"
             COMPONENT "tsclex")
 
-endforeach()
+endforeach ()

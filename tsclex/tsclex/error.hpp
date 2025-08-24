@@ -48,12 +48,12 @@ public:
 	lex_error(const source_location& location) noexcept;
 
 	/**
-	 * @brief Get the location where the error occurred
+	 * \brief Get the location where the error occurred
 	 */
 	const source_location& location() const noexcept;
 
 	/**
-	 * @brief Get the error code
+	 * \brief Get the error code
 	 */
 	virtual error_code code() const noexcept = 0;
 

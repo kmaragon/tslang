@@ -23,7 +23,7 @@
 namespace tscc {
 
 /**
- * @brief Get the length of the jsonified string using the provided quote character
+ * \brief Get the length of the jsonified string using the provided quote character
  *
  * This will consider instances of the quote character as needing to be escaped.
  * But the resulting size will not include any surrounding quotes
@@ -31,7 +31,7 @@ namespace tscc {
 std::size_t json_string_size(const std::u32string_view& str, char quote_char = '"');
 
 /**
- * @brief Encode the string to a jsonified version of itself
+ * \brief Encode the string to a jsonified version of itself
  *
  * The resulting string will include the quotes and will have the quote char
  * escaped.

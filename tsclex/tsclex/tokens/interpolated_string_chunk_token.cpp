@@ -16,33 +16,31 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "source_location.hpp"
+#include "interpolated_string_chunk_token.hpp"
 
-using namespace tscc::lex;
+#include "tsccore/json.hpp"
+#include "tsccore/utf8.hpp"
 
-source_location::source_location(std::shared_ptr<source> source,
-								 std::size_t line,
-								 std::size_t column,
-								 std::size_t offset) noexcept
-	: source_(std::move(source)),
-	  line_(line),
-	  column_(column),
-	  offset_(offset) {}
+using namespace tscc::lex::tokens;
 
-source_location source_location::operator+(std::size_t offset) const noexcept {
-	auto result = *this;
-	result.offset_ += offset;
-	return result;
+interpolated_string_chunk_token::interpolated_string_chunk_token(
+	const std::u32string& chunk)
+	: chunk_(chunk) {}
+
+bool interpolated_string_chunk_token::operator==(
+	const tscc::lex::tokens::interpolated_string_chunk_token& other) const {
+	return true;
 }
 
-std::size_t source_location::column() const noexcept {
-	return column_;
+bool interpolated_string_chunk_token::operator!=(
+	const tscc::lex::tokens::interpolated_string_chunk_token& other) const {
+	return false;
 }
 
-std::size_t source_location::offset() const noexcept {
-	return offset_;
+const std::u32string& interpolated_string_chunk_token::value() const noexcept {
+	return chunk_;
 }
 
-std::size_t source_location::line() const noexcept {
-	return line_;
+std::string interpolated_string_chunk_token::to_string() const {
+	return to_json_string(chunk_, 0);
 }

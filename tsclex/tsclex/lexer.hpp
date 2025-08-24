@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <deque>
 #include <istream>
 #include <optional>
 #include <unordered_map>
@@ -50,7 +51,7 @@ enum class language_version : std::uint8_t {
 };
 
 /**
- * @brief The lexer that produces a stream of tokens from a stream of bytes
+ * \brief The lexer that produces a stream of tokens from a stream of bytes
  *
  * The lexer is a simple contract that simply provides iterators. The iterators
  * are mutating of the actual lexer. So calling begin() multiple times will get
@@ -86,7 +87,7 @@ public:
 		bool operator!=(const iterator& other) const;
 
 	private:
-		iterator(lexer* source);
+		explicit iterator(lexer* source);
 
 		std::shared_ptr<token> token_;
 		lexer* lexer_;
@@ -95,9 +96,10 @@ public:
 	};
 
 	/**
-	 * @brief Construct a lexer
-	 * @param stream
-	 * @param stream_metadata
+	 * \brief Construct a lexer
+	 * \param stream
+	 * \param stream_metadata
+	 *
 	 */
 	lexer(std::istream& stream,
 		  std::shared_ptr<source> stream_metadata,
@@ -107,23 +109,16 @@ public:
 	lexer(const lexer&) = delete;
 
 	/**
-	 * @brief Get an iterator to the tokens in the stream
+	 * \brief Get an iterator to the tokens in the stream
 	 */
 	iterator begin();
 
 	/**
-	 * @brief Get an end iterator for the tokens in the stream
+	 * \brief Get an end iterator for the tokens in the stream
 	 */
 	iterator end();
 
 private:
-	static std::array<char32_t, 512> unicode_es3_identifier_start;
-	static std::array<char32_t, 684> unicode_es3_identifier_part;
-	static std::array<char32_t, 740> unicode_es5_identifier_start;
-	static std::array<char32_t, 856> unicode_es5_identifier_part;
-	static std::array<char32_t, 1218> unicode_esnext_identifier_start;
-	static std::array<char32_t, 1426> unicode_esnext_identifier_part;
-
 	using tokfactory = void (*)(token& into, const source_location& location);
 	static std::unordered_map<std::u32string, tokfactory> keyword_lookup;
 
@@ -160,12 +155,14 @@ private:
 	bool scan(token& into);
 	void scan_shebang(std::size_t shebang_offset, token& into);
 	void scan_string(token& into);
+	void scan_template_string_part(token& into);
 	std::size_t scan_escape_sequence(char32_t& into, std::size_t skip = 0);
-	void scan_string_template(token& into);
 	void scan_line_comment(std::size_t comment_offset, token& into);
 	void scan_multiline_comment(token& into, bool is_jsdoc);
 	void scan_binary_token(token& into);
-	std::size_t scan_binary_or_octal_number(long long& into, std::size_t base, std::size_t skip = 0);
+	std::size_t scan_binary_or_octal_number(long long& into,
+											std::size_t base,
+											std::size_t skip = 0);
 	bool scan_octal_token(token& into, bool throw_on_invalid = true);
 	void scan_decimal_token(token& into);
 	void scan_big_integer_token(token& into);
@@ -175,18 +172,19 @@ private:
 	void append_wbuffer(char32_t ch);
 
 	std::size_t scan_hex_number(long long& into,
-									std::size_t min_size,
-									bool scan_as_many_as_possible,
-									bool can_have_separators,
-									std::size_t skip = 0);
-	std::size_t scan_octal_number(long long& into, bool bail_on_decimal, std::size_t skip = 0);
+								std::size_t min_size,
+								bool scan_as_many_as_possible,
+								bool can_have_separators,
+								std::size_t skip = 0);
+	std::size_t scan_octal_number(long long& into,
+								  bool bail_on_decimal,
+								  std::size_t skip = 0);
 	std::size_t scan_binary_number(long long& into, std::size_t skip = 0);
 
 	// must scan one value or throw
 	std::size_t scan_unicode_escape_into_wbuffer(std::size_t min_size,
 												 bool scan_as_many_as_possible,
 												 bool can_have_separators);
-
 
 	// consider unicode and is identifier start
 	void scan_identifier(token& into, bool is_private = false);
@@ -199,7 +197,7 @@ private:
 	constexpr bool is_identifier_part(char32_t ch, bool is_jsx = false);
 	constexpr bool is_identifier_start(char32_t ch);
 
-	source_location location() const;
+	[[nodiscard]] source_location location() const;
 
 	std::istream& stream_;
 	std::shared_ptr<source> source_;
@@ -218,6 +216,14 @@ private:
 	// force identifier rather than keyword after special token
 	bool force_identifier_;
 
+	// interpolated string context
+	enum interpolation_context : int8_t {
+		in_constant,
+		in_template,
+		in_brace
+	};
+
+	std::deque<std::pair<interpolation_context, source_location>> interpolation_context_;
 	const language_version vers_;
 };
 

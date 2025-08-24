@@ -166,12 +166,14 @@ And some more
 			REQUIRE(tokens.size() == 2);
 			CHECK(tokens[0].is<tscc::lex::tokens::jsdoc_token>());
 			CHECK(tokens[0]->to_string() ==
-				  "/**\n * @param {string} name - The name parameter\n * @returns {number} The result\n */");
+				  "/**\n * @param {string} name - The name parameter\n * "
+				  "@returns {number} The result\n */");
 			CHECK(tokens[1].is<tscc::lex::tokens::newline_token>());
 		}
 
 		SECTION("Inline JSDoc Comment") {
-			auto tokens = tokenize(R"(/** @returns {number} The result */ function get_result())");
+			auto tokens = tokenize(
+				R"(/** @returns {number} The result */ function get_result())");
 			REQUIRE(tokens.size() == 5);
 			CHECK(tokens[0].is<tscc::lex::tokens::jsdoc_token>());
 			CHECK(tokens[0]->to_string() ==
@@ -184,21 +186,30 @@ And some more
 		}
 
 		SECTION("Conflict Markers") {
-			// Need to put the conflict markers in one line otherwise the text editors freak out
-			auto tokens = tokenize("\n<<<<<<< HEAD\n=======\n>>>>>>> branch\n||||||| base\n=======\n>>>>>>> branch\n");
+			// Need to put the conflict markers in one line otherwise the text
+			// editors freak out
+			auto tokens = tokenize(
+				"\n<<<<<<< HEAD\n=======\n>>>>>>> branch\n||||||| "
+				"base\n=======\n>>>>>>> branch\n");
 			REQUIRE(tokens.size() == 7);
 			CHECK(tokens[0].is<tscc::lex::tokens::newline_token>());
-			CHECK(tokens[1].is<tscc::lex::tokens::conflict_marker_trivia_token>());
+			CHECK(tokens[1]
+					  .is<tscc::lex::tokens::conflict_marker_trivia_token>());
 			CHECK(tokens[1]->to_string() == "<<<<<<< HEAD");
-			CHECK(tokens[2].is<tscc::lex::tokens::conflict_marker_trivia_token>());
+			CHECK(tokens[2]
+					  .is<tscc::lex::tokens::conflict_marker_trivia_token>());
 			CHECK(tokens[2]->to_string() == "=======");
-			CHECK(tokens[3].is<tscc::lex::tokens::conflict_marker_trivia_token>());
+			CHECK(tokens[3]
+					  .is<tscc::lex::tokens::conflict_marker_trivia_token>());
 			CHECK(tokens[3]->to_string() == ">>>>>>> branch");
-			CHECK(tokens[4].is<tscc::lex::tokens::conflict_marker_trivia_token>());
+			CHECK(tokens[4]
+					  .is<tscc::lex::tokens::conflict_marker_trivia_token>());
 			CHECK(tokens[4]->to_string() == "||||||| base");
-			CHECK(tokens[5].is<tscc::lex::tokens::conflict_marker_trivia_token>());
+			CHECK(tokens[5]
+					  .is<tscc::lex::tokens::conflict_marker_trivia_token>());
 			CHECK(tokens[5]->to_string() == "=======");
-			CHECK(tokens[6].is<tscc::lex::tokens::conflict_marker_trivia_token>());
+			CHECK(tokens[6]
+					  .is<tscc::lex::tokens::conflict_marker_trivia_token>());
 			CHECK(tokens[6]->to_string() == ">>>>>>> branch");
 		}
 	}
@@ -297,7 +308,8 @@ And some more
 		}
 
 		SECTION("Compound Operators") {
-			auto tokens = tokenize("+= -= *= /= %= **= &= |= ^= <<= >>= &&= ||= ??=");
+			auto tokens =
+				tokenize("+= -= *= /= %= **= &= |= ^= <<= >>= &&= ||= ??=");
 			REQUIRE(tokens.size() == 14);
 			CHECK(tokens[0].is<tscc::lex::tokens::plus_eq_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::minus_eq_token>());
@@ -310,7 +322,8 @@ And some more
 			CHECK(tokens[8].is<tscc::lex::tokens::caret_eq_token>());
 			CHECK(tokens[9].is<tscc::lex::tokens::double_less_eq_token>());
 			CHECK(tokens[10].is<tscc::lex::tokens::double_greater_eq_token>());
-			CHECK(tokens[11].is<tscc::lex::tokens::double_ampersand_eq_token>());
+			CHECK(
+				tokens[11].is<tscc::lex::tokens::double_ampersand_eq_token>());
 			CHECK(tokens[12].is<tscc::lex::tokens::double_bar_eq_token>());
 			CHECK(tokens[13].is<tscc::lex::tokens::double_question_eq_token>());
 		}
@@ -584,7 +597,9 @@ And some more
 																 lexer.end()});
 				}
 
-				SECTION("Invalid Decimal with Separator Starting Scientific Notation") {
+				SECTION(
+					"Invalid Decimal with Separator Starting Scientific "
+					"Notation") {
 					auto lexer = create_lexer("1e_2");
 					REQUIRE_THROWS(std::vector<tscc::lex::token>{lexer.begin(),
 																 lexer.end()});
@@ -719,10 +734,12 @@ And some more
 					REQUIRE(tokens.size() == 2);
 					CHECK(tokens[0]
 							  .is<tscc::lex::tokens::constant_value_token>());
-					CHECK(tokens[0]->to_string() == "0o54");  // Legacy octal 054 is interpreted as 0o54
+					CHECK(tokens[0]->to_string() ==
+						  "0o54");	// Legacy octal 054 is interpreted as 0o54
 					CHECK(tokens[1]
 							  .is<tscc::lex::tokens::constant_value_token>());
-					CHECK(tokens[1]->to_string() == "91");    // 091 is interpreted as decimal 91
+					CHECK(tokens[1]->to_string() ==
+						  "91");  // 091 is interpreted as decimal 91
 				}
 
 				SECTION("Negative Legacy Octal Format") {
@@ -731,11 +748,13 @@ And some more
 					CHECK(tokens[0].is<tscc::lex::tokens::minus_token>());
 					CHECK(tokens[1]
 							  .is<tscc::lex::tokens::constant_value_token>());
-					CHECK(tokens[1]->to_string() == "0o54");  // Legacy octal -054 is interpreted as -0o54
+					CHECK(tokens[1]->to_string() ==
+						  "0o54");	// Legacy octal -054 is interpreted as -0o54
 					CHECK(tokens[2].is<tscc::lex::tokens::minus_token>());
 					CHECK(tokens[3]
 							  .is<tscc::lex::tokens::constant_value_token>());
-					CHECK(tokens[3]->to_string() == "91");    // -091 is interpreted as decimal -91
+					CHECK(tokens[3]->to_string() ==
+						  "91");  // -091 is interpreted as decimal -91
 				}
 
 				SECTION("Invalid Octal with Non-Octal Digit") {
@@ -926,25 +945,127 @@ And some more
 	SECTION("Template Literals") {
 		SECTION("Basic Template Literal") {
 			auto tokens = tokenize("`template literal`");
-			REQUIRE(tokens.size() == 1);
-			CHECK(tokens[0].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[0]->to_string() == "`template literal`");
+			REQUIRE(tokens.size() == 3);
+			CHECK(
+				tokens[0]
+					.is<tscc::lex::tokens::interpolated_string_start_token>());
+			CHECK(
+				tokens[1]
+					.is<tscc::lex::tokens::interpolated_string_chunk_token>());
+			CHECK(tokens[1]->to_string() == "template literal");
+			CHECK(tokens[2]
+					  .is<tscc::lex::tokens::interpolated_string_end_token>());
 		}
 
 		SECTION("Template Literal with Expression") {
 			auto tokens = tokenize("`value: ${x}`");
-			REQUIRE(tokens.size() == 1);
+			REQUIRE(tokens.size() == 6);
+			CHECK(
+				tokens[0]
+					.is<tscc::lex::tokens::interpolated_string_start_token>());
+			CHECK(
+				tokens[1]
+					.is<tscc::lex::tokens::interpolated_string_chunk_token>());
+			CHECK(tokens[1]->to_string() == "value: ");
+			CHECK(tokens[2].is<tscc::lex::tokens::template_start_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[3]->to_string() == "x");
+			CHECK(tokens[4].is<tscc::lex::tokens::template_end_token>());
+			CHECK(tokens[5]
+					  .is<tscc::lex::tokens::interpolated_string_end_token>());
 		}
 
 		SECTION("Nested Template Literals") {
 			auto tokens = tokenize("`outer ${exec(`inner ${x}`)}`");
-			REQUIRE(tokens.size() == 1);
+			REQUIRE(tokens.size() == 14);
+			CHECK(
+				tokens[0]
+					.is<tscc::lex::tokens::interpolated_string_start_token>());
+			CHECK(
+				tokens[1]
+					.is<tscc::lex::tokens::interpolated_string_chunk_token>());
+			CHECK(tokens[1]->to_string() == "outer ");
+			CHECK(tokens[2].is<tscc::lex::tokens::template_start_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[3]->to_string() == "exec");
+			CHECK(tokens[4].is<tscc::lex::tokens::open_paren_token>());
+			CHECK(
+				tokens[5]
+					.is<tscc::lex::tokens::interpolated_string_start_token>());
+			CHECK(
+				tokens[6]
+					.is<tscc::lex::tokens::interpolated_string_chunk_token>());
+			CHECK(tokens[6]->to_string() == "inner ");
+			CHECK(tokens[7].is<tscc::lex::tokens::template_start_token>());
+			CHECK(tokens[8].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[8]->to_string() == "x");
+			CHECK(tokens[9].is<tscc::lex::tokens::template_end_token>());
+			CHECK(tokens[10]
+					  .is<tscc::lex::tokens::interpolated_string_end_token>());
+			CHECK(tokens[11].is<tscc::lex::tokens::close_paren_token>());
+			CHECK(tokens[12].is<tscc::lex::tokens::template_end_token>());
+			CHECK(tokens[13]
+					  .is<tscc::lex::tokens::interpolated_string_end_token>());
 		}
 
-		// Edge cases and error cases
-		auto lexer = create_lexer("const x = `${");
-		REQUIRE_THROWS(
-			std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+		SECTION("Template Literal with Expression And newline") {
+			auto tokens = tokenize("`value: ${x}\n  also: ${y}`");
+			REQUIRE(tokens.size() == 10);
+			CHECK(
+				tokens[0]
+					.is<tscc::lex::tokens::interpolated_string_start_token>());
+			CHECK(
+				tokens[1]
+					.is<tscc::lex::tokens::interpolated_string_chunk_token>());
+			CHECK(tokens[1]->to_string() == "value: ");
+			CHECK(tokens[2].is<tscc::lex::tokens::template_start_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[3]->to_string() == "x");
+			CHECK(tokens[4].is<tscc::lex::tokens::template_end_token>());
+			CHECK(
+				tokens[5]
+					.is<tscc::lex::tokens::interpolated_string_chunk_token>());
+			CHECK(tokens[5]->to_string() == "\\n  also: ");
+			CHECK(tokens[6].is<tscc::lex::tokens::template_start_token>());
+			CHECK(tokens[7].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[7]->to_string() == "y");
+			CHECK(tokens[8].is<tscc::lex::tokens::template_end_token>());
+			CHECK(tokens[9]
+					  .is<tscc::lex::tokens::interpolated_string_end_token>());
+		}
+
+		SECTION("Template Literal with Expression And CRLF") {
+			auto tokens = tokenize("`value: ${x}\r\n  also: ${y}`");
+			REQUIRE(tokens.size() == 10);
+			CHECK(
+				tokens[0]
+					.is<tscc::lex::tokens::interpolated_string_start_token>());
+			CHECK(
+				tokens[1]
+					.is<tscc::lex::tokens::interpolated_string_chunk_token>());
+			CHECK(tokens[1]->to_string() == "value: ");
+			CHECK(tokens[2].is<tscc::lex::tokens::template_start_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[3]->to_string() == "x");
+			CHECK(tokens[4].is<tscc::lex::tokens::template_end_token>());
+			CHECK(
+				tokens[5]
+					.is<tscc::lex::tokens::interpolated_string_chunk_token>());
+			CHECK(tokens[5]->to_string() == "\\n  also: ");
+			CHECK(tokens[6].is<tscc::lex::tokens::template_start_token>());
+			CHECK(tokens[7].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[7]->to_string() == "y");
+			CHECK(tokens[8].is<tscc::lex::tokens::template_end_token>());
+			CHECK(tokens[9]
+					  .is<tscc::lex::tokens::interpolated_string_end_token>());
+		}
+
+		SECTION("Unterminated string") {
+			// Edge cases and error cases
+			auto lexer = create_lexer("const x = `${");
+			REQUIRE_THROWS(
+				std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+		}
 	}
 
 	SECTION("Decorators") {

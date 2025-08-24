@@ -101,6 +101,9 @@
 #include "tokens/infer_token.hpp"
 #include "tokens/instanceof_token.hpp"
 #include "tokens/interface_token.hpp"
+#include "tokens/interpolated_string_chunk_token.hpp"
+#include "tokens/interpolated_string_end_token.hpp"
+#include "tokens/interpolated_string_start_token.hpp"
 #include "tokens/intrinsic_token.hpp"
 #include "tokens/is_token.hpp"
 #include "tokens/jsdoc_token.hpp"
@@ -149,6 +152,8 @@
 #include "tokens/super_token.hpp"
 #include "tokens/switch_token.hpp"
 #include "tokens/symbol_token.hpp"
+#include "tokens/template_end_token.hpp"
+#include "tokens/template_start_token.hpp"
 #include "tokens/this_token.hpp"
 #include "tokens/throw_token.hpp"
 #include "tokens/tilde_token.hpp"
@@ -172,8 +177,7 @@
 namespace tscc::lex {
 
 /**
- * \brief An exception thrown when trying to extract the basic_token from an
- * undefined token
+ * \brief An exception thrown when trying to extract the basic_token from an undefined token
  */
 class token_undefined : public std::exception {
 public:
@@ -183,32 +187,32 @@ public:
 };
 
 /**
- * @brief A container for any of the possible basic_tokens
+ * \brief A container for any of the possible basic_tokens
  */
 class token {
 public:
 	/**
-	 * @brief Get a reference to the underlying basic_token
+	 * \brief Get a reference to the underlying basic_token
 	 */
 	const tokens::basic_token& operator*() const noexcept;
 
 	/**
-	 * @brief Get a reference to the underlying basic_token
+	 * \brief Get a reference to the underlying basic_token
 	 */
 	tokens::basic_token& operator*() noexcept;
 
 	/**
-	 * @brief Get a pointer to the underlying basic_token
+	 * \brief Get a pointer to the underlying basic_token
 	 */
 	const tokens::basic_token* operator->() const noexcept;
 
 	/**
-	 * @brief Get a pointer to the underlying basic_token
+	 * \brief Get a pointer to the underlying basic_token
 	 */
 	tokens::basic_token* operator->() noexcept;
 
 	/**
-	 * @brief Visit the token by its specific type
+	 * \brief Visit the token by its specific type
 	 *
 	 * The visitor must provide a matching overload for every type
 	 * of token available in the \see tsc::lex::tokens namespace.
@@ -216,8 +220,8 @@ public:
 	 * for the generic base basic_token.
 	 *
 	 * For example:
-	 * @example
-	 * @code c++
+	 * \example
+	 * \code c++
 	 * struct comment_token_visitor
 	 * {
 	 *   int operator()(const tsc::lex::tokens::comment_token& token) const {
@@ -228,7 +232,7 @@ public:
 	 *     return 0;
 	 *   }
 	 * };
-	 * @endcode
+	 * \endcode
 	 */
 	template <typename T>
 	decltype(auto) visit(T&& visitor) const {
@@ -238,7 +242,7 @@ public:
 	}
 
 	/**
-	 * @brief Get the location where the token is defined
+	 * \brief Get the location where the token is defined
 	 */
 	const source_location& location() const noexcept;
 
@@ -256,28 +260,29 @@ public:
 	}
 
 	/**
-	 * @brief Get whether or not the token is of the particular type
+	 * \brief Get whether the token is of the particular type
 	 */
-	template<typename Token>
-	constexpr bool is() const noexcept
-	{
+	template <typename Token>
+	constexpr std::enable_if_t<std::is_base_of_v<tokens::basic_token, Token>,
+							   bool>
+	is() const noexcept {
 		if (!token_)
 			return false;
 		return std::holds_alternative<Token>(*token_);
 	}
 
 	/**
-	 * @brief Set the token to an undefined value
+	 * \brief Set the token to an undefined value
 	 */
 	void undefine();
 
 	/**
-	 * @brief Compare the token for equality vs another token
+	 * \brief Compare the token for equality vs another token
 	 */
 	bool operator==(const token& other) const;
 
 	/**
-	 * @brief Compare the token for inequality vs another token
+	 * \brief Compare the token for inequality vs another token
 	 */
 	bool operator!=(const token& other) const;
 

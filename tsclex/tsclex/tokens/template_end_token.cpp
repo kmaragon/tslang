@@ -16,32 +16,20 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "template_end_token.hpp"
 
-#include <string_view>
+using namespace tscc::lex::tokens;
 
-#include <cstdint>
+bool template_end_token::operator==(
+	const tscc::lex::tokens::template_end_token& other) const {
+	return true;
+}
 
-namespace tscc::lex {
+bool template_end_token::operator!=(
+	const tscc::lex::tokens::template_end_token& other) const {
+	return false;
+}
 
-enum class ts_language_variant : std::uint8_t { ts, jsx, tsx };
-
-/**
- * \brief An object representing a source, whether a file or something else
- */
-class source {
-public:
-	virtual ~source() = default;
-
-	/**
-	 * \brief Get the name of the source
-	 */
-	virtual std::string_view name() const = 0;
-
-	/**
-	 * \brief get the language variant the source uses
-	 */
-	virtual ts_language_variant language_variant() const;
-};
-
-}  // namespace tscc::lex
+std::string template_end_token::to_string() const {
+	return "}";
+}

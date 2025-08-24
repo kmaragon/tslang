@@ -24,7 +24,7 @@
 namespace tscc::lex {
 
 /**
- * @brief An encapsulation of a particular spot in some source code
+ * \brief An encapsulation of a particular spot in some source code
  */
 class source_location {
 public:
@@ -37,25 +37,22 @@ public:
 	source_location(const source_location&) noexcept = default;
 
 	/**
-	 * @brief Get the line number for the location
+	 * \brief Get the line number for the location
 	 */
 	std::size_t line() const noexcept;
 
 	/**
-	 * @brief Get the column number for the location
+	 * \brief Get the column number for the location
 	 */
 	std::size_t column() const noexcept;
 
 	/**
-	 * @brief Get the offset for the location
+	 * \brief Get the offset for the location
 	 */
 	std::size_t offset() const noexcept;
 
 	/**
-	 * @brief Get a source location on the same line but
-	 *
-	 * @param offset
-	 * @return
+	 * \brief Get a source location on the same line but
 	 */
 	source_location operator+(std::size_t offset) const noexcept;
 
