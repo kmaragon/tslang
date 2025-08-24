@@ -169,6 +169,9 @@ private:
 	void scan_hex_token(token& into);
 	bool scan_conflict_marker(token& into);
 	bool scan_jsx_token(token& into);
+	void scan_jsx_element_part(token& into);
+	void scan_jsx_text_part(token& into);
+	void scan_jsx_expression_part(token& into);
 	void append_wbuffer(char32_t ch);
 
 	std::size_t scan_hex_number(tscc_big_int& into,
@@ -220,11 +223,18 @@ private:
 	// force identifier rather than keyword after special token
 	bool force_identifier_;
 
-	// interpolated string context
-	enum interpolation_context : int8_t { in_constant, in_template, in_brace };
+	// lexer context stack for managing nested parsing states
+	enum lexer_context : int8_t { 
+		in_template_literal,    // parsing template literal content (`...`)
+		in_template_expression, // parsing template expression (${...})
+		in_nested_brace,        // tracking brace nesting within expressions
+		in_jsx_element,         // parsing JSX element content (<div>...</div>)
+		in_jsx_text,            // parsing JSX text content between tags
+		in_jsx_expression       // parsing JSX expression content ({...})
+	};
 
-	std::deque<std::pair<interpolation_context, source_location>>
-		interpolation_context_;
+	std::deque<std::pair<lexer_context, source_location>>
+		context_stack_;
 	const language_version vers_;
 };
 

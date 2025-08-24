@@ -101,6 +101,14 @@ set(SOURCES
         tsclex/tokens/intrinsic_token.cpp
         tsclex/tokens/is_token.cpp
         tsclex/tokens/jsdoc_token.cpp
+        tsclex/tokens/jsx_attribute_name_token.cpp
+        tsclex/tokens/jsx_attribute_value_end_token.cpp
+        tsclex/tokens/jsx_attribute_value_start_token.cpp
+        tsclex/tokens/jsx_element_close_token.cpp
+        tsclex/tokens/jsx_element_end_token.cpp
+        tsclex/tokens/jsx_element_start_token.cpp
+        tsclex/tokens/jsx_self_closing_token.cpp
+        tsclex/tokens/jsx_text_token.cpp
         tsclex/tokens/keyof_token.cpp
         tsclex/tokens/less_eq_token.cpp
         tsclex/tokens/less_token.cpp
@@ -273,6 +281,15 @@ set(HEADERS
         tsclex/tokens/interpolated_string_start_token.hpp
         tsclex/tokens/intrinsic_token.hpp
         tsclex/tokens/is_token.hpp
+        tsclex/tokens/jsdoc_token.hpp
+        tsclex/tokens/jsx_attribute_name_token.hpp
+        tsclex/tokens/jsx_attribute_value_end_token.hpp
+        tsclex/tokens/jsx_attribute_value_start_token.hpp
+        tsclex/tokens/jsx_element_close_token.hpp
+        tsclex/tokens/jsx_element_end_token.hpp
+        tsclex/tokens/jsx_element_start_token.hpp
+        tsclex/tokens/jsx_self_closing_token.hpp
+        tsclex/tokens/jsx_text_token.hpp
         tsclex/tokens/keyof_token.hpp
         tsclex/tokens/less_eq_token.hpp
         tsclex/tokens/less_token.hpp

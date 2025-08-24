@@ -18,16 +18,21 @@
 
 #pragma once
 
-#include <tsclex/source.hpp>
 #include <string>
+#include <tsclex/source.hpp>
 
-class fake_source : public tscc::lex::source
-{
+class fake_source : public tscc::lex::source {
 public:
-	fake_source(std::string name);
+	fake_source(std::string name,
+				tscc::lex::ts_language_variant variant =
+					tscc::lex::ts_language_variant::ts);
 
 	std::string_view name() const override;
 
+	void language_variant(tscc::lex::ts_language_variant variant);
+
+	tscc::lex::ts_language_variant language_variant() const override;
 private:
 	std::string name_;
+	tscc::lex::ts_language_variant variant_;
 };

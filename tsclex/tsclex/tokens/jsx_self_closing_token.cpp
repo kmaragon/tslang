@@ -16,21 +16,20 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fake_source.hpp"
+#include "jsx_self_closing_token.hpp"
 
-fake_source::fake_source(std::string name,
-						 tscc::lex::ts_language_variant variant)
-	: name_(std::move(name)), variant_(variant) {}
+using namespace tscc::lex::tokens;
 
-std::string_view fake_source::name() const {
-	return name_;
+bool jsx_self_closing_token::operator==(
+	const jsx_self_closing_token& other) const {
+	return true;
 }
 
-void fake_source::language_variant(tscc::lex::ts_language_variant variant) {
-	variant_ = variant;
+bool jsx_self_closing_token::operator!=(
+	const jsx_self_closing_token& other) const {
+	return false;
 }
 
-
-tscc::lex::ts_language_variant fake_source::language_variant() const {
-	return variant_;
+std::string jsx_self_closing_token::to_string() const {
+	return "/>";
 }

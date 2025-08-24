@@ -16,21 +16,28 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fake_source.hpp"
+#include "jsx_element_close_token.hpp"
+#include <tsccore/utf8.hpp>
 
-fake_source::fake_source(std::string name,
-						 tscc::lex::ts_language_variant variant)
-	: name_(std::move(name)), variant_(variant) {}
+using namespace tscc::lex::tokens;
 
-std::string_view fake_source::name() const {
-	return name_;
+jsx_element_close_token::jsx_element_close_token(const std::u32string& element_name)
+	: element_name_(element_name) {}
+
+bool jsx_element_close_token::operator==(
+	const jsx_element_close_token& other) const {
+	return element_name_ == other.element_name_;
 }
 
-void fake_source::language_variant(tscc::lex::ts_language_variant variant) {
-	variant_ = variant;
+bool jsx_element_close_token::operator!=(
+	const jsx_element_close_token& other) const {
+	return !operator==(other);
 }
 
+const std::u32string& jsx_element_close_token::element_name() const noexcept {
+	return element_name_;
+}
 
-tscc::lex::ts_language_variant fake_source::language_variant() const {
-	return variant_;
+std::string jsx_element_close_token::to_string() const {
+	return "</" + utf8_encode(element_name_) + ">";
 }

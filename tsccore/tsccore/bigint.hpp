@@ -18,6 +18,7 @@
 
 namespace tscc {
 
+// TODO - consider using a class to support even larger values
 using tscc_big_int = long long;
 
 }

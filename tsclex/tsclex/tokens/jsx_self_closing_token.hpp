@@ -16,21 +16,21 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fake_source.hpp"
+#pragma once
 
-fake_source::fake_source(std::string name,
-						 tscc::lex::ts_language_variant variant)
-	: name_(std::move(name)), variant_(variant) {}
+#include "basic_token.hpp"
 
-std::string_view fake_source::name() const {
-	return name_;
-}
+namespace tscc::lex::tokens {
 
-void fake_source::language_variant(tscc::lex::ts_language_variant variant) {
-	variant_ = variant;
-}
+class jsx_self_closing_token : public basic_token
+{
+public:
+	jsx_self_closing_token() = default;
 
+	bool operator==(const jsx_self_closing_token& other) const;
+	bool operator!=(const jsx_self_closing_token& other) const;
 
-tscc::lex::ts_language_variant fake_source::language_variant() const {
-	return variant_;
+	std::string to_string() const override;
+};
+
 }

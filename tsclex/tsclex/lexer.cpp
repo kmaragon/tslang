@@ -761,7 +761,7 @@ void lexer::scan_template_string_part(token& into) {
 	if (quote_start == U'`') {
 		into.emplace_token<tokens::interpolated_string_end_token>(location());
 		advance(nc);
-		interpolation_context_.pop_back();
+		context_stack_.pop_back();
 		return;
 	} else if (quote_start == U'$') {
 		char32_t second;
@@ -769,8 +769,8 @@ void lexer::scan_template_string_part(token& into) {
 		if (gc && second == '{') {
 			into.emplace_token<tokens::template_start_token>(location());
 			advance(nc + gc);
-			interpolation_context_.push_back(
-				std::make_pair(in_template, location()));
+			context_stack_.push_back(
+				std::make_pair(in_template_expression, location()));
 			return;
 		}
 	}
@@ -782,7 +782,7 @@ void lexer::scan_template_string_part(token& into) {
 		nc = next_code_point(first);
 		if (!nc) {
 			throw unterminated_string_literal(
-				interpolation_context_.front().second);
+				context_stack_.front().second);
 		}
 
 		// we have an end quote on not the first character so emit the string
@@ -1406,6 +1406,7 @@ bool lexer::scan_jsx_token(token& into) {
 	if (source_->language_variant() == ts_language_variant::ts) {
 		return false;
 	}
+
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
@@ -1882,10 +1883,23 @@ bool lexer::scan(token& into) {
 	};
 
 	reset_one_iteration_values resetter{this};
-	if (!interpolation_context_.empty() &&
-		interpolation_context_.back().first == in_constant) {
-		scan_template_string_part(into);
-		return true;
+	if (!context_stack_.empty()) {
+		switch (context_stack_.back().first) {
+		case in_template_literal:
+			scan_template_string_part(into);
+			return true;
+		case in_jsx_element:
+			scan_jsx_element_part(into);
+			return true;
+		case in_jsx_text:
+			scan_jsx_text_part(into);
+			return true;
+		case in_jsx_expression:
+			scan_jsx_expression_part(into);
+			return true;
+		default:
+			break;
+		}
 	}
 
 	while (true) {
@@ -1896,9 +1910,20 @@ bool lexer::scan(token& into) {
 			// special case, if we were at a valid template point but in an
 			// interpolated string, it might otherwise look like we're good but
 			// we're not
-			if (!interpolation_context_.empty()) {
-				throw unterminated_string_literal(
-					interpolation_context_.front().second);
+			if (!context_stack_.empty()) {
+				switch (context_stack_.front().first) {
+				case in_template_literal:
+				case in_template_expression:
+				case in_nested_brace:
+					throw unterminated_string_literal(
+						context_stack_.front().second);
+				case in_jsx_element:
+				case in_jsx_text:
+				case in_jsx_expression:
+					// For JSX contexts, use unexpected_end_of_text which is more generic
+					throw unexpected_end_of_text(
+						context_stack_.front().second);
+				}
 			}
 			return false;
 		}
@@ -2003,8 +2028,8 @@ bool lexer::scan(token& into) {
 				scan_string(into);
 				return true;
 			case U'`':
-				interpolation_context_.push_back(
-					std::make_pair(in_constant, location()));
+				context_stack_.push_back(
+					std::make_pair(in_template_literal, location()));
 				into.emplace_token<tokens::interpolated_string_start_token>(
 					location());
 				advance(pos);
@@ -2315,7 +2340,7 @@ bool lexer::scan(token& into) {
 						return true;
 					}
 
-					if (is_alpha(next)) {
+					if (is_alpha(next) || next == U'>') {
 						if (scan_jsx_token(into)) {
 							return true;
 						}
@@ -2485,12 +2510,12 @@ bool lexer::scan(token& into) {
 			}
 			case U'{':
 				// special case for string interpolation
-				if (!interpolation_context_.empty() &&
-					(interpolation_context_.back().first == in_template ||
-					 interpolation_context_.back().first == in_brace)) {
+				if (!context_stack_.empty() &&
+					(context_stack_.back().first == in_template_expression ||
+					 context_stack_.back().first == in_nested_brace)) {
 					// increase the brace depth if we are in a template
-					interpolation_context_.push_back(
-						std::make_pair(in_brace, location()));
+					context_stack_.push_back(
+						std::make_pair(in_nested_brace, location()));
 				}
 				into.emplace_token<tokens::open_brace_token>(location());
 				advance(pos);
@@ -2537,14 +2562,14 @@ bool lexer::scan(token& into) {
 			}
 			case U'}':
 				// special case for string interpolation
-				if (!interpolation_context_.empty()) {
-					if (interpolation_context_.back().first == in_brace) {
+				if (!context_stack_.empty()) {
+					if (context_stack_.back().first == in_nested_brace) {
 						// if we're in a brace in the template, just pop it
-						interpolation_context_.pop_back();
-					} else if (interpolation_context_.back().first ==
-							   in_template) {
+						context_stack_.pop_back();
+					} else if (context_stack_.back().first ==
+							   in_template_expression) {
 						// otherwise if we are ending the template
-						interpolation_context_.pop_back();
+						context_stack_.pop_back();
 						into.emplace_token<tokens::template_end_token>(
 							location());
 						advance(pos);
@@ -2596,6 +2621,21 @@ bool lexer::check_and_consume_bigint_suffix() {
 		return true;
 	}
 	return false;
+}
+
+void lexer::scan_jsx_element_part(token& into) {
+	// TODO: Implement JSX element scanning
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+void lexer::scan_jsx_text_part(token& into) {
+	// TODO: Implement JSX text scanning
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
+}
+
+void lexer::scan_jsx_expression_part(token& into) {
+	// TODO: Implement JSX expression scanning
+	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
 source_location lexer::location() const {

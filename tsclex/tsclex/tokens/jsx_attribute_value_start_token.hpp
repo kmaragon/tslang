@@ -16,21 +16,30 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fake_source.hpp"
+#pragma once
 
-fake_source::fake_source(std::string name,
-						 tscc::lex::ts_language_variant variant)
-	: name_(std::move(name)), variant_(variant) {}
+#include "basic_token.hpp"
 
-std::string_view fake_source::name() const {
-	return name_;
-}
+namespace tscc::lex::tokens {
 
-void fake_source::language_variant(tscc::lex::ts_language_variant variant) {
-	variant_ = variant;
-}
+class jsx_attribute_value_start_token : public basic_token
+{
+public:
+	enum class value_type {
+		string,     // "value" or 'value'
+		expression  // {expression}
+	};
 
+	explicit jsx_attribute_value_start_token(value_type type);
 
-tscc::lex::ts_language_variant fake_source::language_variant() const {
-	return variant_;
+	bool operator==(const jsx_attribute_value_start_token& other) const;
+	bool operator!=(const jsx_attribute_value_start_token& other) const;
+
+	value_type type() const noexcept;
+	std::string to_string() const override;
+
+private:
+	value_type type_;
+};
+
 }

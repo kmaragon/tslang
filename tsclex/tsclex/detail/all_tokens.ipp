@@ -86,6 +86,14 @@
 									  tscc::lex::tokens::intrinsic_token,\
 									  tscc::lex::tokens::is_token,\
 									  tscc::lex::tokens::jsdoc_token,\
+									  tscc::lex::tokens::jsx_attribute_name_token,\
+									  tscc::lex::tokens::jsx_attribute_value_end_token,\
+									  tscc::lex::tokens::jsx_attribute_value_start_token,\
+									  tscc::lex::tokens::jsx_element_close_token,\
+									  tscc::lex::tokens::jsx_element_end_token,\
+									  tscc::lex::tokens::jsx_element_start_token,\
+									  tscc::lex::tokens::jsx_self_closing_token,\
+									  tscc::lex::tokens::jsx_text_token,\
 									  tscc::lex::tokens::keyof_token,\
 									  tscc::lex::tokens::less_eq_token,\
 									  tscc::lex::tokens::less_token,\
