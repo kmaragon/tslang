@@ -1,7 +1,17 @@
-tscc
+tslang
 ===========
 
 An overly ambitious project to try to build a full compiler for typescript
+
+# Intended Requirements
+
+* Support enough of a subset of the compiler that the compiler (pre-Go-rewrite) can be compiled with it
+* Support the C++ ABI for binary interoperability with C++ (probably through clang based parsers for ts call through to c++ header gen utilities for the inverse
+* Build the threading models and workers on top of a cooperative scheduler in a core language runtime library
+
+# Explicit non-Requirements
+
+* Full support of every part of TypeScript, especially the least compilable stuff inherited from JavaAcript
 
 # Overall Design Plan
 
