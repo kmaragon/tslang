@@ -816,6 +816,7 @@ void lexer::scan_template_string_part(token& into) {
 				// below
 				first = second;
 				advance(nc + gc);
+				gpos_.advance_line();
 				append_wbuffer(second);
 				continue;
 			}
@@ -823,6 +824,8 @@ void lexer::scan_template_string_part(token& into) {
 			advance(nc + scan_escape_sequence(first));
 			append_wbuffer(first);
 		} else {
+			if (first == '\n')
+				gpos_.advance_line();
 			advance(nc);
 			append_wbuffer(first);
 		}
@@ -1407,6 +1410,7 @@ bool lexer::scan_jsx_token(token& into) {
 		return false;
 	}
 
+
 	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
@@ -1893,9 +1897,6 @@ bool lexer::scan(token& into) {
 			return true;
 		case in_jsx_text:
 			scan_jsx_text_part(into);
-			return true;
-		case in_jsx_expression:
-			scan_jsx_expression_part(into);
 			return true;
 		default:
 			break;
