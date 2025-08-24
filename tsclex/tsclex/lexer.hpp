@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <vector>
 #include "error.hpp"
+#include <tsccore/bigint.hpp>
 
 namespace tscc::lex {
 
@@ -165,13 +166,12 @@ private:
 											std::size_t skip = 0);
 	bool scan_octal_token(token& into, bool throw_on_invalid = true);
 	void scan_decimal_token(token& into);
-	void scan_big_integer_token(token& into);
 	void scan_hex_token(token& into);
 	bool scan_conflict_marker(token& into);
 	bool scan_jsx_token(token& into);
 	void append_wbuffer(char32_t ch);
 
-	std::size_t scan_hex_number(long long& into,
+	std::size_t scan_hex_number(tscc_big_int& into,
 								std::size_t min_size,
 								bool scan_as_many_as_possible,
 								bool can_have_separators,
@@ -196,6 +196,7 @@ private:
 	static constexpr bool is_alpha(char32_t ch);
 	constexpr bool is_identifier_part(char32_t ch, bool is_jsx = false);
 	constexpr bool is_identifier_start(char32_t ch);
+	bool check_and_consume_bigint_suffix();
 
 	[[nodiscard]] source_location location() const;
 

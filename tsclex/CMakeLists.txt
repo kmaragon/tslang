@@ -70,6 +70,7 @@ set(SOURCES
         tsclex/tokens/double_question_eq_token.cpp
         tsclex/tokens/double_question_token.cpp
         tsclex/tokens/else_token.cpp
+        tsclex/tokens/enum_token.cpp
         tsclex/tokens/eq_greater_token.cpp
         tsclex/tokens/eq_token.cpp
         tsclex/tokens/exclamation_eq_eq_token.cpp
@@ -152,6 +153,8 @@ set(SOURCES
         tsclex/tokens/tilde_token.cpp
         tsclex/tokens/triple_dot_token.cpp
         tsclex/tokens/triple_eq_token.cpp
+        tsclex/tokens/triple_greater_eq_token.cpp
+        tsclex/tokens/triple_greater_token.cpp
         tsclex/tokens/true_token.cpp
         tsclex/tokens/try_token.cpp
         tsclex/tokens/type_token.cpp
@@ -240,6 +243,7 @@ set(HEADERS
         tsclex/tokens/double_question_eq_token.hpp
         tsclex/tokens/double_question_token.hpp
         tsclex/tokens/else_token.hpp
+        tsclex/tokens/enum_token.hpp
         tsclex/tokens/eq_greater_token.hpp
         tsclex/tokens/eq_token.hpp
         tsclex/tokens/exclamation_eq_eq_token.hpp
@@ -321,6 +325,8 @@ set(HEADERS
         tsclex/tokens/tilde_token.hpp
         tsclex/tokens/triple_dot_token.hpp
         tsclex/tokens/triple_eq_token.hpp
+        tsclex/tokens/triple_greater_eq_token.hpp
+        tsclex/tokens/triple_greater_token.hpp
         tsclex/tokens/true_token.hpp
         tsclex/tokens/try_token.hpp
         tsclex/tokens/type_token.hpp

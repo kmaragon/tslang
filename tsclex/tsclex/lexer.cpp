@@ -201,6 +201,10 @@ std::unordered_map<std::u32string, lexer::tokfactory>
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::else_token>(location);
 						}},
+					   {U"enum",
+						[](token& into, const source_location& location) {
+							into.emplace_token<tokens::enum_token>(location);
+						}},
 					   {U"export",
 						[](token& into, const source_location& location) {
 							into.emplace_token<tokens::export_token>(location);
@@ -936,7 +940,7 @@ std::size_t lexer::scan_escape_sequence(char32_t& into, std::size_t skip) {
 		}
 
 		long long number;
-		auto scanned = scan_octal_number(number, false, gc + skip);
+		auto scanned = scan_octal_number(number, false, skip);
 		if (scanned && number < 0x7f000000ll) {
 			into = static_cast<char32_t>(number);
 			return scanned;
@@ -1066,7 +1070,7 @@ void lexer::scan_multiline_comment(token& into, bool is_jsdoc) {
 }
 
 void lexer::scan_binary_token(token& into) {
-	long long number;
+	tscc_big_int number;
 	auto scanned = scan_binary_number(number);
 	if (!scanned) {
 		throw invalid_identifier(location());
@@ -1074,11 +1078,16 @@ void lexer::scan_binary_token(token& into) {
 
 	auto loc = location();
 	advance(scanned);
+
+	bool is_bigint = check_and_consume_bigint_suffix();
+	auto size = is_bigint ? tokens::integer_size::big_int
+						  : tokens::integer_size::standard;
+
 	into.emplace_token<tokens::constant_value_token>(
-		loc, number, tokens::integer_base::binary);
+		loc, number, tokens::integer_base::binary, size);
 }
 
-std::size_t lexer::scan_octal_number(long long& into,
+std::size_t lexer::scan_octal_number(tscc_big_int& into,
 									 bool bail_on_decimal,
 									 std::size_t skip) {
 	auto number_location = location();
@@ -1106,7 +1115,7 @@ std::size_t lexer::scan_octal_number(long long& into,
 	return taken;
 }
 
-std::size_t lexer::scan_binary_number(long long& into, std::size_t skip) {
+std::size_t lexer::scan_binary_number(tscc_big_int& into, std::size_t skip) {
 	auto number_location = location();
 	std::size_t nc = 0;
 	std::size_t taken = 0;
@@ -1130,7 +1139,7 @@ std::size_t lexer::scan_binary_number(long long& into, std::size_t skip) {
 }
 
 bool lexer::scan_octal_token(token& into, bool throw_on_invalid) {
-	long long number;
+	tscc_big_int number;
 	auto scanned = scan_octal_number(number, false);
 	if (!scanned) {
 		if (throw_on_invalid)
@@ -1140,12 +1149,17 @@ bool lexer::scan_octal_token(token& into, bool throw_on_invalid) {
 
 	auto loc = location();
 	advance(scanned);
+
+	bool is_bigint = check_and_consume_bigint_suffix();
+	auto size = is_bigint ? tokens::integer_size::big_int
+						  : tokens::integer_size::standard;
+
 	into.emplace_token<tokens::constant_value_token>(
-		loc, number, tokens::integer_base::octal);
+		loc, number, tokens::integer_base::octal, size);
 	return true;
 }
 
-std::size_t lexer::scan_binary_or_octal_number(long long& into,
+std::size_t lexer::scan_binary_or_octal_number(tscc_big_int& into,
 											   std::size_t base,
 											   std::size_t skip) {
 	auto number_location = location();
@@ -1173,7 +1187,7 @@ std::size_t lexer::scan_binary_or_octal_number(long long& into,
 void lexer::scan_decimal_token(token& into) {
 	auto number_location = location();
 
-	long long number_part = 0;
+	tscc_big_int number_part = 0;
 	std::size_t nc = 0;
 	bool last_was_separator = false;
 
@@ -1355,17 +1369,19 @@ void lexer::scan_decimal_token(token& into) {
 		return;
 	}
 
-	into.emplace_token<tokens::constant_value_token>(
-		number_location, number_part, tokens::integer_base::decimal);
-}
-
-void lexer::scan_big_integer_token(token& into) {
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	if (check_and_consume_bigint_suffix()) {
+		into.emplace_token<tokens::constant_value_token>(
+			number_location, number_part, tokens::integer_base::decimal,
+			tokens::integer_size::big_int);
+	} else {
+		into.emplace_token<tokens::constant_value_token>(
+			number_location, number_part, tokens::integer_base::decimal);
+	}
 }
 
 void lexer::scan_hex_token(token& into) {
 	auto number_location = location();
-	long long number_part = 0;
+	tscc_big_int number_part = 0;
 	auto scanned = scan_hex_number(number_part, 1, true, true);
 
 	if (!scanned) {
@@ -1373,8 +1389,13 @@ void lexer::scan_hex_token(token& into) {
 	}
 
 	advance(scanned);
+
+	bool is_bigint = check_and_consume_bigint_suffix();
+	auto size = is_bigint ? tokens::integer_size::big_int
+						  : tokens::integer_size::standard;
+
 	into.emplace_token<tokens::constant_value_token>(
-		number_location, number_part, tokens::integer_base::hex);
+		number_location, number_part, tokens::integer_base::hex, size);
 }
 
 bool lexer::scan_conflict_marker(token& into) {
@@ -1437,7 +1458,7 @@ void lexer::append_wbuffer(char32_t ch) {
 	wbuffer_.push_back(ch);
 }
 
-std::size_t lexer::scan_hex_number(long long& into,
+std::size_t lexer::scan_hex_number(tscc_big_int& into,
 								   std::size_t min_size,
 								   bool scan_as_many_as_possible,
 								   bool can_have_separators,
@@ -1604,6 +1625,9 @@ void lexer::scan_identifier(token& into, bool is_private) {
 			return;
 		}
 	}
+
+	if (is_private)
+		wbuffer_.insert(wbuffer_.begin(), 1, U'#');
 
 	into.emplace_token<tokens::identifier_token>(identifier_start,
 												 std::move(wbuffer_));
@@ -1807,10 +1831,12 @@ bool lexer::scan(token& into) {
 		auto pos = next_code_point(ch);
 
 		if (!pos) {
-			// special case, if we were at a valid template point but in an interpolated string,
-			// it might otherwise look like we're good but we're not
+			// special case, if we were at a valid template point but in an
+			// interpolated string, it might otherwise look like we're good but
+			// we're not
 			if (!interpolation_context_.empty()) {
-				throw unterminated_string_literal(interpolation_context_.front().second);
+				throw unterminated_string_literal(
+					interpolation_context_.front().second);
 			}
 			return false;
 		}
@@ -1917,7 +1943,8 @@ bool lexer::scan(token& into) {
 			case U'`':
 				interpolation_context_.push_back(
 					std::make_pair(in_constant, location()));
-				into.emplace_token<tokens::interpolated_string_start_token>(location());
+				into.emplace_token<tokens::interpolated_string_start_token>(
+					location());
 				advance(pos);
 				return true;
 			case U'%': {
@@ -2150,21 +2177,19 @@ bool lexer::scan(token& into) {
 						return true;
 					}
 
-					if (next == 'n' || next == 'N') {
-						advance(pos + gs);
-						scan_big_integer_token(into);
-						return true;
-					}
-
 					// try to parse an octal number
 					if (is_octal_digit(next)) {
-						long long octal_value;
+						tscc_big_int octal_value;
 						auto taken = scan_octal_number(octal_value, true, pos);
 						if (taken) {
+							advance(pos + gs + taken);
+							bool is_bigint = check_and_consume_bigint_suffix();
+							auto size = is_bigint
+											? tokens::integer_size::big_int
+											: tokens::integer_size::standard;
 							into.emplace_token<tokens::constant_value_token>(
 								location(), octal_value,
-								tokens::integer_base::octal);
-							advance(pos + gs + taken);
+								tokens::integer_base::octal, size);
 						} else {
 							advance(pos);
 							scan_decimal_token(into);
@@ -2302,6 +2327,21 @@ bool lexer::scan(token& into) {
 								if (scan_conflict_marker(into)) {
 									return true;
 								}
+
+								char32_t ttnext{};
+								auto tgs =
+									next_code_point(ttnext, pos + gs + ggs);
+								if (tgs > 0 && ttnext == '=') {
+									advance(pos + gs + ggs + tgs);
+									into.emplace_token<
+										tokens::triple_greater_eq_token>(loc);
+									return true;
+								}
+
+								advance(pos + gs + ggs);
+								into.emplace_token<
+									tokens::triple_greater_token>(loc);
+								return true;
 							}
 
 							if (gtnext == U'=') {
@@ -2483,6 +2523,16 @@ bool lexer::scan(token& into) {
 				return true;
 		}
 	}
+}
+
+bool lexer::check_and_consume_bigint_suffix() {
+	char32_t next{};
+	auto nc = next_code_point(next);
+	if (nc && (next == U'n' || next == U'N')) {
+		advance(nc);
+		return true;
+	}
+	return false;
 }
 
 source_location lexer::location() const {

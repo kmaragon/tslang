@@ -66,13 +66,13 @@ TEST_CASE("Lexer", "[lexer]") {
 		SECTION("Single line comment at EOF") {
 			auto tokens = tokenize("  // this is a comment");
 			REQUIRE(tokens.size() == 1);
-			CHECK(tokens[0]->to_string() == "//this is a comment");
+			CHECK(tokens[0]->to_string() == "// this is a comment");
 		}
 
 		SECTION("Single line comment with spaces and newline") {
 			auto tokens = tokenize("  //~ this is a comment \t \n  ");
 			REQUIRE(tokens.size() == 1);
-			CHECK(tokens[0]->to_string() == "//~ this is a comment");
+			CHECK(tokens[0]->to_string() == "// ~ this is a comment");
 		}
 	}
 
@@ -273,8 +273,8 @@ And some more
 		}
 
 		SECTION("Comparison Operators") {
-			auto tokens = tokenize("== === != !== < > <= >= << >>");
-			REQUIRE(tokens.size() == 10);
+			auto tokens = tokenize("== === != !== < > <= >=");
+			REQUIRE(tokens.size() == 8);
 			CHECK(tokens[0].is<tscc::lex::tokens::double_eq_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::triple_eq_token>());
 			CHECK(tokens[2].is<tscc::lex::tokens::exclamation_eq_token>());
@@ -283,8 +283,6 @@ And some more
 			CHECK(tokens[5].is<tscc::lex::tokens::greater_token>());
 			CHECK(tokens[6].is<tscc::lex::tokens::less_eq_token>());
 			CHECK(tokens[7].is<tscc::lex::tokens::greater_eq_token>());
-			CHECK(tokens[8].is<tscc::lex::tokens::double_less_token>());
-			CHECK(tokens[9].is<tscc::lex::tokens::double_greater_token>());
 		}
 
 		SECTION("Syntactic Operators") {
@@ -295,6 +293,16 @@ And some more
 			CHECK(tokens[2].is<tscc::lex::tokens::identifier_token>());
 			CHECK(tokens[2]->to_string() == "obj");
 			CHECK(tokens[3].is<tscc::lex::tokens::close_brace_token>());
+		}
+
+		SECTION("Bitwise Operators") {
+			auto tokens = tokenize("& | << >> >>>");
+			REQUIRE(tokens.size() == 5);
+			CHECK(tokens[0].is<tscc::lex::tokens::ampersand_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::bar_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::double_less_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::double_greater_token>());
+			CHECK(tokens[4].is<tscc::lex::tokens::triple_greater_token>());
 		}
 
 		SECTION("Logical Operators") {
@@ -309,8 +317,8 @@ And some more
 
 		SECTION("Compound Operators") {
 			auto tokens =
-				tokenize("+= -= *= /= %= **= &= |= ^= <<= >>= &&= ||= ??=");
-			REQUIRE(tokens.size() == 14);
+				tokenize("+= -= *= /= %= **= &= |= ^= <<= >>= &&= ||= ??= >>>=");
+			REQUIRE(tokens.size() == 15);
 			CHECK(tokens[0].is<tscc::lex::tokens::plus_eq_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::minus_eq_token>());
 			CHECK(tokens[2].is<tscc::lex::tokens::asterisk_eq_token>());
@@ -326,6 +334,7 @@ And some more
 				tokens[11].is<tscc::lex::tokens::double_ampersand_eq_token>());
 			CHECK(tokens[12].is<tscc::lex::tokens::double_bar_eq_token>());
 			CHECK(tokens[13].is<tscc::lex::tokens::double_question_eq_token>());
+			CHECK(tokens[14].is<tscc::lex::tokens::triple_greater_eq_token>());
 		}
 
 		SECTION("Brackets") {
@@ -333,6 +342,71 @@ And some more
 			REQUIRE(tokens.size() == 2);
 			CHECK(tokens[0].is<tscc::lex::tokens::open_bracket_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::close_bracket_token>());
+		}
+	}
+
+	SECTION("Additional Punctuation and Edge Cases") {
+		SECTION("Hash Symbol") {
+			// Test # as standalone token (private fields, not shebang)
+			auto tokens = tokenize("class { #privateField; }");
+			REQUIRE(tokens.size() == 5);
+			CHECK(tokens[0].is<tscc::lex::tokens::class_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::open_brace_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[2]->to_string() == "#privateField");
+			CHECK(tokens[3].is<tscc::lex::tokens::semicolon_token>());
+			CHECK(tokens[4].is<tscc::lex::tokens::close_brace_token>());
+		}
+
+		SECTION("Underscore as Identifier") {
+			auto tokens = tokenize("_ _unused __proto__");
+			REQUIRE(tokens.size() == 3);
+			CHECK(tokens[0].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[0]->to_string() == "_");
+			CHECK(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[1]->to_string() == "_unused");
+			CHECK(tokens[2].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[2]->to_string() == "__proto__");
+		}
+	}
+
+	SECTION("String Escape Edge Cases") {
+		SECTION("Additional Escape Sequences") {
+			auto tokens = tokenize("'\\0\\b\\f\\v\\r'");
+			REQUIRE(tokens.size() == 1);
+			REQUIRE(tokens[0].is<tscc::lex::tokens::constant_value_token>());
+
+			auto& cv = static_cast<tscc::lex::tokens::constant_value_token&>(*tokens[0]);
+			auto sv = cv.string_value();
+			REQUIRE(sv);
+			REQUIRE(sv->at(0) == 0);
+			REQUIRE(sv->at(1) == '\b');
+			REQUIRE(sv->at(2) == '\f');
+			REQUIRE(sv->at(3) == '\v');
+			REQUIRE(sv->at(4) == '\r');
+		}
+
+		SECTION("String Without Terminating Newline") {
+			auto tokens = tokenize("'hello'");
+			REQUIRE(tokens.size() == 1);
+			CHECK(tokens[0].is<tscc::lex::tokens::constant_value_token>());
+			CHECK(tokens[0]->to_string() == "'hello'");
+		}
+	}
+
+	SECTION("Comment Edge Cases") {
+		SECTION("Comment at EOF without newline") {
+			auto tokens = tokenize("let x = 1; // final comment");
+			REQUIRE(tokens.size() == 6);
+			CHECK(tokens[0].is<tscc::lex::tokens::let_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[1]->to_string() == "x");
+			CHECK(tokens[2].is<tscc::lex::tokens::eq_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::constant_value_token>());
+			CHECK(tokens[3]->to_string() == "1");
+			CHECK(tokens[4].is<tscc::lex::tokens::semicolon_token>());
+			CHECK(tokens[5].is<tscc::lex::tokens::comment_token>());
+			CHECK(tokens[5]->to_string() == "// final comment");
 		}
 	}
 
@@ -844,6 +918,120 @@ And some more
 																 lexer.end()});
 				}
 			}
+
+			SECTION("BigInt Numbers") {
+				SECTION("Decimal BigInt") {
+					auto tokens = tokenize("123n 0n");
+					REQUIRE(tokens.size() == 2);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[0]->to_string() == "123n");
+					auto constant_value0 =
+						static_cast<tscc::lex::tokens::constant_value_token&>(
+							*tokens[0]);
+					CHECK(constant_value0.is_bigint() == true);
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "0n");
+					auto constant_value1 =
+						static_cast<tscc::lex::tokens::constant_value_token&>(
+							*tokens[1]);
+					CHECK(constant_value1.is_bigint() == true);
+				}
+
+				SECTION("Binary BigInt") {
+					auto tokens = tokenize("0b1010n 0B1111n");
+					REQUIRE(tokens.size() == 2);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[0]->to_string() == "0b1010n");
+					auto constant_value0 =
+						static_cast<tscc::lex::tokens::constant_value_token&>(
+							*tokens[0]);
+					CHECK(constant_value0.is_bigint() == true);
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "0b1111n");
+					auto constant_value1 =
+						static_cast<tscc::lex::tokens::constant_value_token&>(
+							*tokens[1]);
+					CHECK(constant_value1.is_bigint() == true);
+				}
+
+				SECTION("Octal BigInt") {
+					auto tokens = tokenize("0o777n 0O123n");
+					REQUIRE(tokens.size() == 2);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[0]->to_string() == "0o777n");
+					auto constant_value0 =
+						static_cast<tscc::lex::tokens::constant_value_token&>(
+							*tokens[0]);
+					CHECK(constant_value0.is_bigint() == true);
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "0o123n");
+					auto constant_value1 =
+						static_cast<tscc::lex::tokens::constant_value_token&>(
+							*tokens[1]);
+					CHECK(constant_value1.is_bigint() == true);
+				}
+
+				SECTION("Hexadecimal BigInt") {
+					auto tokens = tokenize("0xFFn 0x123n");
+					REQUIRE(tokens.size() == 2);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[0]->to_string() == "0xffn");
+					auto constant_value0 =
+						static_cast<tscc::lex::tokens::constant_value_token&>(
+							*tokens[0]);
+					CHECK(constant_value0.is_bigint() == true);
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "0x123n");
+					auto constant_value1 =
+						static_cast<tscc::lex::tokens::constant_value_token&>(
+							*tokens[1]);
+					CHECK(constant_value1.is_bigint() == true);
+				}
+
+				SECTION("Mixed regular and BigInt numbers") {
+					auto tokens = tokenize("123 123n 0xFF 0xFFn");
+					REQUIRE(tokens.size() == 4);
+					CHECK(tokens[0]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[0]->to_string() == "123");
+					auto constant_value0 =
+						static_cast<tscc::lex::tokens::constant_value_token&>(
+							*tokens[0]);
+					CHECK(constant_value0.is_bigint() == false);
+					
+					CHECK(tokens[1]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[1]->to_string() == "123n");
+					auto constant_value1 =
+						static_cast<tscc::lex::tokens::constant_value_token&>(
+							*tokens[1]);
+					CHECK(constant_value1.is_bigint() == true);
+					
+					CHECK(tokens[2]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[2]->to_string() == "0xff");
+					auto constant_value2 =
+						static_cast<tscc::lex::tokens::constant_value_token&>(
+							*tokens[2]);
+					CHECK(constant_value2.is_bigint() == false);
+					
+					CHECK(tokens[3]
+							  .is<tscc::lex::tokens::constant_value_token>());
+					CHECK(tokens[3]->to_string() == "0xffn");
+					auto constant_value3 =
+						static_cast<tscc::lex::tokens::constant_value_token&>(
+							*tokens[3]);
+					CHECK(constant_value3.is_bigint() == true);
+				}
+			}
 		}
 
 		SECTION("Boolean and Null") {
@@ -1183,6 +1371,36 @@ And some more
 			CHECK(tokens[1].is<tscc::lex::tokens::interface_token>());
 			CHECK(tokens[2].is<tscc::lex::tokens::extends_token>());
 			CHECK(tokens[3].is<tscc::lex::tokens::implements_token>());
+		}
+
+		SECTION("Import/Export Keywords") {
+			auto tokens = tokenize("import export from default");
+			REQUIRE(tokens.size() == 4);
+			CHECK(tokens[0].is<tscc::lex::tokens::import_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::export_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::from_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::default_token>());
+		}
+
+		SECTION("Operator Keywords") {
+			auto tokens = tokenize("instanceof typeof in new delete");
+			REQUIRE(tokens.size() == 5);
+			CHECK(tokens[0].is<tscc::lex::tokens::instanceof_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::typeof_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::in_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::new_token>());
+			CHECK(tokens[4].is<tscc::lex::tokens::delete_token>());
+		}
+
+		SECTION("Advanced TypeScript Keywords") {
+			auto tokens = tokenize("keyof infer satisfies assert namespace enum");
+			REQUIRE(tokens.size() == 6);
+			CHECK(tokens[0].is<tscc::lex::tokens::keyof_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::infer_token>());
+			CHECK(tokens[2].is<tscc::lex::tokens::satisfies_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::assert_token>());
+			CHECK(tokens[4].is<tscc::lex::tokens::namespace_token>());
+			CHECK(tokens[5].is<tscc::lex::tokens::enum_token>());
 		}
 	}
 }

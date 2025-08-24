@@ -55,6 +55,7 @@
 									  tscc::lex::tokens::double_question_eq_token,\
 									  tscc::lex::tokens::double_question_token,\
 									  tscc::lex::tokens::else_token,\
+									  tscc::lex::tokens::enum_token,\
 									  tscc::lex::tokens::eq_greater_token,\
 									  tscc::lex::tokens::eq_token,\
 									  tscc::lex::tokens::exclamation_eq_eq_token,\
@@ -137,6 +138,8 @@
 									  tscc::lex::tokens::tilde_token,\
 									  tscc::lex::tokens::triple_dot_token,\
 									  tscc::lex::tokens::triple_eq_token,\
+									  tscc::lex::tokens::triple_greater_eq_token,\
+									  tscc::lex::tokens::triple_greater_token,\
 									  tscc::lex::tokens::true_token,\
 									  tscc::lex::tokens::try_token,\
 									  tscc::lex::tokens::type_token,\

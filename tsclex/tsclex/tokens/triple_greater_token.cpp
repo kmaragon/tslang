@@ -16,25 +16,20 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "comment_token.hpp"
-#include <tsccore/utf8.hpp>
+#include "triple_greater_token.hpp"
 
 using namespace tscc::lex::tokens;
 
-comment_token::comment_token(const std::u32string& comment_body)
-	: body_(utf8_encode(comment_body)) {}
-
-bool comment_token::operator==(
-	const tscc::lex::tokens::comment_token& other) const {
-	return body_ == other.body_;
+bool triple_greater_token::operator==(
+	const tscc::lex::tokens::triple_greater_token& other) const {
+	return true;
 }
 
-bool comment_token::operator!=(
-	const tscc::lex::tokens::comment_token& other) const {
-	return body_ != other.body_;
+bool triple_greater_token::operator!=(
+	const tscc::lex::tokens::triple_greater_token& other) const {
+	return false;
 }
 
-std::string comment_token::to_string() const
-{
-	return "// " + body_;
+std::string triple_greater_token::to_string() const {
+	return ">>>";
 }

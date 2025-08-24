@@ -16,25 +16,21 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "comment_token.hpp"
-#include <tsccore/utf8.hpp>
+#pragma once
 
-using namespace tscc::lex::tokens;
+#include "basic_token.hpp"
 
-comment_token::comment_token(const std::u32string& comment_body)
-	: body_(utf8_encode(comment_body)) {}
+namespace tscc::lex::tokens {
 
-bool comment_token::operator==(
-	const tscc::lex::tokens::comment_token& other) const {
-	return body_ == other.body_;
-}
-
-bool comment_token::operator!=(
-	const tscc::lex::tokens::comment_token& other) const {
-	return body_ != other.body_;
-}
-
-std::string comment_token::to_string() const
+class enum_token : public basic_token
 {
-	return "// " + body_;
+public:
+	enum_token() = default;
+
+	bool operator==(const enum_token& other) const;
+	bool operator!=(const enum_token& other) const;
+
+	std::string to_string() const override;
+};
+
 }

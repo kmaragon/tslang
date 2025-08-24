@@ -5,7 +5,7 @@
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation, either version 3 of the License, or (at your option)
- * any later version.
+ * any latet tomaticr version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of  MERCHANTABILITY or
@@ -21,11 +21,13 @@
 #include <optional>
 #include <string>
 #include <variant>
+#include <tsccore/bigint.hpp>
 #include "basic_token.hpp"
 
 namespace tscc::lex::tokens {
 
 enum class integer_base { binary, octal, decimal, hex };
+enum class integer_size { standard, big_int };
 
 /**
  * @brief A typescript token that represents a constant value
@@ -33,7 +35,7 @@ enum class integer_base { binary, octal, decimal, hex };
 class constant_value_token : public basic_token {
 public:
 	constant_value_token(std::u32string string_value, char quote_char);
-	constant_value_token(long long integer_value, integer_base base);
+	constant_value_token(tscc_big_int integer_value, integer_base base, integer_size size = integer_size::standard);
 	constant_value_token(long double decimal_value);
 	constant_value_token(long double decimal_value,
 						 int scientific_notation_e,
@@ -44,7 +46,8 @@ public:
 
 	std::string to_string() const override;
 
-	std::optional<long long> integer_value() const noexcept;
+	std::optional<tscc_big_int> integer_value() const noexcept;
+	bool is_bigint() const noexcept;
 	std::optional<long double> decimal_value() const noexcept;
 	std::optional<std::u32string_view> string_value() const noexcept;
 
@@ -66,14 +69,17 @@ private:
 	};
 
 	struct integer_data {
-		long long value;
+		tscc_big_int value;
 		integer_base base;
+		integer_size size;
 
-		constexpr integer_data(long long v, integer_base b) noexcept
-			: value(v), base(b) {}
+		constexpr integer_data(tscc_big_int v, integer_base b) noexcept
+			: value(v), base(b), size(integer_size::standard) {}
+		constexpr integer_data(tscc_big_int v, integer_base b, integer_size s) noexcept
+			: value(v), base(b), size(s) {}
 
 		constexpr bool operator==(const integer_data& other) const noexcept {
-			return value == other.value && base == other.base;
+			return value == other.value && base == other.base && size == other.size;
 		}
 		constexpr bool operator!=(const integer_data& other) const noexcept {
 			return !operator==(other);

@@ -30,9 +30,10 @@ constant_value_token::constant_value_token(std::u32string string_value, char quo
 	: value_(string_data{std::move(string_value), quote}) {
 }
 
-constant_value_token::constant_value_token(long long integer_value,
-                                           integer_base base)
-	: value_(integer_data(integer_value, base)) {
+constant_value_token::constant_value_token(tscc_big_int integer_value,
+                                           integer_base base,
+                                           integer_size size)
+	: value_(integer_data(integer_value, base, size)) {
 }
 
 constant_value_token::constant_value_token(long double decimal_value)
@@ -62,11 +63,18 @@ std::optional<std::u32string_view> constant_value_token::string_value() const no
 	return std::get<string_data>(value_).value;
 }
 
-std::optional<long long> constant_value_token::integer_value() const noexcept {
+std::optional<tscc::tscc_big_int> constant_value_token::integer_value() const noexcept {
 	if (!std::holds_alternative<integer_data>(value_))
 		return std::nullopt;
 
 	return std::get<integer_data>(value_).value;
+}
+
+bool constant_value_token::is_bigint() const noexcept {
+	if (!std::holds_alternative<integer_data>(value_))
+		return false;
+
+	return std::get<integer_data>(value_).size == integer_size::big_int;
 }
 
 std::optional<long double> constant_value_token::decimal_value() const noexcept {
@@ -113,6 +121,9 @@ std::string constant_value_token::to_string() const {
 				break;
 			default:
 				str << std::dec << d.value;
+		}
+		if (d.size == integer_size::big_int) {
+			str << "n";
 		}
 
 		return str.str();
