@@ -37,6 +37,7 @@ enum class error_code : std::uint16_t
 	ts1199 = 1199,
 	ts6188 = 6188,
 	ts6189 = 6189,
+	ts17008 = 17008,
 	ts18026 = 18026,
 };
 

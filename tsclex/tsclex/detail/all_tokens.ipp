@@ -89,6 +89,7 @@
 									  tscc::lex::tokens::jsx_attribute_name_token,\
 									  tscc::lex::tokens::jsx_attribute_value_end_token,\
 									  tscc::lex::tokens::jsx_attribute_value_start_token,\
+									  tscc::lex::tokens::jsx_attribute_value_token,\
 									  tscc::lex::tokens::jsx_element_close_token,\
 									  tscc::lex::tokens::jsx_element_end_token,\
 									  tscc::lex::tokens::jsx_element_start_token,\

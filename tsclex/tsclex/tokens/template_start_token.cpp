@@ -20,6 +20,8 @@
 
 using namespace tscc::lex::tokens;
 
+template_start_token::template_start_token(bool is_jsx) : isjsx_(is_jsx) {}
+
 bool template_start_token::operator==(
 	const tscc::lex::tokens::template_start_token& other) const {
 	return true;
@@ -31,5 +33,5 @@ bool template_start_token::operator!=(
 }
 
 std::string template_start_token::to_string() const {
-	return "${";
+	return isjsx_ ? "{" : "${";
 }

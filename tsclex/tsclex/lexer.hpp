@@ -170,8 +170,8 @@ private:
 	bool scan_conflict_marker(token& into);
 	bool scan_jsx_token(token& into);
 	void scan_jsx_element_part(token& into);
+	void scan_jsx_attribute_part(token& into);
 	void scan_jsx_text_part(token& into);
-	void scan_jsx_expression_part(token& into);
 	void append_wbuffer(char32_t ch);
 
 	std::size_t scan_hex_number(tscc_big_int& into,
@@ -224,17 +224,26 @@ private:
 	bool force_identifier_;
 
 	// lexer context stack for managing nested parsing states
-	enum lexer_context : int8_t { 
-		in_template_literal,    // parsing template literal content (`...`)
-		in_template_expression, // parsing template expression (${...})
-		in_nested_brace,        // tracking brace nesting within expressions
-		in_jsx_element,         // parsing JSX element content (<div>...</div>)
-		in_jsx_text,            // parsing JSX text content between tags
-		in_jsx_expression       // parsing JSX expression content ({...})
+	enum lexer_context : int8_t {
+		in_template_literal,	 // parsing template literal content (`...`)
+		in_template_expression,	 // parsing template expression (${...})
+		in_nested_brace,		 // tracking brace nesting within expressions
+		in_jsx_element,			 // parsing JSX element content (<div>...</div>)
+		in_jsx_attribute,        // reading an attribute value
+		in_jsx_text,			 // parsing JSX text content between tags
+		in_jsx_expression		 // parsing JSX expression content ({...})
+
 	};
 
-	std::deque<std::pair<lexer_context, source_location>>
-		context_stack_;
+	struct stack_entry {
+		source_location location;
+		std::u32string text;
+
+		stack_entry(const source_location& loc, std::u32string text = {}) noexcept
+			: location(loc), text(std::move(text)) {}
+	};
+
+	std::deque<std::pair<lexer_context, stack_entry>> context_stack_;
 	const language_version vers_;
 };
 

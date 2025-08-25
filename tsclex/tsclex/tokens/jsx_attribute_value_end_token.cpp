@@ -20,30 +20,16 @@
 
 using namespace tscc::lex::tokens;
 
-jsx_attribute_value_end_token::jsx_attribute_value_end_token(value_type type)
-	: type_(type) {}
-
 bool jsx_attribute_value_end_token::operator==(
-	const jsx_attribute_value_end_token& other) const {
-	return type_ == other.type_;
+	const jsx_attribute_value_end_token&) const {
+	return true;
 }
 
 bool jsx_attribute_value_end_token::operator!=(
-	const jsx_attribute_value_end_token& other) const {
-	return !operator==(other);
-}
-
-jsx_attribute_value_end_token::value_type jsx_attribute_value_end_token::type() const noexcept {
-	return type_;
+	const jsx_attribute_value_end_token&) const {
+	return false;
 }
 
 std::string jsx_attribute_value_end_token::to_string() const {
-	switch (type_) {
-		case value_type::string:
-			return "\"";  // Could be " or ' but " is more common
-		case value_type::expression:
-			return "}";
-		default:
-			return "?";
-	}
+	return "}";
 }

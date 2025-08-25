@@ -25,21 +25,12 @@ namespace tscc::lex::tokens {
 class jsx_attribute_value_start_token : public basic_token
 {
 public:
-	enum class value_type {
-		string,     // "value" or 'value'
-		expression  // {expression}
-	};
-
-	explicit jsx_attribute_value_start_token(value_type type);
+	jsx_attribute_value_start_token() = default;
 
 	bool operator==(const jsx_attribute_value_start_token& other) const;
 	bool operator!=(const jsx_attribute_value_start_token& other) const;
 
-	value_type type() const noexcept;
 	std::string to_string() const override;
-
-private:
-	value_type type_;
 };
 
 }

@@ -2,11 +2,13 @@
 set(SOURCES
         tsccore/utf8.cpp
         tsccore/json.cpp
+        tsccore/xml.cpp
         )
 
 set(HEADERS
         tsccore/utf8.hpp
         tsccore/json.hpp
+        tsccore/xml.hpp
         )
 
 add_library(tsccore ${SOURCES})

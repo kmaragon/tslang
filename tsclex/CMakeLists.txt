@@ -6,6 +6,7 @@ set(SOURCES
         tsclex/error/invalid_identifier.cpp
         tsclex/error/misplaced_shebang.cpp
         tsclex/error/multiple_separators_not_allowed.cpp
+        tsclex/error/no_jsx_closing_tag.cpp
         tsclex/error/separators_not_allowed_here.cpp
         tsclex/error/unexpected_end_of_text.cpp
         tsclex/error/unicode_value_out_of_range.cpp
@@ -104,6 +105,7 @@ set(SOURCES
         tsclex/tokens/jsx_attribute_name_token.cpp
         tsclex/tokens/jsx_attribute_value_end_token.cpp
         tsclex/tokens/jsx_attribute_value_start_token.cpp
+        tsclex/tokens/jsx_attribute_value_token.cpp
         tsclex/tokens/jsx_element_close_token.cpp
         tsclex/tokens/jsx_element_end_token.cpp
         tsclex/tokens/jsx_element_start_token.cpp
@@ -188,6 +190,7 @@ set(HEADERS
         tsclex/error/invalid_identifier.hpp
         tsclex/error/misplaced_shebang.hpp
         tsclex/error/multiple_separators_not_allowed.hpp
+        tsclex/error/no_jsx_closing_tag.hpp
         tsclex/error/separators_not_allowed_here.hpp
         tsclex/error/unexpected_end_of_text.hpp
         tsclex/error/unicode_value_out_of_range.hpp
@@ -285,6 +288,7 @@ set(HEADERS
         tsclex/tokens/jsx_attribute_name_token.hpp
         tsclex/tokens/jsx_attribute_value_end_token.hpp
         tsclex/tokens/jsx_attribute_value_start_token.hpp
+        tsclex/tokens/jsx_attribute_value_token.hpp
         tsclex/tokens/jsx_element_close_token.hpp
         tsclex/tokens/jsx_element_end_token.hpp
         tsclex/tokens/jsx_element_start_token.hpp

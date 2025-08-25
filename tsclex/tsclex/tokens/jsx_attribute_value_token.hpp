@@ -16,20 +16,27 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "jsx_attribute_value_start_token.hpp"
+#pragma once
 
-using namespace tscc::lex::tokens;
+#include "basic_token.hpp"
+#include <string>
 
-bool jsx_attribute_value_start_token::operator==(
-	const jsx_attribute_value_start_token&) const {
-	return true;
-}
+namespace tscc::lex::tokens {
 
-bool jsx_attribute_value_start_token::operator!=(
-	const jsx_attribute_value_start_token&) const {
-	return false;
-}
+class jsx_attribute_value_token : public basic_token
+{
+public:
+	explicit jsx_attribute_value_token(const std::u32string& value, char quote_char);
 
-std::string jsx_attribute_value_start_token::to_string() const {
-	return "{";
+	bool operator==(const jsx_attribute_value_token& other) const;
+	bool operator!=(const jsx_attribute_value_token& other) const;
+
+	const std::u32string& value() const noexcept;
+	std::string to_string() const override;
+
+private:
+	std::u32string value_;
+	char quote_char_;
+};
+
 }

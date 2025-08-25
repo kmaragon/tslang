@@ -25,12 +25,15 @@ namespace tscc::lex::tokens {
 class template_start_token : public basic_token
 {
 public:
-	template_start_token() = default;
+	template_start_token(bool is_jsx);
 
 	bool operator==(const template_start_token& other) const;
 	bool operator!=(const template_start_token& other) const;
 
 	std::string to_string() const override;
+
+private:
+	bool isjsx_;
 };
 
 }

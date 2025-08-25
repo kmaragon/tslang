@@ -18,11 +18,12 @@
 
 #include "jsx_text_token.hpp"
 #include <tsccore/utf8.hpp>
+#include "tsccore/xml.hpp"
 
 using namespace tscc::lex::tokens;
 
 jsx_text_token::jsx_text_token(const std::u32string& text)
-	: text_(text) {}
+	: text_(xml_decode(text)) {}
 
 bool jsx_text_token::operator==(
 	const jsx_text_token& other) const {
@@ -39,5 +40,5 @@ const std::u32string& jsx_text_token::text() const noexcept {
 }
 
 std::string jsx_text_token::to_string() const {
-	return utf8_encode(text_);
+	return utf8_encode(xml_encode(text_));
 }

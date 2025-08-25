@@ -19,27 +19,20 @@
 #pragma once
 
 #include "basic_token.hpp"
+#include "jsx_attribute_value_start_token.hpp"
 
 namespace tscc::lex::tokens {
 
 class jsx_attribute_value_end_token : public basic_token
 {
 public:
-	enum class value_type {
-		string,     // "value" or 'value'
-		expression  // {expression}
-	};
-
-	explicit jsx_attribute_value_end_token(value_type type);
+	jsx_attribute_value_end_token() = default;
 
 	bool operator==(const jsx_attribute_value_end_token& other) const;
 	bool operator!=(const jsx_attribute_value_end_token& other) const;
 
-	value_type type() const noexcept;
 	std::string to_string() const override;
 
-private:
-	value_type type_;
 };
 
 }

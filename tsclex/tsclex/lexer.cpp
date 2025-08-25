@@ -27,6 +27,7 @@
 #include "error/invalid_identifier.hpp"
 #include "error/misplaced_shebang.hpp"
 #include "error/multiple_separators_not_allowed.hpp"
+#include "error/no_jsx_closing_tag.hpp"
 #include "error/separators_not_allowed_here.hpp"
 #include "error/unexpected_end_of_text.hpp"
 #include "error/unicode_value_out_of_range.hpp"
@@ -35,6 +36,7 @@
 #include "error/unterminated_unicode_escape_sequence.hpp"
 #include "private/unicode_tables.hpp"
 #include "token.hpp"
+#include "tsccore/utf8.hpp"
 
 using namespace tscc::lex;
 
@@ -767,7 +769,7 @@ void lexer::scan_template_string_part(token& into) {
 		char32_t second;
 		auto gc = next_code_point(second, nc);
 		if (gc && second == '{') {
-			into.emplace_token<tokens::template_start_token>(location());
+			into.emplace_token<tokens::template_start_token>(location(), false);
 			advance(nc + gc);
 			context_stack_.push_back(
 				std::make_pair(in_template_expression, location()));
@@ -782,7 +784,7 @@ void lexer::scan_template_string_part(token& into) {
 		nc = next_code_point(first);
 		if (!nc) {
 			throw unterminated_string_literal(
-				context_stack_.front().second);
+				context_stack_.front().second.location);
 		}
 
 		// we have an end quote on not the first character so emit the string
@@ -857,7 +859,7 @@ std::size_t lexer::scan_escape_sequence(char32_t& into, std::size_t skip) {
 		if (is_curly_braced) {
 			cc = next_code_point(check_curly, skip + gc + scanned);
 			if (!cc) {
-				throw unexpected_end_of_text(location() + gc);
+				throw unexpected_end_of_text(location());
 			}
 
 			if (check_curly != '}') {
@@ -1410,8 +1412,343 @@ bool lexer::scan_jsx_token(token& into) {
 		return false;
 	}
 
+	char32_t angle;
+	auto nc = next_code_point(angle);
 
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
+	// we only got here because we already have the < and one character from the
+	// identifier
+	assert(nc && angle == U'<');
+
+	auto at = nc;
+	auto start = location() + nc;
+
+	// scan the the jsx identifier
+	wbuffer_.clear();
+	while (true) {
+		char32_t next{};
+		nc = next_code_point(next, at);
+		if (!nc) {
+			// end of file before in the middle of what would have been an
+			// identifier
+			return false;
+		}
+
+		if (std::iswspace(next))
+			break;
+
+		if (next == U'>') {
+			// we got a close tag. This is an identifier
+			advance(at);
+			into.emplace_token<tokens::jsx_element_start_token>(location(),
+																wbuffer_);
+
+			context_stack_.push_back(std::make_pair(
+				in_jsx_element, stack_entry{start, std::move(wbuffer_)}));
+			return true;
+		}
+
+		if (!is_identifier_part(next, true)) {
+			return false;
+		}
+
+		wbuffer_.push_back(next);
+		at += nc;
+	}
+
+	// if we got here, we may have a jsx token - we just need to validate before
+	// we continue on
+	auto element_name_end = at;
+	while (true) {
+		char32_t next{};
+		nc = next_code_point(next, at);
+		if (!nc) {
+			return false;
+		}
+
+		at += nc;
+		if (std::iswspace(next)) {
+			continue;
+		}
+
+		if (is_identifier_start(next) || next == U'>') {
+			break;
+		}
+
+		if (next == U'/') {
+			char32_t test{};
+			auto gc = next_code_point(test, at);
+			if (!gc) {
+				return false;
+			}
+
+			if (test == U'>') {
+				break;
+			}
+		}
+	}
+
+	// this is a jsx element
+	into.emplace_token<tokens::jsx_element_start_token>(location(), wbuffer_);
+
+	// add case insensitive buffer to the context
+	context_stack_.push_back(std::make_pair(
+		in_jsx_element, stack_entry{start, std::move(wbuffer_)}));
+	advance(element_name_end);
+	return true;
+}
+
+void lexer::scan_jsx_element_part(token& into) {
+	auto element_start = context_stack_.back().second.location;
+
+	while (true) {
+		char32_t next{};
+
+		auto nc = next_code_point(next);
+		if (next == U'\n') {
+			gpos_.advance_line();
+			advance(nc);
+			continue;
+		}
+
+		if (is_identifier_start(next)) {
+			// we have an attribute
+			break;
+		}
+
+		if (std::iswspace(next)) {
+			advance(nc);
+			continue;
+		}
+
+		if (next == U'/') {
+			char32_t test{};
+			auto gc = next_code_point(test, nc);
+			if (!gc) {
+				throw unexpected_end_of_text(element_start);
+			}
+
+			if (test == U'>') {
+				into.emplace_token<tokens::jsx_self_closing_token>(location());
+				context_stack_.pop_back();
+				advance(nc + gc);
+				return;
+			}
+
+			continue;
+		}
+
+		if (next == U'>') {
+			into.emplace_token<tokens::jsx_element_end_token>(location());
+			advance(nc);
+			context_stack_.push_back(std::make_pair(in_jsx_text, location()));
+			return;
+		}
+
+		throw invalid_identifier(element_start);
+	}
+
+	// We should be at an attribute name
+	auto start_name = location();
+	wbuffer_.clear();
+	bool end_of_name = false;
+	while (true) {
+		char32_t next{};
+
+		auto nc = next_code_point(next);
+		if (!nc) {
+			throw unexpected_end_of_text(element_start);
+		}
+
+		if (next == U'=') {
+			// this is the end of the tag - switch to the text
+			advance(nc);
+			into.emplace_token<tokens::jsx_attribute_name_token>(
+				start_name, std::move(wbuffer_));
+			context_stack_.push_back(
+				std::make_pair(in_jsx_attribute, location()));
+			return;
+		}
+
+		if (std::iswspace(next)) {
+			advance(nc);
+			if (next == U'\n') {
+				gpos_.advance_line();
+			}
+			end_of_name = true;
+			continue;
+		}
+
+		if (!is_identifier_part(next, true)) {
+			throw invalid_identifier(location());
+		}
+
+		if (end_of_name) {
+			// we add the name but change no context because it's just
+			// a name with no value
+			into.emplace_token<tokens::jsx_attribute_name_token>(
+				start_name, std::move(wbuffer_));
+			return;
+		}
+
+		advance(nc);
+		wbuffer_.push_back(next);
+	}
+}
+
+void lexer::scan_jsx_attribute_part(token& into) {
+	char32_t next{};
+	auto nc = next_code_point(next);
+
+	while (std::iswspace(next)) {
+		if (next == U'\n') {
+			gpos_.advance_line();
+		} else {
+			advance(nc);
+		}
+		nc = next_code_point(next);
+	}
+
+	auto attribute_start = location();
+
+	// next contains the first character in the attribute
+	if (next == U'"' || next == U'\'') {
+		auto quote_char = next;
+		advance(nc);
+
+		wbuffer_.clear();
+		while (true) {
+			nc = next_code_point(next);
+			if (!nc) {
+				throw unexpected_end_of_text(attribute_start);
+			}
+
+			advance(nc);
+			if (next == quote_char) {
+				// end of the quote
+				into.emplace_token<tokens::jsx_attribute_value_token>(
+					location(), wbuffer_, (char)quote_char);
+				context_stack_.pop_back();
+				return;
+			}
+
+			wbuffer_.push_back(next);
+		}
+	}
+
+	if (next != U'{') {
+		into.emplace_token<tokens::jsx_attribute_value_start_token>(location());
+		context_stack_.push_back(std::make_pair(in_jsx_expression, location()));
+		advance(nc);
+		return;
+	}
+
+	advance(nc);
+	context_stack_.push_back(std::make_pair(in_jsx_expression, location()));
+	into.emplace_token<tokens::jsx_attribute_value_start_token>(location());
+}
+
+void lexer::scan_jsx_text_part(token& into) {
+	// start off and see if we immediately end or immediately start an
+	// expression
+	char32_t next{};
+	auto nc = next_code_point(next);
+	if (next == U'{') {
+		into.emplace_token<tokens::template_start_token>(location(), true);
+		context_stack_.push_back(std::make_pair(in_jsx_expression, location()));
+		advance(nc);
+		return;
+	}
+
+	if (next == U'<') {
+		// we are immediately starting either a close element or start element
+		char32_t test{};
+		auto gc = next_code_point(test, nc);
+		if (gc && test == '/') {
+			// we got a closing tag
+			auto start = location();
+			advance(gc + nc);
+
+			nc = next_code_point(next);
+
+			// read the identifier
+			wbuffer_.clear();
+			while (true) {
+				nc = next_code_point(next);
+				if (!nc) {
+					throw unexpected_end_of_text(start);
+				}
+
+				if (!is_identifier_part(next, true))
+					break;
+
+				advance(nc);
+				wbuffer_.push_back(next);
+			}
+
+			if (next != U'>') {
+				throw invalid_character(location());
+			}
+
+			// pop the in_jsx_text from the stack
+			context_stack_.pop_back();
+
+			// so we should be back to the element
+			assert(!context_stack_.empty());
+			assert(context_stack_.back().first == in_jsx_element);
+
+			// then we can get the tag name
+			into.emplace_token<tokens::jsx_element_close_token>(location(),
+																wbuffer_);
+
+			if (wbuffer_ != context_stack_.back().second.text) {
+				throw no_jsx_closing_tag(
+					location(), utf8_encode(context_stack_.back().second.text));
+			}
+
+			context_stack_.pop_back();
+			advance(nc);
+			return;
+		}
+
+		auto start_location = location() + nc;
+		if (!scan_jsx_token(into)) {
+			throw invalid_identifier(start_location);
+		}
+
+		return;
+	}
+
+	wbuffer_.clear();
+	while (true) {
+		nc = next_code_point(next);
+		if (!nc) {
+			throw unexpected_end_of_text(context_stack_.back().second.location);
+		}
+
+		if (next == U'\n') {
+			gpos_.advance_line();
+		} else if (next == U'\r') {
+			char32_t check{};
+			auto gc = next_code_point(check);
+			if (gc && next == U'\n') {
+				advance(nc);
+				next = check;
+				gpos_.advance_line();
+			}
+		} else if (next == '{') {
+			// we have a token starting
+			into.emplace_token<tokens::jsx_text_token>(location(),
+													   std::move(wbuffer_));
+			return;
+		} else if (next == '<') {
+			into.emplace_token<tokens::jsx_text_token>(location(),
+													   std::move(wbuffer_));
+			return;
+		}
+
+		advance(nc);
+		wbuffer_.push_back(next);
+	}
 }
 
 void lexer::append_wbuffer(char32_t ch) {
@@ -1737,7 +2074,7 @@ constexpr bool lexer::is_identifier_part(char32_t ch, bool is_jsx) {
 	if (ch == U'$' || ch == U'_')
 		return true;
 
-	if (is_jsx && (ch == '-' || ch == ':'))
+	if (is_jsx && (ch == '-' || ch == ':' || ch == '.'))
 		return true;
 
 	if (ch > 0x7f) {
@@ -1889,17 +2226,20 @@ bool lexer::scan(token& into) {
 	reset_one_iteration_values resetter{this};
 	if (!context_stack_.empty()) {
 		switch (context_stack_.back().first) {
-		case in_template_literal:
-			scan_template_string_part(into);
-			return true;
-		case in_jsx_element:
-			scan_jsx_element_part(into);
-			return true;
-		case in_jsx_text:
-			scan_jsx_text_part(into);
-			return true;
-		default:
-			break;
+			case in_template_literal:
+				scan_template_string_part(into);
+				return true;
+			case in_jsx_element:
+				scan_jsx_element_part(into);
+				return true;
+			case in_jsx_attribute:
+				scan_jsx_attribute_part(into);
+				return true;
+			case in_jsx_text:
+				scan_jsx_text_part(into);
+				return true;
+			default:
+				break;
 		}
 	}
 
@@ -1913,17 +2253,19 @@ bool lexer::scan(token& into) {
 			// we're not
 			if (!context_stack_.empty()) {
 				switch (context_stack_.front().first) {
-				case in_template_literal:
-				case in_template_expression:
-				case in_nested_brace:
-					throw unterminated_string_literal(
-						context_stack_.front().second);
-				case in_jsx_element:
-				case in_jsx_text:
-				case in_jsx_expression:
-					// For JSX contexts, use unexpected_end_of_text which is more generic
-					throw unexpected_end_of_text(
-						context_stack_.front().second);
+					case in_template_literal:
+					case in_template_expression:
+					case in_nested_brace:
+						throw unterminated_string_literal(
+							context_stack_.front().second.location);
+					case in_jsx_element:
+					case in_jsx_text:
+					case in_jsx_expression:
+					case in_jsx_attribute:
+						// For JSX contexts, use unexpected_end_of_text which is
+						// more generic
+						throw unexpected_end_of_text(
+							context_stack_.front().second.location);
 				}
 			}
 			return false;
@@ -2341,7 +2683,7 @@ bool lexer::scan(token& into) {
 						return true;
 					}
 
-					if (is_alpha(next) || next == U'>') {
+					if (is_identifier_start(next) || next == U'>') {
 						if (scan_jsx_token(into)) {
 							return true;
 						}
@@ -2511,12 +2853,14 @@ bool lexer::scan(token& into) {
 			}
 			case U'{':
 				// special case for string interpolation
-				if (!context_stack_.empty() &&
-					(context_stack_.back().first == in_template_expression ||
-					 context_stack_.back().first == in_nested_brace)) {
-					// increase the brace depth if we are in a template
-					context_stack_.push_back(
-						std::make_pair(in_nested_brace, location()));
+				if (!context_stack_.empty()) {
+					if (context_stack_.back().first == in_template_expression ||
+						context_stack_.back().first == in_nested_brace ||
+						context_stack_.back().first == in_jsx_expression) {
+						// increase the brace depth if we are in a template
+						context_stack_.push_back(
+							std::make_pair(in_nested_brace, location()));
+					}
 				}
 				into.emplace_token<tokens::open_brace_token>(location());
 				advance(pos);
@@ -2568,11 +2912,25 @@ bool lexer::scan(token& into) {
 						// if we're in a brace in the template, just pop it
 						context_stack_.pop_back();
 					} else if (context_stack_.back().first ==
-							   in_template_expression) {
+								   in_template_expression ||
+							   context_stack_.back().first ==
+								   in_jsx_expression) {
 						// otherwise if we are ending the template
 						context_stack_.pop_back();
-						into.emplace_token<tokens::template_end_token>(
-							location());
+
+						// if we're in an element and we are in a jsx
+						// expression, then we are undoubtedly in an attribute
+						// in that element
+						if (!context_stack_.empty() &&
+							context_stack_.back().first == in_jsx_attribute) {
+							into.emplace_token<
+								tokens::jsx_attribute_value_end_token>(
+								location());
+							context_stack_.pop_back();
+						} else {
+							into.emplace_token<tokens::template_end_token>(
+								location());
+						}
 						advance(pos);
 						return true;
 					}
@@ -2622,21 +2980,6 @@ bool lexer::check_and_consume_bigint_suffix() {
 		return true;
 	}
 	return false;
-}
-
-void lexer::scan_jsx_element_part(token& into) {
-	// TODO: Implement JSX element scanning
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
-}
-
-void lexer::scan_jsx_text_part(token& into) {
-	// TODO: Implement JSX text scanning
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
-}
-
-void lexer::scan_jsx_expression_part(token& into) {
-	// TODO: Implement JSX expression scanning
-	throw std::system_error(std::make_error_code(std::errc::not_supported));
 }
 
 source_location lexer::location() const {

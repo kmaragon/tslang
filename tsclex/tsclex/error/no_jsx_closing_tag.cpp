@@ -1,5 +1,5 @@
 /*
- * TSCC - a Typescript Compiler
+* TSCC - a Typescript Compiler
  * Copyright (c) 2025. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
@@ -16,20 +16,24 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "jsx_attribute_value_start_token.hpp"
+#include "no_jsx_closing_tag.hpp"
 
-using namespace tscc::lex::tokens;
+using namespace tscc::lex;
 
-bool jsx_attribute_value_start_token::operator==(
-	const jsx_attribute_value_start_token&) const {
-	return true;
+no_jsx_closing_tag::no_jsx_closing_tag(
+	const tscc::lex::source_location& location, const std::string& element)
+	: lex_error(location) {
+	constexpr std::string_view templ = "JSX element '{}' has no corresponding closing tag";
+	msg_.reserve(templ.size() + element.size() - 2);
+	msg_.append(templ.substr(0, templ.find('{')));
+	msg_.append(element);
+	msg_.append(templ.substr(templ.find('}') + 1));
 }
 
-bool jsx_attribute_value_start_token::operator!=(
-	const jsx_attribute_value_start_token&) const {
-	return false;
+const char* no_jsx_closing_tag::what() const noexcept {
+	return msg_.c_str();
 }
 
-std::string jsx_attribute_value_start_token::to_string() const {
-	return "{";
+error_code no_jsx_closing_tag::code() const noexcept {
+	return error_code::ts17008;
 }

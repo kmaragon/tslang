@@ -1480,24 +1480,34 @@ And some more
 
 		SECTION("Simple JSX Element") {
 			// <div>Hello</div>
-			auto tokens = tokenize("<div>Hello</div>");
-			REQUIRE(tokens.size() == 4);  // <div, >, Hello, </div>
-			
+			auto tokens = tokenize("var div = <div>Hello</div>");
+			REQUIRE(tokens.size() == 7);  // <div, >, Hello, </div>
+
+			// var
+			CHECK(tokens[0].is<tscc::lex::tokens::var_token>());
+
+			// div
+			CHECK(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[1]->to_string() == "div");
+
+			// =
+			CHECK(tokens[2].is<tscc::lex::tokens::eq_token>());
+
 			// <div
-			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
-			CHECK(tokens[0]->to_string() == "<div");
+			CHECK(tokens[3].is<tscc::lex::tokens::jsx_element_start_token>());
+			CHECK(tokens[3]->to_string() == "<div");
 			
 			// >
-			CHECK(tokens[1].is<tscc::lex::tokens::jsx_element_end_token>());
-			CHECK(tokens[1]->to_string() == ">");
+			CHECK(tokens[4].is<tscc::lex::tokens::jsx_element_end_token>());
+			CHECK(tokens[4]->to_string() == ">");
 			
 			// Hello
-			CHECK(tokens[2].is<tscc::lex::tokens::jsx_text_token>());
-			CHECK(tokens[2]->to_string() == "Hello");
+			CHECK(tokens[5].is<tscc::lex::tokens::jsx_text_token>());
+			CHECK(tokens[5]->to_string() == "Hello");
 			
 			// </div>
-			CHECK(tokens[3].is<tscc::lex::tokens::jsx_element_close_token>());
-			CHECK(tokens[3]->to_string() == "</div>");
+			CHECK(tokens[6].is<tscc::lex::tokens::jsx_element_close_token>());
+			CHECK(tokens[6]->to_string() == "</div>");
 		}
 
 		SECTION("Self-Closing JSX Element") {
@@ -1517,7 +1527,7 @@ And some more
 		SECTION("JSX Element with String Attribute") {
 			// <div className="container">Text</div>
 			auto tokens = tokenize(R"(<div className="container">Text</div>)");
-			REQUIRE(tokens.size() == 8);  // <div, className, ", "container", ", >, Text, </div>
+			REQUIRE(tokens.size() == 6);  // <div, className, ", "container", ", >, Text, </div>
 			
 			// <div
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
@@ -1528,32 +1538,54 @@ And some more
 			CHECK(tokens[1]->to_string() == "className");
 			
 			// ="container" (start) - properly check type
-			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_start_token>());
-			auto& start_token = static_cast<const tscc::lex::tokens::jsx_attribute_value_start_token&>(*tokens[2]);
-			CHECK(start_token.type() == tscc::lex::tokens::jsx_attribute_value_start_token::value_type::string);
-			CHECK(tokens[2]->to_string() == "\"");
-			
-			// container (constant value, not jsx_text)
-			CHECK(tokens[3].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[3]->to_string() == "\"container\"");
-			
-			// " (end) - properly check type
-			REQUIRE(tokens[4].is<tscc::lex::tokens::jsx_attribute_value_end_token>());
-			auto& end_token = static_cast<const tscc::lex::tokens::jsx_attribute_value_end_token&>(*tokens[4]);
-			CHECK(end_token.type() == tscc::lex::tokens::jsx_attribute_value_end_token::value_type::string);
-			CHECK(tokens[4]->to_string() == "\"");
+			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_token>());
+			CHECK(tokens[2]->to_string() == "\"container\"");
 			
 			// >
-			CHECK(tokens[5].is<tscc::lex::tokens::jsx_element_end_token>());
-			CHECK(tokens[5]->to_string() == ">");
+			CHECK(tokens[3].is<tscc::lex::tokens::jsx_element_end_token>());
+			CHECK(tokens[3]->to_string() == ">");
 			
 			// Text
-			CHECK(tokens[6].is<tscc::lex::tokens::jsx_text_token>());
-			CHECK(tokens[6]->to_string() == "Text");
+			CHECK(tokens[4].is<tscc::lex::tokens::jsx_text_token>());
+			CHECK(tokens[4]->to_string() == "Text");
 			
 			// </div>
-			CHECK(tokens[7].is<tscc::lex::tokens::jsx_element_close_token>());
-			CHECK(tokens[7]->to_string() == "</div>");
+			CHECK(tokens[5].is<tscc::lex::tokens::jsx_element_close_token>());
+			CHECK(tokens[5]->to_string() == "</div>");
+		}
+
+		SECTION("JSX Element with Flag Attribute") {
+			// <div className="container">Text</div>
+			auto tokens = tokenize(R"(<div disabled className="container">Text</div>)");
+			REQUIRE(tokens.size() == 7);  // <div, className, ", "container", ", >, Text, </div>
+
+			// <div
+			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
+			CHECK(tokens[0]->to_string() == "<div");
+
+			// disabled
+			CHECK(tokens[1].is<tscc::lex::tokens::jsx_attribute_name_token>());
+			CHECK(tokens[1]->to_string() == "disabled");
+
+			// className
+			CHECK(tokens[2].is<tscc::lex::tokens::jsx_attribute_name_token>());
+			CHECK(tokens[2]->to_string() == "className");
+
+			// ="container" (start) - properly check type
+			REQUIRE(tokens[3].is<tscc::lex::tokens::jsx_attribute_value_token>());
+			CHECK(tokens[3]->to_string() == "\"container\"");
+
+			// >
+			CHECK(tokens[4].is<tscc::lex::tokens::jsx_element_end_token>());
+			CHECK(tokens[4]->to_string() == ">");
+
+			// Text
+			CHECK(tokens[5].is<tscc::lex::tokens::jsx_text_token>());
+			CHECK(tokens[5]->to_string() == "Text");
+
+			// </div>
+			CHECK(tokens[6].is<tscc::lex::tokens::jsx_element_close_token>());
+			CHECK(tokens[6]->to_string() == "</div>");
 		}
 
 		SECTION("JSX Element with Expression Attribute") {
@@ -1571,20 +1603,14 @@ And some more
 			
 			// ={handleClick} (start) - properly check type
 			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_start_token>());
-			auto& expr_start_token = static_cast<const tscc::lex::tokens::jsx_attribute_value_start_token&>(*tokens[2]);
-			CHECK(expr_start_token.type() == tscc::lex::tokens::jsx_attribute_value_start_token::value_type::expression);
-			CHECK(tokens[2]->to_string() == "{");
-			
+
 			// handleClick (identifier inside expression)
 			CHECK(tokens[3].is<tscc::lex::tokens::identifier_token>());
 			CHECK(tokens[3]->to_string() == "handleClick");
 			
 			// } (end) - properly check type
 			REQUIRE(tokens[4].is<tscc::lex::tokens::jsx_attribute_value_end_token>());
-			auto& expr_end_token = static_cast<const tscc::lex::tokens::jsx_attribute_value_end_token&>(*tokens[4]);
-			CHECK(expr_end_token.type() == tscc::lex::tokens::jsx_attribute_value_end_token::value_type::expression);
-			CHECK(tokens[4]->to_string() == "}");
-			
+
 			// >
 			CHECK(tokens[5].is<tscc::lex::tokens::jsx_element_end_token>());
 			CHECK(tokens[5]->to_string() == ">");
@@ -1601,7 +1627,7 @@ And some more
 		SECTION("JSX Element with Template Literal Expression") {
 			// <div className={`${base} ${modifier}`}>Content</div>
 			auto tokens = tokenize(R"(<div className={`${base} ${modifier}`}>Content</div>)");
-			REQUIRE(tokens.size() == 15);  // <div, className, {, `, ${, base, }, space, ${, modifier, }, `, }, >, Content, </div>
+			REQUIRE(tokens.size() == 16);  // <div, className, {, `, ${, base, }, space, ${, modifier, }, `, }, >, Content, </div>
 			
 			// <div
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
@@ -1611,10 +1637,7 @@ And some more
 			
 			// ={
 			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_start_token>());
-			auto& template_start = static_cast<const tscc::lex::tokens::jsx_attribute_value_start_token&>(*tokens[2]);
-			CHECK(template_start.type() == tscc::lex::tokens::jsx_attribute_value_start_token::value_type::expression);
-			CHECK(tokens[2]->to_string() == "{");
-			
+
 			// Template literal tokens: `, ${, base, }, space, ${, modifier, }, `
 			CHECK(tokens[3].is<tscc::lex::tokens::interpolated_string_start_token>());
 			CHECK(tokens[4].is<tscc::lex::tokens::template_start_token>());
@@ -1622,7 +1645,7 @@ And some more
 			CHECK(tokens[5]->to_string() == "base");
 			CHECK(tokens[6].is<tscc::lex::tokens::template_end_token>());
 			CHECK(tokens[7].is<tscc::lex::tokens::interpolated_string_chunk_token>());
-			CHECK(tokens[8]->to_string() == " ");
+			CHECK(tokens[7]->to_string() == " ");
 			CHECK(tokens[8].is<tscc::lex::tokens::template_start_token>());
 			CHECK(tokens[9].is<tscc::lex::tokens::identifier_token>());
 			CHECK(tokens[9]->to_string() == "modifier");
@@ -1631,10 +1654,7 @@ And some more
 			
 			// }
 			REQUIRE(tokens[12].is<tscc::lex::tokens::jsx_attribute_value_end_token>());
-			auto& template_end = static_cast<const tscc::lex::tokens::jsx_attribute_value_end_token&>(*tokens[12]);
-			CHECK(template_end.type() == tscc::lex::tokens::jsx_attribute_value_end_token::value_type::expression);
-			CHECK(tokens[12]->to_string() == "}");
-			
+
 			// >
 			CHECK(tokens[13].is<tscc::lex::tokens::jsx_element_end_token>());
 
@@ -1650,7 +1670,7 @@ And some more
 		SECTION("JSX with Multiple String Attributes") {
 			// <input type="text" value="default" />
 			auto tokens = tokenize(R"(<input type="text" value="default" />)");
-			REQUIRE(tokens.size() == 10);  // <input, type, ", "text", ", value, ", "default", ", />
+			REQUIRE(tokens.size() == 6);  // <input, type, ", "text", ", value, ", "default", ", />
 			
 			// <input
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
@@ -1660,35 +1680,19 @@ And some more
 			CHECK(tokens[1].is<tscc::lex::tokens::jsx_attribute_name_token>());
 			CHECK(tokens[1]->to_string() == "type");
 			
-			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_start_token>());
-			auto& type_start = static_cast<const tscc::lex::tokens::jsx_attribute_value_start_token&>(*tokens[2]);
-			CHECK(type_start.type() == tscc::lex::tokens::jsx_attribute_value_start_token::value_type::string);
-			
-			CHECK(tokens[3].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[3]->to_string() == "\"text\"");
-			
-			REQUIRE(tokens[4].is<tscc::lex::tokens::jsx_attribute_value_end_token>());
-			auto& type_end = static_cast<const tscc::lex::tokens::jsx_attribute_value_end_token&>(*tokens[4]);
-			CHECK(type_end.type() == tscc::lex::tokens::jsx_attribute_value_end_token::value_type::string);
+			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_token>());
+			CHECK(tokens[2]->to_string() == "\"text\"");
 			
 			// value="default"
-			CHECK(tokens[5].is<tscc::lex::tokens::jsx_attribute_name_token>());
-			CHECK(tokens[5]->to_string() == "value");
+			CHECK(tokens[3].is<tscc::lex::tokens::jsx_attribute_name_token>());
+			CHECK(tokens[3]->to_string() == "value");
 			
-			REQUIRE(tokens[6].is<tscc::lex::tokens::jsx_attribute_value_start_token>());
-			auto& value_start = static_cast<const tscc::lex::tokens::jsx_attribute_value_start_token&>(*tokens[6]);
-			CHECK(value_start.type() == tscc::lex::tokens::jsx_attribute_value_start_token::value_type::string);
-			
-			CHECK(tokens[7].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[7]->to_string() == "\"default\"");
-			
-			REQUIRE(tokens[8].is<tscc::lex::tokens::jsx_attribute_value_end_token>());
-			auto& value_end = static_cast<const tscc::lex::tokens::jsx_attribute_value_end_token&>(*tokens[8]);
-			CHECK(value_end.type() == tscc::lex::tokens::jsx_attribute_value_end_token::value_type::string);
+			REQUIRE(tokens[4].is<tscc::lex::tokens::jsx_attribute_value_token>());
+			CHECK(tokens[4]->to_string() == "\"default\"");
 			
 			// />
-			CHECK(tokens[9].is<tscc::lex::tokens::jsx_self_closing_token>());
-			CHECK(tokens[9]->to_string() == "/>");
+			CHECK(tokens[5].is<tscc::lex::tokens::jsx_self_closing_token>());
+			CHECK(tokens[5]->to_string() == "/>");
 		}
 
 		SECTION("Nested JSX Elements") {
@@ -1771,8 +1775,8 @@ And some more
 
 		SECTION("JSX with Unicode Element Names") {
 			// <MyComponent π="3.14">Content</MyComponent>
-			auto tokens = tokenize("<MyComponent ア=\"3.14\">Content</MyComponent>");
-			REQUIRE(tokens.size() == 8);  // <MyComponent, ア, ", "3.14", ", >, Content, </MyComponent>
+			auto tokens = tokenize("<MyComponent ℼ=\"3.14\">Content</MyComponent>");
+			REQUIRE(tokens.size() == 6);  // <MyComponent, ℼ, ", "3.14", ", >, Content, </MyComponent>
 			
 			// <MyComponent
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
@@ -1780,30 +1784,22 @@ And some more
 			
 			// π (Unicode attribute name)
 			CHECK(tokens[1].is<tscc::lex::tokens::jsx_attribute_name_token>());
-			CHECK(tokens[1]->to_string() == "π");
+			CHECK(tokens[1]->to_string() == "ℼ");
 			
 			// ="3.14"
-			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_start_token>());
-			auto& unicode_start = static_cast<const tscc::lex::tokens::jsx_attribute_value_start_token&>(*tokens[2]);
-			CHECK(unicode_start.type() == tscc::lex::tokens::jsx_attribute_value_start_token::value_type::string);
-			
-			CHECK(tokens[3].is<tscc::lex::tokens::constant_value_token>());
-			CHECK(tokens[3]->to_string() == "\"3.14\"");
-			
-			REQUIRE(tokens[4].is<tscc::lex::tokens::jsx_attribute_value_end_token>());
-			auto& unicode_end = static_cast<const tscc::lex::tokens::jsx_attribute_value_end_token&>(*tokens[4]);
-			CHECK(unicode_end.type() == tscc::lex::tokens::jsx_attribute_value_end_token::value_type::string);
-			
+			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_token>());
+			CHECK(tokens[2]->to_string() == "\"3.14\"");
+
 			// >
-			CHECK(tokens[5].is<tscc::lex::tokens::jsx_element_end_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::jsx_element_end_token>());
 			
 			// Content
-			CHECK(tokens[6].is<tscc::lex::tokens::jsx_text_token>());
-			CHECK(tokens[6]->to_string() == "Content");
+			CHECK(tokens[4].is<tscc::lex::tokens::jsx_text_token>());
+			CHECK(tokens[4]->to_string() == "Content");
 			
 			// </MyComponent>
-			CHECK(tokens[7].is<tscc::lex::tokens::jsx_element_close_token>());
-			CHECK(tokens[7]->to_string() == "</MyComponent>");
+			CHECK(tokens[5].is<tscc::lex::tokens::jsx_element_close_token>());
+			CHECK(tokens[5]->to_string() == "</MyComponent>");
 		}
 
 		SECTION("JSX Error Cases") {

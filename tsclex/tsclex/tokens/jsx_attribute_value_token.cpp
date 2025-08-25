@@ -16,20 +16,31 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "jsx_attribute_value_start_token.hpp"
+#include "jsx_attribute_value_token.hpp"
+#include "tsccore/utf8.hpp"
+#include "tsccore/xml.hpp"
 
 using namespace tscc::lex::tokens;
 
-bool jsx_attribute_value_start_token::operator==(
-	const jsx_attribute_value_start_token&) const {
-	return true;
+jsx_attribute_value_token::jsx_attribute_value_token(
+	const std::u32string& value,
+	char quote_char)
+	: value_(xml_decode(value)), quote_char_(quote_char) {}
+
+bool jsx_attribute_value_token::operator==(
+	const jsx_attribute_value_token& other) const {
+	return value_ == other.value_ && quote_char_ == other.quote_char_;
 }
 
-bool jsx_attribute_value_start_token::operator!=(
-	const jsx_attribute_value_start_token&) const {
-	return false;
+bool jsx_attribute_value_token::operator!=(
+	const jsx_attribute_value_token& other) const {
+	return !operator==(other);
 }
 
-std::string jsx_attribute_value_start_token::to_string() const {
-	return "{";
+const std::u32string& jsx_attribute_value_token::value() const noexcept {
+	return value_;
+}
+
+std::string jsx_attribute_value_token::to_string() const {
+	return quote_char_ + utf8_encode(xml_encode(value_)) + quote_char_;
 }
