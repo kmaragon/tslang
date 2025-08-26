@@ -121,7 +121,13 @@ public:
 
 private:
 	using tokfactory = void (*)(token& into, const source_location& location);
-	static std::unordered_map<std::u32string, tokfactory> keyword_lookup;
+	
+	struct versioned_keyword {
+		tokfactory factory;
+		language_version min_version;
+	};
+	
+	static std::unordered_map<std::u32string, versioned_keyword> keyword_lookup;
 
 	struct position_t {
 		struct line_t {
@@ -172,6 +178,7 @@ private:
 	void scan_jsx_element_part(token& into);
 	void scan_jsx_attribute_part(token& into);
 	void scan_jsx_text_part(token& into);
+	bool try_scan_regex(token& into);
 	void append_wbuffer(char32_t ch);
 
 	std::size_t scan_hex_number(tscc_big_int& into,

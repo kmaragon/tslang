@@ -172,6 +172,7 @@ set(SOURCES
         tsclex/tokens/undefined_token.cpp
         tsclex/tokens/unique_token.cpp
         tsclex/tokens/unknown_token.cpp
+        tsclex/tokens/using_token.cpp
         tsclex/tokens/var_token.cpp
         tsclex/tokens/void_token.cpp
         tsclex/tokens/while_token.cpp
@@ -355,6 +356,7 @@ set(HEADERS
         tsclex/tokens/undefined_token.hpp
         tsclex/tokens/unique_token.hpp
         tsclex/tokens/unknown_token.hpp
+        tsclex/tokens/using_token.hpp
         tsclex/tokens/var_token.hpp
         tsclex/tokens/void_token.hpp
         tsclex/tokens/while_token.hpp

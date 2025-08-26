@@ -156,6 +156,7 @@
 									  tscc::lex::tokens::undefined_token,\
 									  tscc::lex::tokens::unique_token,\
 									  tscc::lex::tokens::unknown_token,\
+									  tscc::lex::tokens::using_token,\
 									  tscc::lex::tokens::var_token,\
 									  tscc::lex::tokens::void_token,\
 									  tscc::lex::tokens::while_token,\

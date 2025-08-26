@@ -178,6 +178,7 @@
 #include "tokens/undefined_token.hpp"
 #include "tokens/unique_token.hpp"
 #include "tokens/unknown_token.hpp"
+#include "tokens/using_token.hpp"
 #include "tokens/var_token.hpp"
 #include "tokens/void_token.hpp"
 #include "tokens/while_token.hpp"
