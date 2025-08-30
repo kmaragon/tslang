@@ -31,30 +31,13 @@
 
 using namespace tsccore::regex;
 
-class string_scanner : public scanner {
-private:
-	std::u32string input_;
-	size_t position_;
-
-public:
-	explicit string_scanner(const std::u32string& input)
-		: input_(input), position_(0) {}
-
-	char32_t read_next() override {
-		if (position_ >= input_.length()) {
-			return static_cast<char32_t>(-1);  // EOF
-		}
-		return input_[position_++];
-	}
-};
 
 TEST_CASE("Regular Expression Scanning", "[regex]") {
 	SECTION("Simple character") {
 		std::u32string input = U"a";
-		string_scanner scanner(input);
 		regular_expression regex;
 
-		REQUIRE_NOTHROW(scan(scanner, regex));
+		REQUIRE_NOTHROW(scan(input, regex));
 
 		const auto& disjunction = regex.get_disjunction();
 		auto alternatives = disjunction.get_alternatives();
@@ -71,10 +54,9 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 
 	SECTION("Character class") {
 		std::u32string input = U"[abc]";
-		string_scanner scanner(input);
 		regular_expression regex;
 
-		REQUIRE_NOTHROW(scan(scanner, regex));
+		REQUIRE_NOTHROW(scan(input, regex));
 
 		const auto& disjunction = regex.get_disjunction();
 		auto alternatives = disjunction.get_alternatives();
@@ -97,10 +79,9 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 
 	SECTION("Negated character class") {
 		std::u32string input = U"[^abc]";
-		string_scanner scanner(input);
 		regular_expression regex;
 
-		REQUIRE_NOTHROW(scan(scanner, regex));
+		REQUIRE_NOTHROW(scan(input, regex));
 
 		const auto& disjunction = regex.get_disjunction();
 		auto alternatives = disjunction.get_alternatives();
@@ -118,10 +99,9 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 
 	SECTION("Character range") {
 		std::u32string input = U"[a-z]";
-		string_scanner scanner(input);
 		regular_expression regex;
 
-		REQUIRE_NOTHROW(scan(scanner, regex));
+		REQUIRE_NOTHROW(scan(input, regex));
 
 		const auto& disjunction = regex.get_disjunction();
 		auto alternatives = disjunction.get_alternatives();
@@ -142,10 +122,9 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 
 	SECTION("Quantifiers") {
 		std::u32string input = U"a*";
-		string_scanner scanner(input);
 		regular_expression regex;
 
-		REQUIRE_NOTHROW(scan(scanner, regex));
+		REQUIRE_NOTHROW(scan(input, regex));
 
 		const auto& disjunction = regex.get_disjunction();
 		auto alternatives = disjunction.get_alternatives();
@@ -168,10 +147,9 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 
 	SECTION("Disjunction") {
 		std::u32string input = U"a|b";
-		string_scanner scanner(input);
 		regular_expression regex;
 
-		REQUIRE_NOTHROW(scan(scanner, regex));
+		REQUIRE_NOTHROW(scan(input, regex));
 
 		const auto& disjunction = regex.get_disjunction();
 		auto alternatives = disjunction.get_alternatives();
@@ -194,10 +172,9 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 
 	SECTION("Builtin character classes") {
 		std::u32string input = U"\\d";
-		string_scanner scanner(input);
 		regular_expression regex;
 
-		REQUIRE_NOTHROW(scan(scanner, regex));
+		REQUIRE_NOTHROW(scan(input, regex));
 
 		const auto& disjunction = regex.get_disjunction();
 		auto alternatives = disjunction.get_alternatives();
@@ -213,10 +190,9 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 
 	SECTION("Assertions") {
 		std::u32string input = U"^abc$";
-		string_scanner scanner(input);
 		regular_expression regex;
 
-		REQUIRE_NOTHROW(scan(scanner, regex));
+		REQUIRE_NOTHROW(scan(input, regex));
 
 		const auto& disjunction = regex.get_disjunction();
 		auto alternatives = disjunction.get_alternatives();
@@ -255,19 +231,17 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 	SECTION("Error handling") {
 		SECTION("Unterminated character class") {
 			std::u32string input = U"[abc";
-			string_scanner scanner(input);
 			regular_expression regex;
 
-			REQUIRE_THROWS_AS(scan(scanner, regex),
+			REQUIRE_THROWS_AS(scan(input, regex),
 							  tsccore::regex::unterminated_character_class);
 		}
 
 		SECTION("Invalid character class range") {
 			std::u32string input = U"[z-a]";
-			string_scanner scanner(input);
 			regular_expression regex;
 
-			REQUIRE_THROWS_AS(scan(scanner, regex),
+			REQUIRE_THROWS_AS(scan(input, regex),
 							  tsccore::regex::invalid_character_class_range);
 		}
 	}

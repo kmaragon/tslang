@@ -33,122 +33,88 @@ using namespace tsccore::regex;
 namespace {
 constexpr char32_t EOF_CHAR = static_cast<char32_t>(-1);
 
-class regex_scanner_impl {
-private:
-	scanner& scanner_;
-	char32_t current_char_;
-	char32_t next_char_;
-	size_t offset_;
-	bool has_next_;
+constexpr char32_t current_char(const std::u32string_view& input,
+								const size_t pos) noexcept {
+	return pos < input.length() ? input[pos] : EOF_CHAR;
+}
 
-public:
-	explicit regex_scanner_impl(scanner& scanner)
-		: scanner_(scanner),
-		  current_char_(0),
-		  next_char_(0),
-		  offset_(0),
-		  has_next_(false) {
-		advance();
-		peek_next();
+constexpr char32_t peek_char(const std::u32string_view& input,
+							 const size_t pos) noexcept {
+	return pos + 1 < input.length() ? input[pos + 1] : EOF_CHAR;
+}
+
+constexpr bool at_end(const std::u32string_view& input, size_t pos) noexcept {
+	return pos >= input.length();
+}
+
+disjunction scan_disjunction(const std::u32string_view& input, size_t& pos);
+
+group scan_group(const std::u32string_view& input, size_t& pos) {
+	if (current_char(input, pos) != U'(') {
+		throw invalid_regular_expression(pos);
 	}
 
-	char32_t current() const { return current_char_; }
-
-	char32_t peek() const { return has_next_ ? next_char_ : EOF_CHAR; }
-
-	void advance() {
-		if (has_next_) {
-			current_char_ = next_char_;
-			has_next_ = false;
-		} else {
-			current_char_ = scanner_.read_next();
-		}
-		++offset_;
-	}
-
-	void peek_next() {
-		if (!has_next_) {
-			next_char_ = scanner_.read_next();
-			has_next_ = true;
-		}
-	}
-
-	size_t get_offset() const { return offset_; }
-
-	bool at_end() const { return current_char_ == EOF_CHAR; }
-};
-
-disjunction scan_disjunction(regex_scanner_impl& scanner);
-
-group scan_group(regex_scanner_impl& scanner) {
-	if (scanner.current() != U'(') {
-		throw invalid_regular_expression(scanner.get_offset());
-	}
-
-	scanner.advance();	// skip '('
+	++pos;	// skip '('
 
 	group::type group_type = group::type::capturing;
 	std::optional<std::string> name;
 
 	// Check for special group types
-	if (scanner.current() == U'?') {
-		scanner.advance();
+	if (current_char(input, pos) == U'?') {
+		++pos;
 
-		switch (scanner.current()) {
+		switch (current_char(input, pos)) {
 			case U':':
 				group_type = group::type::non_capturing;
-				scanner.advance();
+				++pos;
 				break;
 			case U'=':
 				group_type = group::type::positive_lookahead;
-				scanner.advance();
+				++pos;
 				break;
 			case U'!':
 				group_type = group::type::negative_lookahead;
-				scanner.advance();
+				++pos;
 				break;
 			case U'<':
-				scanner.advance();
-				if (scanner.current() == U'=') {
+				++pos;
+				if (current_char(input, pos) == U'=') {
 					group_type = group::type::positive_lookbehind;
-					scanner.advance();
-				} else if (scanner.current() == U'!') {
+					++pos;
+				} else if (current_char(input, pos) == U'!') {
 					group_type = group::type::negative_lookbehind;
-					scanner.advance();
+					++pos;
 				} else {
 					// Named capturing group ?<name>
 					std::string group_name;
-					while (scanner.current() != U'>' && !scanner.at_end()) {
-						group_name += static_cast<char>(scanner.current());
-						scanner.advance();
+					while (current_char(input, pos) != U'>' &&
+						   !at_end(input, pos)) {
+						group_name +=
+							static_cast<char>(current_char(input, pos));
+						++pos;
 					}
-					if (scanner.current() == U'>') {
-						scanner.advance();
+					if (current_char(input, pos) == U'>') {
+						++pos;
 						name = group_name;
 					}
 				}
 				break;
 			default:
-				throw invalid_regular_expression(scanner.get_offset());
+				throw invalid_regular_expression(pos);
 		}
 	}
 
-	disjunction group_disjunction = scan_disjunction(scanner);
+	disjunction group_disjunction = scan_disjunction(input, pos);
 
-	if (scanner.current() != U')') {
-		throw unterminated_regular_expression_literal(scanner.get_offset());
+	if (current_char(input, pos++) != U')') {
+		throw unterminated_regular_expression_literal(pos);
 	}
 
-	scanner.advance();	// skip ')'
-
-	return group(group_type, std::move(group_disjunction), name);
+	return {group_type, std::move(group_disjunction), name};
 }
 
-char32_t scan_escape_sequence(regex_scanner_impl& scanner) {
-	char32_t ch = scanner.current();
-	scanner.advance();
-
-	switch (ch) {
+char32_t scan_escape_sequence(const std::u32string_view& input, size_t& pos) {
+	switch (char32_t ch = current_char(input, pos++)) {
 		case U'n':
 			return U'\n';
 		case U'r':
@@ -196,8 +162,9 @@ char32_t scan_escape_sequence(regex_scanner_impl& scanner) {
 			// \xHH - hexadecimal escape
 			char32_t result = 0;
 			for (int i = 0; i < 2; ++i) {
-				if (!scanner.at_end() && std::isxdigit(scanner.current())) {
-					char32_t digit = scanner.current();
+				if (!at_end(input, pos) &&
+					std::iswxdigit(current_char(input, pos))) {
+					char32_t digit = current_char(input, pos);
 					if (digit >= U'0' && digit <= U'9') {
 						result = result * 16 + (digit - U'0');
 					} else if (digit >= U'a' && digit <= U'f') {
@@ -205,9 +172,9 @@ char32_t scan_escape_sequence(regex_scanner_impl& scanner) {
 					} else if (digit >= U'A' && digit <= U'F') {
 						result = result * 16 + (digit - U'A' + 10);
 					}
-					scanner.advance();
+					++pos;
 				} else {
-					throw invalid_escape_sequence(scanner.get_offset());
+					throw invalid_escape_sequence(pos);
 				}
 			}
 			return result;
@@ -217,8 +184,9 @@ char32_t scan_escape_sequence(regex_scanner_impl& scanner) {
 			// \uHHHH - unicode escape
 			char32_t result = 0;
 			for (int i = 0; i < 4; ++i) {
-				if (!scanner.at_end() && std::isxdigit(scanner.current())) {
-					char32_t digit = scanner.current();
+				if (!at_end(input, pos) &&
+					std::iswxdigit(current_char(input, pos))) {
+					char32_t digit = current_char(input, pos);
 					if (digit >= U'0' && digit <= U'9') {
 						result = result * 16 + (digit - U'0');
 					} else if (digit >= U'a' && digit <= U'f') {
@@ -226,9 +194,9 @@ char32_t scan_escape_sequence(regex_scanner_impl& scanner) {
 					} else if (digit >= U'A' && digit <= U'F') {
 						result = result * 16 + (digit - U'A' + 10);
 					}
-					scanner.advance();
+					++pos;
 				} else {
-					throw invalid_escape_sequence(scanner.get_offset());
+					throw invalid_escape_sequence(pos);
 				}
 			}
 			return result;
@@ -240,51 +208,52 @@ char32_t scan_escape_sequence(regex_scanner_impl& scanner) {
 	}
 }
 
-character_class scan_character_class(regex_scanner_impl& scanner) {
-	if (scanner.current() != U'[') {
-		throw invalid_regular_expression(scanner.get_offset());
+character_class scan_character_class(const std::u32string_view& input,
+									 size_t& pos) {
+	if (current_char(input, pos) != U'[') {
+		throw invalid_regular_expression(pos);
 	}
 
-	scanner.advance();	// skip '['
+	++pos;	// skip '['
 
 	bool negated = false;
-	if (scanner.current() == U'^') {
+	if (current_char(input, pos) == U'^') {
 		negated = true;
-		scanner.advance();
+		++pos;
 	}
 
 	character_class char_class(negated);
 
-	while (scanner.current() != U']' && !scanner.at_end()) {
-		char32_t start_char = scanner.current();
+	while (current_char(input, pos) != U']' && !at_end(input, pos)) {
+		char32_t start_char = current_char(input, pos);
 
 		if (start_char == U'\\') {
-			scanner.advance();
-			start_char = scan_escape_sequence(scanner);
+			++pos;
+			start_char = scan_escape_sequence(input, pos);
 		} else {
-			scanner.advance();
+			++pos;
 		}
 
-		if (scanner.current() == U'-' && !scanner.at_end()) {
-			scanner.advance();	// skip '-'
+		if (current_char(input, pos) == U'-' && !at_end(input, pos)) {
+			++pos;	// skip '-'
 
-			if (scanner.current() == U']') {
+			if (current_char(input, pos) == U']') {
 				// '-' at end of character class, treat as literal
 				char_class.add_character(start_char);
 				char_class.add_character(U'-');
 				break;
 			}
 
-			char32_t end_char = scanner.current();
+			char32_t end_char = current_char(input, pos);
 			if (end_char == U'\\') {
-				scanner.advance();
-				end_char = scan_escape_sequence(scanner);
+				++pos;
+				end_char = scan_escape_sequence(input, pos);
 			} else {
-				scanner.advance();
+				++pos;
 			}
 
 			if (start_char > end_char) {
-				throw invalid_character_class_range(scanner.get_offset());
+				throw invalid_character_class_range(pos);
 			}
 
 			char_class.add_range(start_char, end_char);
@@ -293,77 +262,70 @@ character_class scan_character_class(regex_scanner_impl& scanner) {
 		}
 	}
 
-	if (scanner.current() != U']') {
-		throw unterminated_character_class(scanner.get_offset());
+	if (current_char(input, pos) != U']') {
+		throw unterminated_character_class(pos);
 	}
 
-	scanner.advance();	// skip ']'
+	++pos;	// skip ']'
 	return char_class;
 }
 
-atom scan_atom(regex_scanner_impl& scanner) {
-	char32_t ch = scanner.current();
-
-	switch (ch) {
+atom scan_atom(const std::u32string_view& input, size_t& pos) {
+	switch (const char32_t ch = current_char(input, pos)) {
 		case U'.':
-			scanner.advance();
-			return atom(atom::builtin_class::dot);
+			++pos;
+			return atom::builtin_class::dot;
 
 		case U'[':
-			return atom(scan_character_class(scanner));
+			return scan_character_class(input, pos);
 
 		case U'(':
-			return atom(scan_group(scanner));
+			return scan_group(input, pos);
 
 		case U'\\': {
-			scanner.advance();	// skip backslash
-			char32_t escaped = scanner.current();
-
-			switch (escaped) {
+			// skip backslash
+			switch (current_char(input, ++pos)) {
 				case U'w':
-					scanner.advance();
-					return atom(atom::builtin_class::word);
+					++pos;
+					return atom::builtin_class::word;
 				case U'W':
-					scanner.advance();
-					return atom(atom::builtin_class::non_word);
+					++pos;
+					return atom::builtin_class::non_word;
 				case U'd':
-					scanner.advance();
-					return atom(atom::builtin_class::digit);
+					++pos;
+					return atom::builtin_class::digit;
 				case U'D':
-					scanner.advance();
-					return atom(atom::builtin_class::non_digit);
+					++pos;
+					return atom::builtin_class::non_digit;
 				case U's':
-					scanner.advance();
-					return atom(atom::builtin_class::whitespace);
+					++pos;
+					return atom::builtin_class::whitespace;
 				case U'S':
-					scanner.advance();
-					return atom(atom::builtin_class::non_whitespace);
+					++pos;
+					return atom::builtin_class::non_whitespace;
 				case U'b':
 				case U'B':
 					// These should be handled as assertions, not atoms
 					// Put the backslash back and throw an error since this
 					// shouldn't happen
-					throw invalid_regular_expression(scanner.get_offset());
+					throw invalid_regular_expression(pos);
 				default:
-					return atom(scan_escape_sequence(scanner));
+					return scan_escape_sequence(input, pos);
 			}
 		}
 
 		default:
 			if (ch == U'*' || ch == U'+' || ch == U'?' || ch == U'{' ||
 				ch == U'}' || ch == U'|' || ch == U')' || ch == EOF_CHAR) {
-				throw invalid_regular_expression(scanner.get_offset());
+				throw invalid_regular_expression(pos);
 			}
-			scanner.advance();
-			return atom(ch);
+			++pos;
+			return ch;
 	}
 }
 
-assertion scan_assertion(regex_scanner_impl& scanner) {
-	char32_t ch = scanner.current();
-	scanner.advance();
-
-	switch (ch) {
+assertion scan_assertion(const std::u32string_view& input, size_t& pos) {
+	switch (current_char(input, pos++)) {
 		case U'^':
 			return assertion(assertion::type::start_of_line);
 		case U'$':
@@ -373,57 +335,57 @@ assertion scan_assertion(regex_scanner_impl& scanner) {
 		case U'B':
 			return assertion(assertion::type::non_word_boundary);
 		default:
-			throw invalid_regular_expression(scanner.get_offset());
+			throw invalid_regular_expression(pos);
 	}
 }
 
-std::optional<quantifier> scan_quantifier(regex_scanner_impl& scanner) {
-	char32_t ch = scanner.current();
-
-	switch (ch) {
+std::optional<quantifier> scan_quantifier(const std::u32string_view& input,
+										  size_t& pos) {
+	switch (current_char(input, pos)) {
 		case U'*':
-			scanner.advance();
+			++pos;
 			return quantifier{quantifier::prefix::zero_or_more};
 		case U'+':
-			scanner.advance();
+			++pos;
 			return quantifier{quantifier::prefix::one_or_more};
 		case U'?':
-			scanner.advance();
+			++pos;
 			return quantifier{quantifier::prefix::zero_or_one};
 		case U'{': {
-			scanner.advance();	// skip '{'
+			++pos;	// skip '{'
 
 			// Parse min value
 			size_t min = 0;
-			while (std::isdigit(scanner.current()) && !scanner.at_end()) {
-				min = min * 10 + (scanner.current() - U'0');
-				scanner.advance();
+			while (std::iswdigit(current_char(input, pos)) &&
+				   !at_end(input, pos)) {
+				min = min * 10 + (current_char(input, pos) - U'0');
+				++pos;
 			}
 
 			size_t max = min;
 
-			if (scanner.current() == U',') {
-				scanner.advance();	// skip ','
+			if (current_char(input, pos) == U',') {
+				++pos;	// skip ','
 
-				if (scanner.current() == U'}') {
+				if (current_char(input, pos) == U'}') {
 					// {min,} - unlimited max
 					max = SIZE_MAX;
 				} else {
 					// {min,max}
 					max = 0;
-					while (std::isdigit(scanner.current()) &&
-						   !scanner.at_end()) {
-						max = max * 10 + (scanner.current() - U'0');
-						scanner.advance();
+					while (std::iswdigit(current_char(input, pos)) &&
+						   !at_end(input, pos)) {
+						max = max * 10 + (current_char(input, pos) - U'0');
+						++pos;
 					}
 				}
 			}
 
-			if (scanner.current() != U'}') {
-				throw invalid_regular_expression(scanner.get_offset());
+			if (current_char(input, pos) != U'}') {
+				throw invalid_regular_expression(pos);
 			}
 
-			scanner.advance();	// skip '}'
+			++pos;	// skip '}'
 
 			return quantifier(std::make_pair(min, max));
 		}
@@ -432,54 +394,54 @@ std::optional<quantifier> scan_quantifier(regex_scanner_impl& scanner) {
 	}
 }
 
-term scan_term(regex_scanner_impl& scanner) {
-	switch (scanner.current()) {
+term scan_term(const std::u32string_view& input, size_t& pos) {
+	switch (current_char(input, pos)) {
 		case U'^':
 		case U'$': {
-			assertion assert = scan_assertion(scanner);
-			return term(assert);
+			assertion assert = scan_assertion(input, pos);
+			return assert;
 		}
 		case U'\\': {
 			// Look ahead to see if it's a boundary assertion
-			scanner.peek_next();
-			if (scanner.peek() == U'b' || scanner.peek() == U'B') {
-				scanner.advance();	// skip backslash
-				assertion assert = scan_assertion(scanner);
-				return term(assert);
-			} else {
-				// Let scan_atom handle the backslash
-				atom a = scan_atom(scanner);
-				auto quant = scan_quantifier(scanner);
-				return term(a, quant);
+			if (peek_char(input, pos) == U'b' ||
+				peek_char(input, pos) == U'B') {
+				++pos;	// skip backslash
+				assertion assert = scan_assertion(input, pos);
+				return assert;
 			}
+
+			// Let scan_atom handle the backslash
+			atom a = scan_atom(input, pos);
+			auto quant = scan_quantifier(input, pos);
+			return {a, quant};
 		}
 		default: {
-			atom a = scan_atom(scanner);
-			auto quant = scan_quantifier(scanner);
-			return term(a, quant);
+			atom a = scan_atom(input, pos);
+			auto quant = scan_quantifier(input, pos);
+			return {a, quant};
 		}
 	}
 }
 
-alternative scan_alternative(regex_scanner_impl& scanner) {
+alternative scan_alternative(const std::u32string_view& input, size_t& pos) {
 	std::vector<term> terms;
 
-	while (!scanner.at_end() && scanner.current() != U'|' &&
-		   scanner.current() != U')') {
-		terms.push_back(scan_term(scanner));
+	while (!at_end(input, pos) && current_char(input, pos) != U'|' &&
+		   current_char(input, pos) != U')') {
+		terms.push_back(scan_term(input, pos));
 	}
 
 	return alternative(std::move(terms));
 }
 
-disjunction scan_disjunction(regex_scanner_impl& scanner) {
+disjunction scan_disjunction(const std::u32string_view& input, size_t& pos) {
 	disjunction result;
 
-	result.add_alternative(scan_alternative(scanner));
+	result.add_alternative(scan_alternative(input, pos));
 
-	while (scanner.current() == U'|') {
-		scanner.advance();	// skip '|'
-		result.add_alternative(scan_alternative(scanner));
+	while (current_char(input, pos) == U'|') {
+		++pos;	// skip '|'
+		result.add_alternative(scan_alternative(input, pos));
 	}
 
 	return result;
@@ -487,15 +449,16 @@ disjunction scan_disjunction(regex_scanner_impl& scanner) {
 
 }  // namespace
 
-void tsccore::regex::scan(scanner& scanner, regular_expression& into) {
-	regex_scanner_impl impl(scanner);
+void tsccore::regex::scan(const std::u32string_view& input,
+						  regular_expression& into) {
+	size_t pos = 0;
 
 	try {
-		disjunction main_disjunction = scan_disjunction(impl);
+		disjunction main_disjunction = scan_disjunction(input, pos);
 		into.set_disjunction(std::move(main_disjunction));
-	} catch (const tsccore::regex::regex_error&) {
+	} catch (const regex_error&) {
 		throw;
 	} catch (const std::exception&) {
-		throw invalid_regular_expression(impl.get_offset());
+		throw invalid_regular_expression(pos);
 	}
 }

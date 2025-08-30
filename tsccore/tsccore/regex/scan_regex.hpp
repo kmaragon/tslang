@@ -18,11 +18,11 @@
 
 #pragma once
 
-#include "scanner.hpp"
 #include "regular_expression.hpp"
+#include <string_view>
 
 namespace tsccore::regex {
 
-void scan(scanner& scanner, regular_expression& into);
+void scan(const std::u32string_view& input, regular_expression& into);
 
 }  // namespace tsccore::regex
