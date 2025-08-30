@@ -18,4 +18,43 @@
 
 #pragma once
 
-class atom {};
+#include <variant>
+#include <string>
+#include <cstdint>
+#include "character_class.hpp"
+#include "group.hpp"
+
+namespace tsccore::regex {
+
+class atom {
+public:
+	enum class builtin_class {
+		dot,           // .
+		word,          // \w
+		non_word,      // \W
+		digit,         // \d
+		non_digit,     // \D
+		whitespace,    // \s
+		non_whitespace // \S
+	};
+
+	atom(char32_t character);
+	atom(builtin_class builtin_class);
+	atom(character_class character_class);
+	atom(group group);
+	
+	bool is_character() const;
+	bool is_builtin_class() const;
+	bool is_character_class() const;
+	bool is_group() const;
+	
+	char32_t get_character() const;
+	builtin_class get_builtin_class() const;
+	const character_class& get_character_class() const;
+	const group& get_group() const;
+
+private:
+	std::variant<char32_t, builtin_class, character_class, group> value_;
+};
+
+}  // namespace tsccore::regex

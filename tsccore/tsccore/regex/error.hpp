@@ -19,39 +19,33 @@
 #pragma once
 
 #include <exception>
-#include "source_location.hpp"
+#include <cinttypes>
 
-namespace tscc::lex
+namespace tsccore::regex
 {
 
 enum class error_code : std::uint16_t
 {
-	ts999 = 999,
-	ts1002 = 1002,
-	ts1003 = 1003,
-	ts1010 = 1010,
-	ts1125 = 1125,
-	ts1126 = 1126,
-	ts1127 = 1127,
-	ts1198 = 1198,
-	ts1199 = 1199,
-	ts6188 = 6188,
-	ts6189 = 6189,
-	ts17008 = 17008,
-	ts18026 = 18026,
+	ts1507 = 1507,  // Invalid regular expression
+	ts1509 = 1509,  // Unterminated regular expression literal
+	ts1510 = 1510,  // Unterminated character class in regular expression
+	ts2301 = 2301,  // Invalid escape sequence in regular expression
+	ts2413 = 2413,  // Invalid range in character class
+	ts2414 = 2414,  // Backreference '\{0}' is not available
+	ts2415 = 2415,  // Decimal escape sequences and backreferences are not allowed in character classes
 };
 
 /**
  * \brief A generic exception while lexing
  */
-class lex_error : public std::exception {
+class regex_error : public std::exception {
 public:
-	lex_error(const source_location& location) noexcept;
+	regex_error(size_t offset) noexcept;
 
 	/**
 	 * \brief Get the location where the error occurred
 	 */
-	const source_location& location() const noexcept;
+	size_t offset() const noexcept;
 
 	/**
 	 * \brief Get the error code
@@ -59,8 +53,53 @@ public:
 	virtual error_code code() const noexcept = 0;
 
 private:
-	source_location location_;
+	size_t offset_;
 };
 
+class invalid_regular_expression : public regex_error {
+public:
+	invalid_regular_expression(size_t offset) noexcept;
+	error_code code() const noexcept override;
+};
+
+class unterminated_regular_expression_literal : public regex_error {
+public:
+	unterminated_regular_expression_literal(size_t offset) noexcept;
+	error_code code() const noexcept override;
+};
+
+class unterminated_character_class : public regex_error {
+public:
+	unterminated_character_class(size_t offset) noexcept;
+	error_code code() const noexcept override;
+};
+
+class invalid_escape_sequence : public regex_error {
+public:
+	invalid_escape_sequence(size_t offset) noexcept;
+	error_code code() const noexcept override;
+};
+
+class invalid_character_class_range : public regex_error {
+public:
+	invalid_character_class_range(size_t offset) noexcept;
+	error_code code() const noexcept override;
+};
+
+class backreference_not_available : public regex_error {
+public:
+	backreference_not_available(size_t offset, int backreference_number) noexcept;
+	error_code code() const noexcept override;
+	int backreference_number() const noexcept;
+
+private:
+	int backreference_number_;
+};
+
+class decimal_escape_in_character_class : public regex_error {
+public:
+	decimal_escape_in_character_class(size_t offset) noexcept;
+	error_code code() const noexcept override;
+};
 
 }

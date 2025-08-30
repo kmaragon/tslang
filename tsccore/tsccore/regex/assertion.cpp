@@ -17,3 +17,15 @@
  */
 
 #include "assertion.hpp"
+
+namespace tsccore::regex {
+
+assertion::assertion(type assertion_type)
+	: type_(assertion_type) {
+}
+
+assertion::type assertion::get_type() const {
+	return type_;
+}
+
+}  // namespace tsccore::regex

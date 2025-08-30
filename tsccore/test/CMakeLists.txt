@@ -2,6 +2,7 @@ find_package(Catch2 CONFIG REQUIRED)
 
 set(TESTS
     utf8_tests.cpp
+    regex_tests.cpp
         )
 
 add_executable(tsccore.test ${TESTS})

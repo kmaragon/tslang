@@ -18,4 +18,11 @@
 
 #pragma once
 
-class scanner {};
+namespace tsccore::regex {
+class scanner {
+public:
+	virtual ~scanner() = default;
+
+	virtual char32_t read_next() = 0;
+};
+}  // namespace tsccore::regex

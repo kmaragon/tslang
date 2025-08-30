@@ -18,4 +18,23 @@
 
 #pragma once
 
-class assertion {};
+namespace tsccore::regex {
+
+class assertion {
+public:
+	enum class type {
+		start_of_line,     // ^
+		end_of_line,       // $
+		word_boundary,     // \b
+		non_word_boundary  // \B
+	};
+
+	explicit assertion(type assertion_type);
+	
+	type get_type() const;
+
+private:
+	type type_;
+};
+
+}  // namespace tsccore::regex

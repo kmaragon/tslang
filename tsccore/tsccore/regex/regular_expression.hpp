@@ -17,6 +17,19 @@
  */
 
 #pragma once
+#include <variant>
+#include "disjunction.hpp"
 
-namespace tsccore
-class regex {};
+namespace tsccore::regex {
+class regular_expression {
+public:
+	regular_expression() = default;
+	explicit regular_expression(disjunction disjunction);
+	
+	const disjunction& get_disjunction() const;
+	void set_disjunction(disjunction disjunction);
+
+private:
+	disjunction disjunction_;
+};
+}  // namespace tsccore::regex

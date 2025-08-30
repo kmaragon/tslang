@@ -16,27 +16,40 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
+#include <optional>
 #include <string>
-#include "basic_token.hpp"
+#include <memory>
+#include "disjunction.hpp"
 
-namespace tscc::lex::tokens {
+namespace tsccore::regex {
 
-/**
- * @brief A typescript token that represents a comment
- */
-class conflict_marker_trivia_token : public basic_token {
+class group {
 public:
-	conflict_marker_trivia_token(char prefix_char,
-								 const std::u32string& comment);
+	enum class type {
+		capturing,
+		non_capturing,
+		positive_lookahead,
+		negative_lookahead,
+		positive_lookbehind,
+		negative_lookbehind
+	};
 
-	bool operator==(const conflict_marker_trivia_token& other) const;
-	bool operator!=(const conflict_marker_trivia_token& other) const;
+	group(type group_type, disjunction disjunction, std::optional<std::string> name = std::nullopt);
+	group(const group& other);
+	group(group&& other) noexcept;
+	group& operator=(const group& other);
+	group& operator=(group&& other) noexcept;
 
-	std::string to_string() const override;
+	type get_type() const;
+	const disjunction& get_disjunction() const;
+	const std::optional<std::string>& get_name() const;
 
 private:
-	std::u32string body_;
-	char prefix_;
+	type type_;
+	disjunction disjunction_;
+	std::optional<std::string> name_;
 };
 
-}  // namespace tscc::lex::tokens
+}  // namespace tsccore::regex

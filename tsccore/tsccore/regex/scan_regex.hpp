@@ -19,9 +19,10 @@
 #pragma once
 
 #include "scanner.hpp"
+#include "regular_expression.hpp"
 
 namespace tsccore::regex {
 
+void scan(scanner& scanner, regular_expression& into);
 
-
-}
+}  // namespace tsccore::regex

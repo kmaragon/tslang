@@ -18,4 +18,38 @@
 
 #pragma once
 
-class alternative {};
+#include <variant>
+#include <vector>
+#include <optional>
+#include "assertion.hpp"
+#include "atom.hpp"
+#include "quantifier.hpp"
+
+namespace tsccore::regex {
+
+class term {
+public:
+	term(assertion assertion);
+	term(atom atom, std::optional<quantifier> quantifier = std::nullopt);
+	
+	bool is_assertion() const;
+	const assertion& get_assertion() const;
+	const atom& get_atom() const;
+	const std::optional<quantifier>& get_quantifier() const;
+
+private:
+	std::variant<assertion, std::pair<atom, std::optional<quantifier>>> value_;
+};
+
+class alternative {
+public:
+	alternative() = default;
+	explicit alternative(std::vector<term> terms);
+	
+	const std::vector<term>& get_terms() const;
+	void add_term(term term);
+
+private:
+	std::vector<term> terms_;
+};
+}  // namespace tsccore::regex

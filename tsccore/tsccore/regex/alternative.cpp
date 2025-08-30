@@ -17,3 +17,45 @@
  */
 
 #include "alternative.hpp"
+
+namespace tsccore::regex {
+
+// term class implementation
+term::term(assertion assertion)
+	: value_(assertion) {
+}
+
+term::term(atom atom, std::optional<quantifier> quantifier)
+	: value_(std::make_pair(atom, quantifier)) {
+}
+
+bool term::is_assertion() const {
+	return std::holds_alternative<assertion>(value_);
+}
+
+const assertion& term::get_assertion() const {
+	return std::get<assertion>(value_);
+}
+
+const atom& term::get_atom() const {
+	return std::get<std::pair<atom, std::optional<quantifier>>>(value_).first;
+}
+
+const std::optional<quantifier>& term::get_quantifier() const {
+	return std::get<std::pair<atom, std::optional<quantifier>>>(value_).second;
+}
+
+// alternative class implementation
+alternative::alternative(std::vector<term> terms)
+	: terms_(std::move(terms)) {
+}
+
+const std::vector<term>& alternative::get_terms() const {
+	return terms_;
+}
+
+void alternative::add_term(term term) {
+	terms_.push_back(std::move(term));
+}
+
+}  // namespace tsccore::regex

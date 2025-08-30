@@ -16,4 +16,32 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "quantifier_prefix.hpp"
+#include "quantifier.hpp"
+
+namespace tsccore::regex {
+
+quantifier::quantifier(prefix prefix_type)
+	: value_(prefix_type) {
+}
+
+quantifier::quantifier(std::pair<std::size_t, std::size_t> min_max)
+	: value_(min_max) {
+}
+
+bool quantifier::is_prefix() const {
+	return std::holds_alternative<prefix>(value_);
+}
+
+bool quantifier::is_range() const {
+	return std::holds_alternative<min_max_length>(value_);
+}
+
+quantifier::prefix quantifier::get_prefix() const {
+	return std::get<prefix>(value_);
+}
+
+const std::pair<std::size_t, std::size_t>& quantifier::get_range() const {
+	return std::get<min_max_length>(value_);
+}
+
+}  // namespace tsccore::regex

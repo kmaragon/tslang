@@ -16,4 +16,20 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "regex.hpp"
+#include "regular_expression.hpp"
+
+namespace tsccore::regex {
+
+regular_expression::regular_expression(disjunction disjunction)
+	: disjunction_(std::move(disjunction)) {
+}
+
+const disjunction& regular_expression::get_disjunction() const {
+	return disjunction_;
+}
+
+void regular_expression::set_disjunction(disjunction disjunction) {
+	disjunction_ = std::move(disjunction);
+}
+
+}  // namespace tsccore::regex

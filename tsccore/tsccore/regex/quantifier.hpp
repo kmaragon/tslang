@@ -17,9 +17,31 @@
  */
 
 #pragma once
+#include <utility>
+#include <variant>
 
-namespace tscore::regex {
+namespace tsccore::regex {
 
-class quantifier_prefix {};
+class quantifier {
+public:
+	enum class prefix : char {
+		zero_or_more = '*',
+		one_or_more = '+',
+		zero_or_one = '?'
+	};
 
-}
+	explicit quantifier(prefix prefix_type);
+	explicit quantifier(std::pair<std::size_t, std::size_t> min_max);
+	
+	bool is_prefix() const;
+	bool is_range() const;
+	
+	prefix get_prefix() const;
+	const std::pair<std::size_t, std::size_t>& get_range() const;
+
+private:
+	using min_max_length = std::pair<std::size_t, std::size_t>;
+	std::variant<prefix, min_max_length> value_;
+};
+
+}  // namespace tsccore::regex
