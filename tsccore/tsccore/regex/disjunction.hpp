@@ -19,6 +19,7 @@
 #pragma once
 #include <algorithm>
 #include <span>
+#include <string>
 #include <vector>
 
 namespace tsccore::regex {
@@ -43,6 +44,12 @@ public:
 
 	[[nodiscard]] std::span<const alternative> get_alternatives() const;
 	void add_alternative(alternative&& alternative);
+
+	std::size_t string_size() const noexcept;
+	void to_string(std::u32string& to) const;
+
+	bool operator==(const disjunction& other) const noexcept;
+	bool operator!=(const disjunction& other) const noexcept;
 
 private:
 	void reset() noexcept;

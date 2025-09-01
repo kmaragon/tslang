@@ -18,11 +18,9 @@
 
 #include "character_class.hpp"
 
-namespace tsccore::regex {
+using namespace tsccore::regex;
 
-character_class::character_class(bool negated)
-	: negated_(negated) {
-}
+character_class::character_class(bool negated) : negated_(negated) {}
 
 void character_class::add_character(char32_t character) {
 	characters_.insert(character);
@@ -48,4 +46,74 @@ const std::vector<character_class::range>& character_class::get_ranges() const {
 	return ranges_;
 }
 
-}  // namespace tsccore::regex
+std::size_t character_class::string_size() const noexcept {
+	std::size_t size = 1;
+	if (negated_)
+		size += 1;
+
+	for (char32_t ch : characters_) {
+		if (ch == U']' || ch == U'\\' || ch == U'-') {
+			size += 2;
+		} else {
+			size += 1;
+		}
+	}
+
+	for (const auto& range : ranges_) {
+		if (range.first == U']' || range.first == U'\\' ||
+			range.first == U'-') {
+			size += 2;
+		} else {
+			size += 1;
+		}
+		size += 1;
+		if (range.second == U']' || range.second == U'\\' ||
+			range.second == U'-') {
+			size += 2;
+		} else {
+			size += 1;
+		}
+	}
+
+	size += 1;
+	return size;
+}
+
+void character_class::to_string(std::u32string& to) const {
+	to += U'[';
+	if (negated_) {
+		to += U'^';
+	}
+
+	for (char32_t ch : characters_) {
+		if (ch == U']' || ch == U'\\' || ch == U'-') {
+			to += U'\\';
+		}
+		to += ch;
+	}
+
+	for (const auto& range : ranges_) {
+		if (range.first == U']' || range.first == U'\\' ||
+			range.first == U'-') {
+			to += U'\\';
+		}
+		to += range.first;
+		to += U'-';
+		if (range.second == U']' || range.second == U'\\' ||
+			range.second == U'-') {
+			to += U'\\';
+		}
+		to += range.second;
+	}
+
+	to += U']';
+}
+
+bool character_class::operator==(const character_class& other) const noexcept {
+	return negated_ == other.negated_ && characters_ == other.characters_ &&
+		   ranges_ == other.ranges_;
+}
+
+bool character_class::operator!=(const character_class& other) const noexcept {
+	return !(*this == other);
+}

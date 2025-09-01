@@ -18,12 +18,10 @@
 
 #include "error.hpp"
 
-namespace tsccore::regex {
+using namespace tsccore::regex;
 
 // regex_error base class implementation
-regex_error::regex_error(size_t offset) noexcept
-	: offset_(offset) {
-}
+regex_error::regex_error(size_t offset) noexcept : offset_(offset) {}
 
 size_t regex_error::offset() const noexcept {
 	return offset_;
@@ -31,48 +29,47 @@ size_t regex_error::offset() const noexcept {
 
 // Specific error implementations
 invalid_regular_expression::invalid_regular_expression(size_t offset) noexcept
-	: regex_error(offset) {
-}
+	: regex_error(offset) {}
 
 error_code invalid_regular_expression::code() const noexcept {
 	return error_code::ts1507;
 }
 
-unterminated_regular_expression_literal::unterminated_regular_expression_literal(size_t offset) noexcept
-	: regex_error(offset) {
-}
+unterminated_regular_expression_literal::
+	unterminated_regular_expression_literal(size_t offset) noexcept
+	: regex_error(offset) {}
 
 error_code unterminated_regular_expression_literal::code() const noexcept {
 	return error_code::ts1509;
 }
 
-unterminated_character_class::unterminated_character_class(size_t offset) noexcept
-	: regex_error(offset) {
-}
+unterminated_character_class::unterminated_character_class(
+	size_t offset) noexcept
+	: regex_error(offset) {}
 
 error_code unterminated_character_class::code() const noexcept {
 	return error_code::ts1510;
 }
 
 invalid_escape_sequence::invalid_escape_sequence(size_t offset) noexcept
-	: regex_error(offset) {
-}
+	: regex_error(offset) {}
 
 error_code invalid_escape_sequence::code() const noexcept {
 	return error_code::ts2301;
 }
 
-invalid_character_class_range::invalid_character_class_range(size_t offset) noexcept
-	: regex_error(offset) {
-}
+invalid_character_class_range::invalid_character_class_range(
+	size_t offset) noexcept
+	: regex_error(offset) {}
 
 error_code invalid_character_class_range::code() const noexcept {
 	return error_code::ts2413;
 }
 
-backreference_not_available::backreference_not_available(size_t offset, int backreference_number) noexcept
-	: regex_error(offset), backreference_number_(backreference_number) {
-}
+backreference_not_available::backreference_not_available(
+	size_t offset,
+	int backreference_number) noexcept
+	: regex_error(offset), backreference_number_(backreference_number) {}
 
 error_code backreference_not_available::code() const noexcept {
 	return error_code::ts2414;
@@ -82,12 +79,10 @@ int backreference_not_available::backreference_number() const noexcept {
 	return backreference_number_;
 }
 
-decimal_escape_in_character_class::decimal_escape_in_character_class(size_t offset) noexcept
-	: regex_error(offset) {
-}
+decimal_escape_in_character_class::decimal_escape_in_character_class(
+	size_t offset) noexcept
+	: regex_error(offset) {}
 
 error_code decimal_escape_in_character_class::code() const noexcept {
 	return error_code::ts2415;
 }
-
-}  // namespace tsccore::regex

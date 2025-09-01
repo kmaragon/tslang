@@ -18,23 +18,16 @@
 
 #include "atom.hpp"
 
-namespace tsccore::regex {
+using namespace tsccore::regex;
 
-atom::atom(char32_t character)
-	: value_(character) {
-}
+atom::atom(char32_t character) : value_(character) {}
 
-atom::atom(builtin_class builtin_class)
-	: value_(builtin_class) {
-}
+atom::atom(builtin_class builtin_class) : value_(builtin_class) {}
 
 atom::atom(character_class character_class)
-	: value_(std::move(character_class)) {
-}
+	: value_(std::move(character_class)) {}
 
-atom::atom(group group)
-	: value_(std::move(group)) {
-}
+atom::atom(group group) : value_(std::move(group)) {}
 
 bool atom::is_character() const {
 	return std::holds_alternative<char32_t>(value_);
@@ -68,4 +61,71 @@ const group& atom::get_group() const {
 	return std::get<group>(value_);
 }
 
-}  // namespace tsccore::regex
+std::size_t atom::string_size() const noexcept {
+	if (is_character()) {
+		char32_t ch = get_character();
+		if (ch == U'.' || ch == U'*' || ch == U'+' || ch == U'?' ||
+			ch == U'^' || ch == U'$' || ch == U'|' || ch == U'(' ||
+			ch == U')' || ch == U'[' || ch == U']' || ch == U'{' ||
+			ch == U'}' || ch == U'\\') {
+			return 2;
+		}
+		return 1;
+	} else if (is_builtin_class()) {
+		return 2;
+	} else if (is_character_class()) {
+		return get_character_class().string_size();
+	} else {
+		return get_group().string_size();
+	}
+}
+
+void atom::to_string(std::u32string& to) const {
+	if (is_character()) {
+		char32_t ch = get_character();
+		if (ch == U'.' || ch == U'*' || ch == U'+' || ch == U'?' ||
+			ch == U'^' || ch == U'$' || ch == U'|' || ch == U'(' ||
+			ch == U')' || ch == U'[' || ch == U']' || ch == U'{' ||
+			ch == U'}' || ch == U'\\') {
+			to += U'\\';
+		}
+		to += ch;
+	} else if (is_builtin_class()) {
+		builtin_class bc = get_builtin_class();
+		switch (bc) {
+			case builtin_class::dot:
+				to += U'.';
+				break;
+			case builtin_class::word:
+				to += U"\\w";
+				break;
+			case builtin_class::non_word:
+				to += U"\\W";
+				break;
+			case builtin_class::digit:
+				to += U"\\d";
+				break;
+			case builtin_class::non_digit:
+				to += U"\\D";
+				break;
+			case builtin_class::whitespace:
+				to += U"\\s";
+				break;
+			case builtin_class::non_whitespace:
+				to += U"\\S";
+				break;
+		}
+	} else if (is_character_class()) {
+		get_character_class().to_string(to);
+	} else {
+		get_group().to_string(to);
+	}
+}
+
+bool atom::operator==(const atom& other) const noexcept {
+	return value_ == other.value_;
+}
+
+bool atom::operator!=(const atom& other) const noexcept {
+	return !(*this == other);
+}

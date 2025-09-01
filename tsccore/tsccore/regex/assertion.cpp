@@ -18,14 +18,48 @@
 
 #include "assertion.hpp"
 
-namespace tsccore::regex {
+using namespace tsccore::regex;
 
-assertion::assertion(type assertion_type)
-	: type_(assertion_type) {
-}
+assertion::assertion(type assertion_type) : type_(assertion_type) {}
 
 assertion::type assertion::get_type() const {
 	return type_;
 }
 
-}  // namespace tsccore::regex
+std::size_t assertion::string_size() const noexcept {
+	switch (type_) {
+		case type::start_of_line:
+		case type::end_of_line:
+			return 1;
+		case type::word_boundary:
+		case type::non_word_boundary:
+			return 2;
+		default:
+			return 0;
+	}
+}
+
+void assertion::to_string(std::u32string& to) const {
+	switch (type_) {
+		case type::start_of_line:
+			to += U'^';
+			break;
+		case type::end_of_line:
+			to += U'$';
+			break;
+		case type::word_boundary:
+			to += U"\\b";
+			break;
+		case type::non_word_boundary:
+			to += U"\\B";
+			break;
+	}
+}
+
+bool assertion::operator==(const assertion& other) const noexcept {
+	return type_ == other.type_;
+}
+
+bool assertion::operator!=(const assertion& other) const noexcept {
+	return !(*this == other);
+}

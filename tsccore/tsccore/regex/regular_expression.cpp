@@ -18,11 +18,10 @@
 
 #include "regular_expression.hpp"
 
-namespace tsccore::regex {
+using namespace tsccore::regex;
 
 regular_expression::regular_expression(disjunction disjunction)
-	: disjunction_(std::move(disjunction)) {
-}
+	: disjunction_(std::move(disjunction)) {}
 
 const disjunction& regular_expression::get_disjunction() const {
 	return disjunction_;
@@ -32,4 +31,20 @@ void regular_expression::set_disjunction(disjunction disjunction) {
 	disjunction_ = std::move(disjunction);
 }
 
-}  // namespace tsccore::regex
+std::size_t regular_expression::string_size() const noexcept {
+	return disjunction_.string_size();
+}
+
+void regular_expression::to_string(std::u32string& to) const {
+	disjunction_.to_string(to);
+}
+
+bool regular_expression::operator==(
+	const regular_expression& other) const noexcept {
+	return disjunction_ == other.disjunction_;
+}
+
+bool regular_expression::operator!=(
+	const regular_expression& other) const noexcept {
+	return !(*this == other);
+}

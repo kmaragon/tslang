@@ -18,6 +18,7 @@
 
 #include "scan_regex.hpp"
 #include <cctype>
+#include <limits>
 #include <stdexcept>
 #include "alternative.hpp"
 #include "assertion.hpp"
@@ -57,7 +58,7 @@ group scan_group(const std::u32string_view& input, size_t& pos) {
 	++pos;	// skip '('
 
 	group::type group_type = group::type::capturing;
-	std::optional<std::string> name;
+	std::optional<std::u32string> name;
 
 	// Check for special group types
 	if (current_char(input, pos) == U'?') {
@@ -86,16 +87,16 @@ group scan_group(const std::u32string_view& input, size_t& pos) {
 					++pos;
 				} else {
 					// Named capturing group ?<name>
-					std::string group_name;
+					std::u32string group_name;
+					group_name.reserve(8);
 					while (current_char(input, pos) != U'>' &&
 						   !at_end(input, pos)) {
-						group_name +=
-							static_cast<char>(current_char(input, pos));
+						group_name += current_char(input, pos);
 						++pos;
 					}
 					if (current_char(input, pos) == U'>') {
 						++pos;
-						name = group_name;
+						name = std::move(group_name);
 					}
 				}
 				break;
@@ -369,7 +370,7 @@ std::optional<quantifier> scan_quantifier(const std::u32string_view& input,
 
 				if (current_char(input, pos) == U'}') {
 					// {min,} - unlimited max
-					max = SIZE_MAX;
+					max = std::numeric_limits<std::size_t>::max();
 				} else {
 					// {min,max}
 					max = 0;

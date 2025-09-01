@@ -36,7 +36,7 @@ public:
 		negative_lookbehind
 	};
 
-	group(type group_type, disjunction disjunction, std::optional<std::string> name = std::nullopt);
+	group(type group_type, disjunction disjunction, std::optional<std::u32string> name = std::nullopt);
 	group(const group& other);
 	group(group&& other) noexcept;
 	group& operator=(const group& other);
@@ -44,12 +44,18 @@ public:
 
 	type get_type() const;
 	const disjunction& get_disjunction() const;
-	const std::optional<std::string>& get_name() const;
+	const std::optional<std::u32string>& get_name() const;
+
+	std::size_t string_size() const noexcept;
+	void to_string(std::u32string& to) const;
+
+	bool operator==(const group& other) const noexcept;
+	bool operator!=(const group& other) const noexcept;
 
 private:
 	type type_;
 	disjunction disjunction_;
-	std::optional<std::string> name_;
+	std::optional<std::u32string> name_;
 };
 
 }  // namespace tsccore::regex

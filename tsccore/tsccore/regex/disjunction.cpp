@@ -19,7 +19,7 @@
 #include "disjunction.hpp"
 #include "alternative.hpp"
 
-namespace tsccore::regex {
+using namespace tsccore::regex;
 
 disjunction::disjunction() : index_(0) {}
 
@@ -165,4 +165,34 @@ void disjunction::add_alternative(alternative&& alternative) {
 	}
 }
 
-}  // namespace tsccore::regex
+std::size_t disjunction::string_size() const noexcept {
+	auto span = get_alternatives();
+	std::size_t result = 0;
+	for (auto& a : span)
+		result += a.string_size() + 1;
+
+	if (result == 0)
+		return 0;
+	return result - 1;
+}
+
+void disjunction::to_string(std::u32string& to) const {
+	auto span = get_alternatives();
+	for (size_t i = 0; i < span.size(); ++i) {
+		if (i)
+			to += U'|';
+		span[i].to_string(to);
+	}
+}
+
+bool disjunction::operator==(const disjunction& other) const noexcept {
+	auto alternatives = get_alternatives();
+	auto other_alternatives = other.get_alternatives();
+
+	return std::equal(alternatives.begin(), alternatives.end(),
+					  other_alternatives.begin(), other_alternatives.end());
+}
+
+bool disjunction::operator!=(const disjunction& other) const noexcept {
+	return !(*this == other);
+}

@@ -149,6 +149,7 @@
 #include "tokens/question_dot_token.hpp"
 #include "tokens/question_token.hpp"
 #include "tokens/readonly_token.hpp"
+#include "tokens/regex_token.hpp"
 #include "tokens/require_token.hpp"
 #include "tokens/return_token.hpp"
 #include "tokens/satisfies_token.hpp"

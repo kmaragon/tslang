@@ -37,6 +37,12 @@ public:
 	const atom& get_atom() const;
 	const std::optional<quantifier>& get_quantifier() const;
 
+	std::size_t string_size() const noexcept;
+	void to_string(std::u32string& to) const;
+
+	bool operator==(const term& other) const noexcept;
+	bool operator!=(const term& other) const noexcept;
+
 private:
 	std::variant<assertion, std::pair<atom, std::optional<quantifier>>> value_;
 };
@@ -48,6 +54,12 @@ public:
 	
 	const std::vector<term>& get_terms() const;
 	void add_term(term term);
+
+	std::size_t string_size() const noexcept;
+	void to_string(std::u32string& to) const;
+
+	bool operator==(const alternative& other) const noexcept;
+	bool operator!=(const alternative& other) const noexcept;
 
 private:
 	std::vector<term> terms_;

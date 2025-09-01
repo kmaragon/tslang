@@ -17,25 +17,32 @@
  */
 
 #pragma once
+#include <set>
+#include <string>
 #include <utility>
 #include <vector>
-#include <set>
 
 namespace tsccore::regex {
 
 class character_class {
 public:
 	using range = std::pair<char32_t, char32_t>;
-	
+
 	character_class(bool negated = false);
-	
+
 	void add_character(char32_t character);
 	void add_range(char32_t start, char32_t end);
 	void add_range(range range);
-	
+
 	bool is_negated() const;
 	const std::set<char32_t>& get_characters() const;
 	const std::vector<range>& get_ranges() const;
+
+	std::size_t string_size() const noexcept;
+	void to_string(std::u32string& to) const;
+
+	bool operator==(const character_class& other) const noexcept;
+	bool operator!=(const character_class& other) const noexcept;
 
 private:
 	bool negated_;

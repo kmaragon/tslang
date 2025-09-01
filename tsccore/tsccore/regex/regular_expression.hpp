@@ -25,9 +25,15 @@ class regular_expression {
 public:
 	regular_expression() = default;
 	explicit regular_expression(disjunction disjunction);
-	
+
 	const disjunction& get_disjunction() const;
 	void set_disjunction(disjunction disjunction);
+
+	std::size_t string_size() const noexcept;
+	void to_string(std::u32string& to) const;
+
+	bool operator==(const regular_expression& other) const noexcept;
+	bool operator!=(const regular_expression& other) const noexcept;
 
 private:
 	disjunction disjunction_;

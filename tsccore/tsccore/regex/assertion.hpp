@@ -17,6 +17,7 @@
  */
 
 #pragma once
+#include <string>
 
 namespace tsccore::regex {
 
@@ -32,6 +33,12 @@ public:
 	explicit assertion(type assertion_type);
 	
 	type get_type() const;
+
+	std::size_t string_size() const noexcept;
+	void to_string(std::u32string& to) const;
+
+	bool operator==(const assertion& other) const noexcept;
+	bool operator!=(const assertion& other) const noexcept;
 
 private:
 	type type_;

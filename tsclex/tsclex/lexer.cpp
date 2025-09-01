@@ -21,6 +21,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include <tsccore/regex/scan_regex.hpp>
 #include "error/expected_command.hpp"
 #include "error/hexidecimal_digit_expected.hpp"
 #include "error/invalid_character.hpp"
@@ -105,355 +106,422 @@ lexer::iterator lexer::end() {
 }
 
 std::unordered_map<std::u32string, lexer::versioned_keyword>
-	lexer::
-		keyword_lookup{{U"abstract",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::abstract_token>(
-								location);
-						}, language_version::es3}},
-					   {U"accessor",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::accessor_token>(
-								location);
-						}, language_version::es3}},
-					   {U"any",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::any_token>(location);
-						}, language_version::es3}},
-					   {U"as",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::as_token>(location);
-						}, language_version::es3}},
-					   {U"asserts",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::asserts_token>(location);
-						}, language_version::es3}},
-					   {U"assert",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::assert_token>(location);
-						}, language_version::es3}},
-					   {U"async",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::async_token>(location);
-						}, language_version::es2015}},
-					   {U"await",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::await_token>(location);
-						}, language_version::es2015}},
-					   {U"bigint",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::bigint_token>(location);
-						}, language_version::es3}},
-					   {U"boolean",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::boolean_token>(location);
-						}, language_version::es3}},
-					   {U"break",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::break_token>(location);
-						}, language_version::es3}},
-					   {U"case",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::case_token>(location);
-						}, language_version::es3}},
-					   {U"catch",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::catch_token>(location);
-						}, language_version::es3}},
-					   {U"class",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::class_token>(location);
-						}, language_version::es2015}},
-					   {U"continue",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::continue_token>(
-								location);
-						}, language_version::es3}},
-					   {U"const",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::const_token>(location);
-						}, language_version::es2015}},
-					   {U"constructor",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::constructor_token>(
-								location);
-						}, language_version::es3}},
-					   {U"debugger",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::debugger_token>(
-								location);
-						}, language_version::es3}},
-					   {U"declare",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::declare_token>(location);
-						}, language_version::es3}},
-					   {U"default",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::default_token>(location);
-						}, language_version::es2015}},
-					   {U"delete",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::delete_token>(location);
-						}, language_version::es3}},
-					   {U"do",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::do_token>(location);
-						}, language_version::es3}},
-					   {U"else",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::else_token>(location);
-						}, language_version::es3}},
-					   {U"enum",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::enum_token>(location);
-						}, language_version::es3}},
-					   {U"export",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::export_token>(location);
-						}, language_version::es2015}},
-					   {U"extends",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::extends_token>(location);
-						}, language_version::es2015}},
-					   {U"false",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::false_token>(location);
-						}, language_version::es3}},
-					   {U"finally",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::finally_token>(location);
-						}, language_version::es3}},
-					   {U"for",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::for_token>(location);
-						}, language_version::es3}},
-					   {U"from",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::from_token>(location);
-						}, language_version::es2015}},
-					   {U"function",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::function_token>(
-								location);
-						}, language_version::es3}},
-					   {U"get",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::get_token>(location);
-						}, language_version::es5}},
-					   {U"global",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::global_token>(location);
-						}, language_version::es3}},
-					   {U"if",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::if_token>(location);
-						}, language_version::es3}},
-					   {U"implements",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::implements_token>(
-								location);
-						}, language_version::es3}},
-					   {U"import",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::import_token>(location);
-						}, language_version::es2015}},
-					   {U"in",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::in_token>(location);
-						}, language_version::es3}},
-					   {U"infer",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::infer_token>(location);
-						}, language_version::es3}},
-					   {U"instanceof",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::instanceof_token>(
-								location);
-						}, language_version::es3}},
-					   {U"interface",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::interface_token>(
-								location);
-						}, language_version::es3}},
-					   {U"intrinsic",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::intrinsic_token>(
-								location);
-						}, language_version::es3}},
-					   {U"is",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::is_token>(location);
-						}, language_version::es3}},
-					   {U"keyof",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::keyof_token>(location);
-						}, language_version::es3}},
-					   {U"let",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::let_token>(location);
-						}, language_version::es2015}},
-					   {U"module",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::module_token>(location);
-						}, language_version::es3}},
-					   {U"namespace",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::namespace_token>(
-								location);
-						}, language_version::es3}},
-					   {U"never",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::never_token>(location);
-						}, language_version::es3}},
-					   {U"new",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::new_token>(location);
-						}, language_version::es3}},
-					   {U"null",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::null_token>(location);
-						}, language_version::es3}},
-					   {U"number",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::number_token>(location);
-						}, language_version::es3}},
-					   {U"of",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::of_token>(location);
-						}, language_version::es2015}},
-					   {U"object",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::object_token>(location);
-						}, language_version::es3}},
-					   {U"package",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::package_token>(location);
-						}, language_version::es3}},
-					   {U"private",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::private_token>(location);
-						}, language_version::es3}},
-					   {U"protected",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::protected_token>(
-								location);
-						}, language_version::es3}},
-					   {U"public",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::public_token>(location);
-						}, language_version::es3}},
-					   {U"override",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::override_token>(
-								location);
-						}, language_version::es3}},
-					   {U"out",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::out_token>(location);
-						}, language_version::es3}},
-					   {U"readonly",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::readonly_token>(
-								location);
-						}, language_version::es3}},
-					   {U"require",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::require_token>(location);
-						}, language_version::es3}},
-					   {U"return",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::return_token>(location);
-						}, language_version::es3}},
-					   {U"satisfies",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::satisfies_token>(
-								location);
-						}, language_version::es3}},
-					   {U"set",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::set_token>(location);
-						}, language_version::es5}},
-					   {U"static",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::static_token>(location);
-						}, language_version::es2015}},
-					   {U"string",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::string_token>(location);
-						}, language_version::es3}},
-					   {U"super",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::super_token>(location);
-						}, language_version::es2015}},
-					   {U"switch",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::switch_token>(location);
-						}, language_version::es3}},
-					   {U"symbol",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::symbol_token>(location);
-						}, language_version::es2015}},
-					   {U"this",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::this_token>(location);
-						}, language_version::es3}},
-					   {U"throw",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::throw_token>(location);
-						}, language_version::es3}},
-					   {U"true",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::true_token>(location);
-						}, language_version::es3}},
-					   {U"try",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::try_token>(location);
-						}, language_version::es3}},
-					   {U"type",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::type_token>(location);
-						}, language_version::es3}},
-					   {U"typeof",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::typeof_token>(location);
-						}, language_version::es3}},
-					   {U"undefined",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::undefined_token>(
-								location);
-						}, language_version::es3}},
-					   {U"unique",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::unique_token>(location);
-						}, language_version::es3}},
-					   {U"unknown",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::unknown_token>(location);
-						}, language_version::es3}},
-					   {U"using",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::using_token>(location);
-						}, language_version::es2022}},
-					   {U"var",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::var_token>(location);
-						}, language_version::es3}},
-					   {U"void",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::void_token>(location);
-						}, language_version::es3}},
-					   {U"while",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::while_token>(location);
-						}, language_version::es3}},
-					   {U"with",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::with_token>(location);
-						}, language_version::es3}},
-					   {U"yield",
-						{[](token& into, const source_location& location) {
-							into.emplace_token<tokens::yield_token>(location);
-						}, language_version::es2015}}};
+	lexer::keyword_lookup{
+		{U"abstract",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::abstract_token>(location);
+		  },
+		  language_version::es3}},
+		{U"accessor",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::accessor_token>(location);
+		  },
+		  language_version::es3}},
+		{U"any",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::any_token>(location);
+		  },
+		  language_version::es3}},
+		{U"as",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::as_token>(location);
+		  },
+		  language_version::es3}},
+		{U"asserts",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::asserts_token>(location);
+		  },
+		  language_version::es3}},
+		{U"assert",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::assert_token>(location);
+		  },
+		  language_version::es3}},
+		{U"async",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::async_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"await",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::await_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"bigint",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::bigint_token>(location);
+		  },
+		  language_version::es3}},
+		{U"boolean",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::boolean_token>(location);
+		  },
+		  language_version::es3}},
+		{U"break",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::break_token>(location);
+		  },
+		  language_version::es3}},
+		{U"case",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::case_token>(location);
+		  },
+		  language_version::es3}},
+		{U"catch",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::catch_token>(location);
+		  },
+		  language_version::es3}},
+		{U"class",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::class_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"continue",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::continue_token>(location);
+		  },
+		  language_version::es3}},
+		{U"const",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::const_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"constructor",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::constructor_token>(location);
+		  },
+		  language_version::es3}},
+		{U"debugger",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::debugger_token>(location);
+		  },
+		  language_version::es3}},
+		{U"declare",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::declare_token>(location);
+		  },
+		  language_version::es3}},
+		{U"default",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::default_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"delete",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::delete_token>(location);
+		  },
+		  language_version::es3}},
+		{U"do",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::do_token>(location);
+		  },
+		  language_version::es3}},
+		{U"else",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::else_token>(location);
+		  },
+		  language_version::es3}},
+		{U"enum",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::enum_token>(location);
+		  },
+		  language_version::es3}},
+		{U"export",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::export_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"extends",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::extends_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"false",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::false_token>(location);
+		  },
+		  language_version::es3}},
+		{U"finally",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::finally_token>(location);
+		  },
+		  language_version::es3}},
+		{U"for",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::for_token>(location);
+		  },
+		  language_version::es3}},
+		{U"from",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::from_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"function",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::function_token>(location);
+		  },
+		  language_version::es3}},
+		{U"get",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::get_token>(location);
+		  },
+		  language_version::es5}},
+		{U"global",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::global_token>(location);
+		  },
+		  language_version::es3}},
+		{U"if",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::if_token>(location);
+		  },
+		  language_version::es3}},
+		{U"implements",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::implements_token>(location);
+		  },
+		  language_version::es3}},
+		{U"import",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::import_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"in",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::in_token>(location);
+		  },
+		  language_version::es3}},
+		{U"infer",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::infer_token>(location);
+		  },
+		  language_version::es3}},
+		{U"instanceof",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::instanceof_token>(location);
+		  },
+		  language_version::es3}},
+		{U"interface",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::interface_token>(location);
+		  },
+		  language_version::es3}},
+		{U"intrinsic",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::intrinsic_token>(location);
+		  },
+		  language_version::es3}},
+		{U"is",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::is_token>(location);
+		  },
+		  language_version::es3}},
+		{U"keyof",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::keyof_token>(location);
+		  },
+		  language_version::es3}},
+		{U"let",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::let_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"module",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::module_token>(location);
+		  },
+		  language_version::es3}},
+		{U"namespace",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::namespace_token>(location);
+		  },
+		  language_version::es3}},
+		{U"never",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::never_token>(location);
+		  },
+		  language_version::es3}},
+		{U"new",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::new_token>(location);
+		  },
+		  language_version::es3}},
+		{U"null",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::null_token>(location);
+		  },
+		  language_version::es3}},
+		{U"number",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::number_token>(location);
+		  },
+		  language_version::es3}},
+		{U"of",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::of_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"object",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::object_token>(location);
+		  },
+		  language_version::es3}},
+		{U"package",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::package_token>(location);
+		  },
+		  language_version::es3}},
+		{U"private",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::private_token>(location);
+		  },
+		  language_version::es3}},
+		{U"protected",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::protected_token>(location);
+		  },
+		  language_version::es3}},
+		{U"public",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::public_token>(location);
+		  },
+		  language_version::es3}},
+		{U"override",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::override_token>(location);
+		  },
+		  language_version::es3}},
+		{U"out",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::out_token>(location);
+		  },
+		  language_version::es3}},
+		{U"readonly",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::readonly_token>(location);
+		  },
+		  language_version::es3}},
+		{U"require",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::require_token>(location);
+		  },
+		  language_version::es3}},
+		{U"return",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::return_token>(location);
+		  },
+		  language_version::es3}},
+		{U"satisfies",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::satisfies_token>(location);
+		  },
+		  language_version::es3}},
+		{U"set",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::set_token>(location);
+		  },
+		  language_version::es5}},
+		{U"static",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::static_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"string",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::string_token>(location);
+		  },
+		  language_version::es3}},
+		{U"super",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::super_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"switch",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::switch_token>(location);
+		  },
+		  language_version::es3}},
+		{U"symbol",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::symbol_token>(location);
+		  },
+		  language_version::es2015}},
+		{U"this",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::this_token>(location);
+		  },
+		  language_version::es3}},
+		{U"throw",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::throw_token>(location);
+		  },
+		  language_version::es3}},
+		{U"true",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::true_token>(location);
+		  },
+		  language_version::es3}},
+		{U"try",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::try_token>(location);
+		  },
+		  language_version::es3}},
+		{U"type",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::type_token>(location);
+		  },
+		  language_version::es3}},
+		{U"typeof",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::typeof_token>(location);
+		  },
+		  language_version::es3}},
+		{U"undefined",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::undefined_token>(location);
+		  },
+		  language_version::es3}},
+		{U"unique",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::unique_token>(location);
+		  },
+		  language_version::es3}},
+		{U"unknown",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::unknown_token>(location);
+		  },
+		  language_version::es3}},
+		{U"using",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::using_token>(location);
+		  },
+		  language_version::es2022}},
+		{U"var",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::var_token>(location);
+		  },
+		  language_version::es3}},
+		{U"void",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::void_token>(location);
+		  },
+		  language_version::es3}},
+		{U"while",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::while_token>(location);
+		  },
+		  language_version::es3}},
+		{U"with",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::with_token>(location);
+		  },
+		  language_version::es3}},
+		{U"yield",
+		 {[](token& into, const source_location& location) {
+			  into.emplace_token<tokens::yield_token>(location);
+		  },
+		  language_version::es2015}}};
 
 inline std::size_t lexer::next_code_point(char32_t& into,
 										  std::size_t look_forward) {
@@ -1756,15 +1824,93 @@ void lexer::scan_jsx_text_part(token& into) {
 }
 
 bool lexer::try_scan_regex(token& into) {
-	char32_t next{};
+	auto regex_location = location();
 
-	// scan the slash
-	auto skip = scan_escape_sequence(next);
+	char32_t first{};
+	auto total_skip = next_code_point(first);
+	if (!total_skip || first != U'/') {
+		return false;
+	}
+
 	wbuffer_.clear();
 
-	// TODO fully parse
+	while (true) {
+		auto nc = next_code_point(first, total_skip);
+		if (!nc) {
+			return false;
+		}
 
-	return false;
+		if (first == U'\r' || first == U'\n') {
+			return false;
+		}
+
+		if (first == U'/') {
+			total_skip += nc;
+			break;
+		}
+
+		if (first == U'\\') {
+			wbuffer_.push_back(first);
+			total_skip += nc;
+
+			auto nnc = next_code_point(first, total_skip);
+			if (!nnc) {
+				return false;
+			}
+			wbuffer_.push_back(first);
+			total_skip += nnc;
+		} else {
+			wbuffer_.push_back(first);
+			total_skip += nc;
+		}
+	}
+
+	tokens::regex_token::flags flags = tokens::regex_token::flags::none;
+	while (true) {
+		auto nc = next_code_point(first, total_skip);
+		if (!nc) {
+			break;
+		}
+
+		switch (first) {
+			case U'i':
+				flags = flags | tokens::regex_token::flags::ignore_case;
+				total_skip += nc;
+				break;
+			case U'g':
+				flags = flags | tokens::regex_token::flags::global;
+				total_skip += nc;
+				break;
+			case U'm':
+				flags = flags | tokens::regex_token::flags::multiline;
+				total_skip += nc;
+				break;
+			case U's':
+				flags = flags | tokens::regex_token::flags::dot_all;
+				total_skip += nc;
+				break;
+			case U'u':
+				flags = flags | tokens::regex_token::flags::unicode;
+				total_skip += nc;
+				break;
+			case U'y':
+				flags = flags | tokens::regex_token::flags::sticky;
+				total_skip += nc;
+				break;
+			default:
+				if (iswalnum(first))
+					return false;
+				goto end_flags;
+		}
+	}
+
+end_flags:
+	tsccore::regex::regular_expression regex;
+	tsccore::regex::scan(std::u32string_view(wbuffer_), regex);
+	advance(total_skip);
+	into.emplace_token<tokens::regex_token>(regex_location, std::move(regex),
+											flags);
+	return true;
 }
 
 void lexer::append_wbuffer(char32_t ch) {

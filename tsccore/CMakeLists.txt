@@ -26,7 +26,6 @@ set(HEADERS
         tsccore/regex/quantifier.hpp
         tsccore/regex/regular_expression.hpp
         tsccore/regex/scan_regex.hpp
-        tsccore/regex/scanner.hpp
         tsccore/utf8.hpp
         tsccore/json.hpp
         tsccore/xml.hpp

@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include "regular_expression.hpp"
 #include <string_view>
+#include "regular_expression.hpp"
 
 namespace tsccore::regex {
 

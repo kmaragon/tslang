@@ -17,6 +17,7 @@
  */
 
 #pragma once
+#include <string>
 #include <utility>
 #include <variant>
 
@@ -32,12 +33,18 @@ public:
 
 	explicit quantifier(prefix prefix_type);
 	explicit quantifier(std::pair<std::size_t, std::size_t> min_max);
-	
+
 	bool is_prefix() const;
 	bool is_range() const;
-	
+
 	prefix get_prefix() const;
 	const std::pair<std::size_t, std::size_t>& get_range() const;
+
+	std::size_t string_size() const noexcept;
+	void to_string(std::u32string& to) const;
+
+	bool operator==(const quantifier& other) const noexcept;
+	bool operator!=(const quantifier& other) const noexcept;
 
 private:
 	using min_max_length = std::pair<std::size_t, std::size_t>;

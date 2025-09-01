@@ -17,6 +17,7 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
+#include <limits>
 #include <memory>
 #include <string>
 #include "../tsccore/regex/alternative.hpp"
@@ -46,9 +47,16 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 		REQUIRE(terms.size() == 1);
 		REQUIRE(!terms[0].is_assertion());
 
-		const auto& atom = terms[0].get_atom();
-		REQUIRE(atom.is_character());
-		REQUIRE(atom.get_character() == U'a');
+		const auto& term_atom = terms[0].get_atom();
+		REQUIRE(term_atom.is_character());
+		REQUIRE(term_atom.get_character() == U'a');
+		
+		CHECK(term_atom == atom(U'a'));
+		CHECK_FALSE(term_atom != atom(U'a'));
+		std::u32string atom_str;
+		term_atom.to_string(atom_str);
+		CHECK(atom_str == U"a");
+		CHECK(term_atom.string_size() == 1);
 	}
 
 	SECTION("Character classes") {
@@ -75,6 +83,11 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 			REQUIRE(characters.count(U'a') == 1);
 			REQUIRE(characters.count(U'b') == 1);
 			REQUIRE(characters.count(U'c') == 1);
+			
+			std::u32string cc_str;
+			char_class.to_string(cc_str);
+			CHECK(cc_str == U"[abc]");
+			CHECK(char_class.string_size() == 5);
 		}
 
 		SECTION("Negated character class") {
@@ -281,7 +294,7 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 			const auto& quant = quantifier_opt.value();
 			REQUIRE(quant.is_range());
 			REQUIRE(quant.get_range().first == 3);
-			REQUIRE(quant.get_range().second == SIZE_MAX);
+			REQUIRE(quant.get_range().second == std::numeric_limits<std::size_t>::max());
 		}
 
 		SECTION("Range quantifier") {
@@ -376,6 +389,34 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 			const auto& c_atom = terms[1].get_atom();
 			REQUIRE(c_atom.is_character());
 			REQUIRE(c_atom.get_character() == U'c');
+		}
+		
+		SECTION("Multiple terms in alternative vs disjunction") {
+			std::u32string input = U"abc";
+			regular_expression regex;
+
+			REQUIRE_NOTHROW(scan(input, regex));
+
+			const auto& disjunction = regex.get_disjunction();
+			auto alternatives = disjunction.get_alternatives();
+			REQUIRE(alternatives.size() == 1);
+
+			const auto& terms = alternatives[0].get_terms();
+			REQUIRE(terms.size() == 3);
+
+			REQUIRE(terms[0].get_atom().get_character() == U'a');
+			REQUIRE(terms[1].get_atom().get_character() == U'b');
+			REQUIRE(terms[2].get_atom().get_character() == U'c');
+			
+			std::u32string alt_str;
+			alternatives[0].to_string(alt_str);
+			CHECK(alt_str == U"abc");
+			CHECK(alternatives[0].string_size() == 3);
+			
+			std::u32string disj_str;
+			disjunction.to_string(disj_str);
+			CHECK(disj_str == U"abc");
+			CHECK(disjunction.string_size() == 3);
 		}
 	}
 
@@ -674,7 +715,7 @@ TEST_CASE("Regular Expression Scanning", "[regex]") {
 			const auto& group = atom.get_group();
 			REQUIRE(group.get_type() == group::type::capturing);
 			REQUIRE(group.get_name().has_value());
-			REQUIRE(group.get_name().value() == "name");
+			REQUIRE(group.get_name().value() == U"name");
 		}
 
 		SECTION("Positive lookahead") {

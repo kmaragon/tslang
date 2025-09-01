@@ -127,6 +127,7 @@
 									  tscc::lex::tokens::question_dot_token,\
 									  tscc::lex::tokens::question_token,\
 									  tscc::lex::tokens::readonly_token,\
+									  tscc::lex::tokens::regex_token,\
 									  tscc::lex::tokens::require_token,\
 									  tscc::lex::tokens::return_token,\
 									  tscc::lex::tokens::satisfies_token,\

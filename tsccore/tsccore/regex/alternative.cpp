@@ -18,16 +18,13 @@
 
 #include "alternative.hpp"
 
-namespace tsccore::regex {
+using namespace tsccore::regex;
 
 // term class implementation
-term::term(assertion assertion)
-	: value_(assertion) {
-}
+term::term(assertion assertion) : value_(assertion) {}
 
 term::term(atom atom, std::optional<quantifier> quantifier)
-	: value_(std::make_pair(atom, quantifier)) {
-}
+	: value_(std::make_pair(atom, quantifier)) {}
 
 bool term::is_assertion() const {
 	return std::holds_alternative<assertion>(value_);
@@ -41,14 +38,36 @@ const atom& term::get_atom() const {
 	return std::get<std::pair<atom, std::optional<quantifier>>>(value_).first;
 }
 
+std::size_t term::string_size() const noexcept {
+	return is_assertion() ? get_assertion().string_size() : get_atom().string_size() + (get_quantifier() ? get_quantifier()->string_size() : 0);
+}
+
+void term::to_string(std::u32string& to) const {
+	if (is_assertion()) {
+		get_assertion().to_string(to);
+	} else {
+		get_atom().to_string(to);
+		if (get_quantifier()) {
+			get_quantifier()->to_string(to);
+		}
+	}
+}
+
+
+bool term::operator==(const term& other) const noexcept {
+	return value_ == other.value_;
+}
+
+bool term::operator!=(const term& other) const noexcept {
+	return !(*this == other);
+}
+
 const std::optional<quantifier>& term::get_quantifier() const {
 	return std::get<std::pair<atom, std::optional<quantifier>>>(value_).second;
 }
 
 // alternative class implementation
-alternative::alternative(std::vector<term> terms)
-	: terms_(std::move(terms)) {
-}
+alternative::alternative(std::vector<term> terms) : terms_(std::move(terms)) {}
 
 const std::vector<term>& alternative::get_terms() const {
 	return terms_;
@@ -58,4 +77,25 @@ void alternative::add_term(term term) {
 	terms_.push_back(std::move(term));
 }
 
-}  // namespace tsccore::regex
+std::size_t alternative::string_size() const noexcept {
+	std::size_t result = 0;
+	for (auto& t : terms_) {
+		result += t.string_size();
+	}
+
+	return result;
+}
+
+void alternative::to_string(std::u32string& to) const {
+	for (auto& t : terms_) {
+		t.to_string(to);
+	}
+}
+
+bool alternative::operator==(const alternative& other) const noexcept {
+	return terms_ == other.terms_;
+}
+
+bool alternative::operator!=(const alternative& other) const noexcept {
+	return !(*this == other);
+}

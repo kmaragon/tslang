@@ -143,6 +143,7 @@ set(SOURCES
         tsclex/tokens/question_dot_token.cpp
         tsclex/tokens/question_token.cpp
         tsclex/tokens/readonly_token.cpp
+        tsclex/tokens/regex_token.cpp
         tsclex/tokens/require_token.cpp
         tsclex/tokens/return_token.cpp
         tsclex/tokens/satisfies_token.cpp
@@ -327,6 +328,7 @@ set(HEADERS
         tsclex/tokens/question_dot_token.hpp
         tsclex/tokens/question_token.hpp
         tsclex/tokens/readonly_token.hpp
+        tsclex/tokens/regex_token.hpp
         tsclex/tokens/require_token.hpp
         tsclex/tokens/return_token.hpp
         tsclex/tokens/satisfies_token.hpp
