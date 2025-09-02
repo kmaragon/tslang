@@ -67,7 +67,9 @@ std::size_t atom::string_size() const noexcept {
 		if (ch == U'.' || ch == U'*' || ch == U'+' || ch == U'?' ||
 			ch == U'^' || ch == U'$' || ch == U'|' || ch == U'(' ||
 			ch == U')' || ch == U'[' || ch == U']' || ch == U'{' ||
-			ch == U'}' || ch == U'\\') {
+			ch == U'}' || ch == U'\\' || ch == U'\n' || ch == U'\r' ||
+			ch == U'\t' || ch == U'\f' || ch == U'\v' || ch == U'\0' ||
+			ch == U'/') {
 			return 2;
 		}
 		return 1;
@@ -86,10 +88,23 @@ void atom::to_string(std::u32string& to) const {
 		if (ch == U'.' || ch == U'*' || ch == U'+' || ch == U'?' ||
 			ch == U'^' || ch == U'$' || ch == U'|' || ch == U'(' ||
 			ch == U')' || ch == U'[' || ch == U']' || ch == U'{' ||
-			ch == U'}' || ch == U'\\') {
+			ch == U'}' || ch == U'\\' || ch == U'/') {
 			to += U'\\';
-		}
-		to += ch;
+			to += ch;
+		} else if (ch == U'\n')
+			to += U"\\n";
+		else if (ch == U'\r')
+			to += U"\\r";
+		else if (ch == U'\t')
+			to += U"\\t";
+		else if (ch == U'\f')
+			to += U"\\f";
+		else if (ch == U'\v')
+			to += U"\\v";
+		else if (ch == U'\0')
+			to += U"\\0";
+		else
+			to += ch;
 	} else if (is_builtin_class()) {
 		builtin_class bc = get_builtin_class();
 		switch (bc) {

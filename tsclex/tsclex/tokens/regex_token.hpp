@@ -32,7 +32,8 @@ public:
 		multiline = 1 << 2,
 		dot_all = 1 << 3,
 		unicode = 1 << 4,
-		sticky = 1 << 5
+		sticky = 1 << 5,
+		unicode_sets = 1 << 6
 	};
 
 	regex_token(tsccore::regex::regular_expression&& expression, flags flags = flags::none) noexcept;

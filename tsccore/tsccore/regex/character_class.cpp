@@ -47,32 +47,24 @@ const std::vector<character_class::range>& character_class::get_ranges() const {
 }
 
 std::size_t character_class::string_size() const noexcept {
+	auto needs_escape = [](char32_t ch) constexpr {
+		return ch == U']' || ch == U'\\' || ch == U'-' ||
+			   ch == U'\n' || ch == U'\r' || ch == U'\t' ||
+			   ch == U'\f' || ch == U'\v' || ch == U'\0';
+	};
+
 	std::size_t size = 1;
 	if (negated_)
 		size += 1;
 
 	for (char32_t ch : characters_) {
-		if (ch == U']' || ch == U'\\' || ch == U'-') {
-			size += 2;
-		} else {
-			size += 1;
-		}
+		size += needs_escape(ch) ? 2 : 1;
 	}
 
 	for (const auto& range : ranges_) {
-		if (range.first == U']' || range.first == U'\\' ||
-			range.first == U'-') {
-			size += 2;
-		} else {
-			size += 1;
-		}
-		size += 1;
-		if (range.second == U']' || range.second == U'\\' ||
-			range.second == U'-') {
-			size += 2;
-		} else {
-			size += 1;
-		}
+		size += needs_escape(range.first) ? 2 : 1;
+		size += 1; // for '-'
+		size += needs_escape(range.second) ? 2 : 1;
 	}
 
 	size += 1;
@@ -80,30 +72,51 @@ std::size_t character_class::string_size() const noexcept {
 }
 
 void character_class::to_string(std::u32string& to) const {
+	auto escape_char = [&to](char32_t ch) {
+		switch (ch) {
+			case U']':
+			case U'\\':
+			case U'-':
+				to += U'\\';
+				to += ch;
+				break;
+			case U'\n':
+				to += U"\\n";
+				break;
+			case U'\r':
+				to += U"\\r";
+				break;
+			case U'\t':
+				to += U"\\t";
+				break;
+			case U'\f':
+				to += U"\\f";
+				break;
+			case U'\v':
+				to += U"\\v";
+				break;
+			case U'\0':
+				to += U"\\0";
+				break;
+			default:
+				to += ch;
+				break;
+		}
+	};
+
 	to += U'[';
 	if (negated_) {
 		to += U'^';
 	}
 
 	for (char32_t ch : characters_) {
-		if (ch == U']' || ch == U'\\' || ch == U'-') {
-			to += U'\\';
-		}
-		to += ch;
+		escape_char(ch);
 	}
 
 	for (const auto& range : ranges_) {
-		if (range.first == U']' || range.first == U'\\' ||
-			range.first == U'-') {
-			to += U'\\';
-		}
-		to += range.first;
+		escape_char(range.first);
 		to += U'-';
-		if (range.second == U']' || range.second == U'\\' ||
-			range.second == U'-') {
-			to += U'\\';
-		}
-		to += range.second;
+		escape_char(range.second);
 	}
 
 	to += U']';

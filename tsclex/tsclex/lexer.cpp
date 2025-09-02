@@ -22,7 +22,11 @@
 #include <cmath>
 #include <cstring>
 #include <tsccore/regex/scan_regex.hpp>
+#include "error/conflicting_regex_flags.hpp"
+#include "error/duplicate_regex_flag.hpp"
 #include "error/expected_command.hpp"
+#include "error/regex_flag_unavailable.hpp"
+#include "error/unknown_regex_flag.hpp"
 #include "error/hexidecimal_digit_expected.hpp"
 #include "error/invalid_character.hpp"
 #include "error/invalid_identifier.hpp"
@@ -546,7 +550,7 @@ inline std::size_t lexer::next_code_point(char32_t& into,
 				return sn - needed;
 			}
 
-			rbuffer_.resize(buffer_offset_ + read);
+			rbuffer_.resize(preserve_size + read);
 			needed -= std::min(needed, static_cast<std::size_t>(read));
 
 			if (!needed)
@@ -1872,36 +1876,63 @@ bool lexer::try_scan_regex(token& into) {
 			break;
 		}
 
+		tokens::regex_token::flags new_flag;
 		switch (first) {
 			case U'i':
-				flags = flags | tokens::regex_token::flags::ignore_case;
-				total_skip += nc;
+				new_flag = tokens::regex_token::flags::ignore_case;
 				break;
 			case U'g':
-				flags = flags | tokens::regex_token::flags::global;
-				total_skip += nc;
+				new_flag = tokens::regex_token::flags::global;
 				break;
 			case U'm':
-				flags = flags | tokens::regex_token::flags::multiline;
-				total_skip += nc;
+				new_flag = tokens::regex_token::flags::multiline;
 				break;
 			case U's':
-				flags = flags | tokens::regex_token::flags::dot_all;
-				total_skip += nc;
+				if (vers_ < language_version::es2018) {
+					throw regex_flag_unavailable(regex_location + total_skip);
+				}
+				new_flag = tokens::regex_token::flags::dot_all;
 				break;
 			case U'u':
-				flags = flags | tokens::regex_token::flags::unicode;
-				total_skip += nc;
+				if (vers_ < language_version::es2015) {
+					throw regex_flag_unavailable(regex_location + total_skip);
+				}
+				new_flag = tokens::regex_token::flags::unicode;
 				break;
 			case U'y':
-				flags = flags | tokens::regex_token::flags::sticky;
-				total_skip += nc;
+				if (vers_ < language_version::es2015) {
+					throw regex_flag_unavailable(regex_location + total_skip);
+				}
+				new_flag = tokens::regex_token::flags::sticky;
+				break;
+			case U'v':
+				if (vers_ < language_version::es_next) {
+					throw regex_flag_unavailable(regex_location + total_skip);
+				}
+				if (has_flag(flags, tokens::regex_token::flags::unicode)) {
+					throw conflicting_regex_flags(regex_location + total_skip);
+				}
+				new_flag = tokens::regex_token::flags::unicode_sets;
 				break;
 			default:
+				if (iswalpha(first))
+					throw unknown_regex_flag(regex_location + total_skip);
 				if (iswalnum(first))
 					return false;
 				goto end_flags;
 		}
+
+		if (has_flag(flags, new_flag)) {
+			throw duplicate_regex_flag(regex_location + total_skip);
+		}
+		
+		if (new_flag == tokens::regex_token::flags::unicode && 
+			has_flag(flags, tokens::regex_token::flags::unicode_sets)) {
+			throw conflicting_regex_flags(regex_location + total_skip);
+		}
+		
+		flags = flags | new_flag;
+		total_skip += nc;
 	}
 
 end_flags:

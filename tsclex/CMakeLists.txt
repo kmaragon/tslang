@@ -1,5 +1,7 @@
 
 set(SOURCES
+        tsclex/error/conflicting_regex_flags.cpp
+        tsclex/error/duplicate_regex_flag.cpp
         tsclex/error/expected_command.cpp
         tsclex/error/hexidecimal_digit_expected.cpp
         tsclex/error/invalid_character.cpp
@@ -7,9 +9,11 @@ set(SOURCES
         tsclex/error/misplaced_shebang.cpp
         tsclex/error/multiple_separators_not_allowed.cpp
         tsclex/error/no_jsx_closing_tag.cpp
+        tsclex/error/regex_flag_unavailable.cpp
         tsclex/error/separators_not_allowed_here.cpp
         tsclex/error/unexpected_end_of_text.cpp
         tsclex/error/unicode_value_out_of_range.cpp
+        tsclex/error/unknown_regex_flag.cpp
         tsclex/error/unterminated_multiline_comment.cpp
         tsclex/error/unterminated_string_literal.cpp
         tsclex/error/unterminated_unicode_escape_sequence.cpp
@@ -186,6 +190,8 @@ set(SOURCES
 )
 
 set(HEADERS
+        tsclex/error/conflicting_regex_flags.hpp
+        tsclex/error/duplicate_regex_flag.hpp
         tsclex/error/expected_command.hpp
         tsclex/error/hexidecimal_digit_expected.hpp
         tsclex/error/invalid_character.hpp
@@ -193,9 +199,11 @@ set(HEADERS
         tsclex/error/misplaced_shebang.hpp
         tsclex/error/multiple_separators_not_allowed.hpp
         tsclex/error/no_jsx_closing_tag.hpp
+        tsclex/error/regex_flag_unavailable.hpp
         tsclex/error/separators_not_allowed_here.hpp
         tsclex/error/unexpected_end_of_text.hpp
         tsclex/error/unicode_value_out_of_range.hpp
+        tsclex/error/unknown_regex_flag.hpp
         tsclex/error/unterminated_multiline_comment.hpp
         tsclex/error/unterminated_string_literal.hpp
         tsclex/error/unterminated_unicode_escape_sequence.hpp

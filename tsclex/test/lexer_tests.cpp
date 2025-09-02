@@ -18,6 +18,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <sstream>
+#include <tsclex/error/conflicting_regex_flags.hpp>
+#include <tsclex/error/regex_flag_unavailable.hpp>
 #include <tsclex/lexer.hpp>
 #include <tsclex/token.hpp>
 #include "fake_source.hpp"
@@ -30,11 +32,15 @@ TEST_CASE("Lexer", "[lexer]") {
 	std::stringstream file;
 	auto source = std::make_shared<fake_source>(__FILE__);
 
-	auto create_lexer = [&file, &source](const std::string& input) {
+	auto create_lexer = [&file, &source](
+							const std::string& input,
+							tscc::lex::language_version version =
+								tscc::lex::language_version::es_next) {
+		file.str("");
 		file.clear();
 		file << input;
-		file.seekg(0, std::ios::beg);
-		return tscc::lex::lexer(file, source);
+		file.flush();
+		return tscc::lex::lexer(file, source, version);
 	};
 
 	auto tokenize = [&create_lexer](const std::string& input) {
@@ -1475,6 +1481,230 @@ And some more
 		}
 	}
 
+	SECTION("Regular Expressions") {
+		SECTION("Basic Regex Patterns") {
+			auto tokens = tokenize("/abc/ /[a-z]+/ /\\d{2,4}/");
+			REQUIRE(tokens.size() == 3);
+			CHECK(tokens[0].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[0]->to_string() == "/abc/");
+			CHECK(tokens[1].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[1]->to_string() == "/[a-z]+/");
+			CHECK(tokens[2].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[2]->to_string() == "/\\d{2,4}/");
+		}
+
+		SECTION("Regex with Flags") {
+			auto tokens = tokenize(
+				"/test/g /pattern/i /multi/m /dotall/s /unicode/u /sticky/y");
+			REQUIRE(tokens.size() == 6);
+
+			// Global flag
+			CHECK(tokens[0].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[0]->to_string() == "/test/g");
+			auto& regex0 =
+				static_cast<tscc::lex::tokens::regex_token&>(*tokens[0]);
+			CHECK(has_flag(regex0.get_flags(),
+						   tscc::lex::tokens::regex_token::flags::global));
+
+			// Ignore case flag
+			CHECK(tokens[1].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[1]->to_string() == "/pattern/i");
+			auto& regex1 =
+				static_cast<tscc::lex::tokens::regex_token&>(*tokens[1]);
+			CHECK(has_flag(regex1.get_flags(),
+						   tscc::lex::tokens::regex_token::flags::ignore_case));
+
+			// Multiline flag
+			CHECK(tokens[2].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[2]->to_string() == "/multi/m");
+			auto& regex2 =
+				static_cast<tscc::lex::tokens::regex_token&>(*tokens[2]);
+			CHECK(has_flag(regex2.get_flags(),
+						   tscc::lex::tokens::regex_token::flags::multiline));
+
+			// Dot all flag
+			CHECK(tokens[3].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[3]->to_string() == "/dotall/s");
+			auto& regex3 =
+				static_cast<tscc::lex::tokens::regex_token&>(*tokens[3]);
+			CHECK(has_flag(regex3.get_flags(),
+						   tscc::lex::tokens::regex_token::flags::dot_all));
+
+			// Unicode flag
+			CHECK(tokens[4].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[4]->to_string() == "/unicode/u");
+			auto& regex4 =
+				static_cast<tscc::lex::tokens::regex_token&>(*tokens[4]);
+			CHECK(has_flag(regex4.get_flags(),
+						   tscc::lex::tokens::regex_token::flags::unicode));
+
+			// Sticky flag
+			CHECK(tokens[5].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[5]->to_string() == "/sticky/y");
+			auto& regex5 =
+				static_cast<tscc::lex::tokens::regex_token&>(*tokens[5]);
+			CHECK(has_flag(regex5.get_flags(),
+						   tscc::lex::tokens::regex_token::flags::sticky));
+		}
+
+		SECTION("Regex with Multiple Flags") {
+			auto tokens = tokenize("/pattern/gi /test/msu");
+			REQUIRE(tokens.size() == 2);
+
+			// Global + ignore case
+			CHECK(tokens[0].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[0]->to_string() == "/pattern/ig");
+			auto& regex0 =
+				static_cast<tscc::lex::tokens::regex_token&>(*tokens[0]);
+			CHECK(has_flag(regex0.get_flags(),
+						   tscc::lex::tokens::regex_token::flags::global));
+			CHECK(has_flag(regex0.get_flags(),
+						   tscc::lex::tokens::regex_token::flags::ignore_case));
+
+			// Multiline + dot all + unicode
+			CHECK(tokens[1].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[1]->to_string() == "/test/msu");
+			auto& regex1 =
+				static_cast<tscc::lex::tokens::regex_token&>(*tokens[1]);
+			CHECK(has_flag(regex1.get_flags(),
+						   tscc::lex::tokens::regex_token::flags::multiline));
+			CHECK(has_flag(regex1.get_flags(),
+						   tscc::lex::tokens::regex_token::flags::dot_all));
+			CHECK(has_flag(regex1.get_flags(),
+						   tscc::lex::tokens::regex_token::flags::unicode));
+		}
+
+		SECTION("Regex with Escaped Characters") {
+			auto tokens =
+				tokenize(R"(/\// /\\./ /\n\t\r/ /[\n-A]+/ /\x41\u0042/)");
+			REQUIRE(tokens.size() == 5);
+
+			// Escaped forward slash
+			CHECK(tokens[0].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[0]->to_string() == "/\\//");
+
+			// Escaped backslash and dot
+			CHECK(tokens[1].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[1]->to_string() == "/\\\\./");
+
+			// Common escape sequences
+			CHECK(tokens[2].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[2]->to_string() == "/\\n\\t\\r/");
+
+			// Escape sequences in character classes
+			CHECK(tokens[3].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[3]->to_string() == "/[\\n-A]+/");
+
+			// Hex and unicode escapes
+			CHECK(tokens[4].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[4]->to_string() == "/AB/");
+		}
+
+		SECTION("Regex in Context") {
+			auto tokens = tokenize("const pattern = /[a-zA-Z]+/g;");
+			REQUIRE(tokens.size() == 5);
+			CHECK(tokens[0].is<tscc::lex::tokens::const_token>());
+			CHECK(tokens[1].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens[1]->to_string() == "pattern");
+			CHECK(tokens[2].is<tscc::lex::tokens::eq_token>());
+			CHECK(tokens[3].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens[3]->to_string() == "/[a-zA-Z]+/g");
+			CHECK(tokens[4].is<tscc::lex::tokens::semicolon_token>());
+		}
+
+		SECTION("Regex vs Division Disambiguation") {
+			// After assignment, should be regex
+			auto tokens1 = tokenize("x = /pattern/");
+			REQUIRE(tokens1.size() == 3);
+			CHECK(tokens1[0].is<tscc::lex::tokens::identifier_token>());
+			CHECK(tokens1[0]->to_string() == "x");
+			CHECK(tokens1[1].is<tscc::lex::tokens::eq_token>());
+			CHECK(tokens1[2].is<tscc::lex::tokens::regex_token>());
+
+			// After return, should be regex
+			auto tokens2 = tokenize("return /pattern/");
+			REQUIRE(tokens2.size() == 2);
+			CHECK(tokens2[0].is<tscc::lex::tokens::return_token>());
+			CHECK(tokens2[1].is<tscc::lex::tokens::regex_token>());
+
+			// After open paren, should be regex
+			auto tokens3 = tokenize("(/pattern/)");
+			REQUIRE(tokens3.size() == 3);
+			CHECK(tokens3[0].is<tscc::lex::tokens::open_paren_token>());
+			CHECK(tokens3[1].is<tscc::lex::tokens::regex_token>());
+			CHECK(tokens3[2].is<tscc::lex::tokens::close_paren_token>());
+		}
+
+		SECTION("Complex Regex Patterns") {
+			auto tokens = tokenize(
+				"/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]"
+				"|2[0-4][0-9]|[01]?[0-9][0-9]?)$/");
+			REQUIRE(tokens.size() == 1);
+			CHECK(tokens[0].is<tscc::lex::tokens::regex_token>());
+			// This is an IP address validation regex pattern
+			CHECK(tokens[0]->to_string() ==
+				  "/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-"
+				  "5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/");
+		}
+
+		SECTION("Regex Error Cases") {
+			SECTION("Invalid Regex Flags") {
+				auto lexer = create_lexer("/pattern/xyz");
+				REQUIRE_THROWS(
+					std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+			}
+
+			SECTION("Duplicate Regex Flags") {
+				auto lexer = create_lexer("/pattern/gg");
+				REQUIRE_THROWS(
+					std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+			}
+
+			constexpr auto construct_vector = [](auto& lexer) {
+				return std::vector<tscc::lex::token>{lexer.begin(),
+													 lexer.end()};
+			};
+
+			SECTION("Version-Specific Flag Availability") {
+				// Test 's' flag unavailable in ES5
+				auto lexer_es5 = create_lexer("/pattern/s",
+											  tscc::lex::language_version::es5);
+				REQUIRE_THROWS_AS(construct_vector(lexer_es5),
+								  tscc::lex::regex_flag_unavailable);
+
+				// Test 'u' and 'y' flags unavailable in ES3
+				auto lexer_es3_u = create_lexer(
+					"/pattern/u", tscc::lex::language_version::es3);
+				REQUIRE_THROWS_AS(construct_vector(lexer_es3_u),
+								  tscc::lex::regex_flag_unavailable);
+
+				auto lexer_es3_y = create_lexer(
+					"/pattern/y", tscc::lex::language_version::es3);
+				REQUIRE_THROWS_AS(construct_vector(lexer_es3_y),
+								  tscc::lex::regex_flag_unavailable);
+
+				// Test 'v' flag unavailable in ES2022
+				auto lexer_es2022 = create_lexer(
+					"/pattern/v", tscc::lex::language_version::es2022);
+				REQUIRE_THROWS_AS(construct_vector(lexer_es2022),
+								  tscc::lex::regex_flag_unavailable);
+			}
+
+			SECTION("Conflicting Unicode Flags") {
+				// Test 'u' and 'v' flags cannot be used together
+				auto lexer_uv = create_lexer(
+					"/pattern/uv", tscc::lex::language_version::es_next);
+				REQUIRE_THROWS_AS(construct_vector(lexer_uv),
+								  tscc::lex::conflicting_regex_flags);
+
+				auto lexer_vu = create_lexer(
+					"/pattern/vu", tscc::lex::language_version::es_next);
+				REQUIRE_THROWS_AS(construct_vector(lexer_vu),
+								  tscc::lex::conflicting_regex_flags);
+			}
+		}
+	}
+
 	SECTION("JSX Tokens") {
 		source->language_variant(tscc::lex::ts_language_variant::jsx);
 
@@ -1496,15 +1726,15 @@ And some more
 			// <div
 			CHECK(tokens[3].is<tscc::lex::tokens::jsx_element_start_token>());
 			CHECK(tokens[3]->to_string() == "<div");
-			
+
 			// >
 			CHECK(tokens[4].is<tscc::lex::tokens::jsx_element_end_token>());
 			CHECK(tokens[4]->to_string() == ">");
-			
+
 			// Hello
 			CHECK(tokens[5].is<tscc::lex::tokens::jsx_text_token>());
 			CHECK(tokens[5]->to_string() == "Hello");
-			
+
 			// </div>
 			CHECK(tokens[6].is<tscc::lex::tokens::jsx_element_close_token>());
 			CHECK(tokens[6]->to_string() == "</div>");
@@ -1514,11 +1744,11 @@ And some more
 			// <input />
 			auto tokens = tokenize("<input />");
 			REQUIRE(tokens.size() == 2);  // <input, />
-			
+
 			// <input
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
 			CHECK(tokens[0]->to_string() == "<input");
-			
+
 			// />
 			CHECK(tokens[1].is<tscc::lex::tokens::jsx_self_closing_token>());
 			CHECK(tokens[1]->to_string() == "/>");
@@ -1527,28 +1757,30 @@ And some more
 		SECTION("JSX Element with String Attribute") {
 			// <div className="container">Text</div>
 			auto tokens = tokenize(R"(<div className="container">Text</div>)");
-			REQUIRE(tokens.size() == 6);  // <div, className, ", "container", ", >, Text, </div>
-			
+			REQUIRE(tokens.size() ==
+					6);	 // <div, className, ", "container", ", >, Text, </div>
+
 			// <div
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
 			CHECK(tokens[0]->to_string() == "<div");
-			
+
 			// className
 			CHECK(tokens[1].is<tscc::lex::tokens::jsx_attribute_name_token>());
 			CHECK(tokens[1]->to_string() == "className");
-			
+
 			// ="container" (start) - properly check type
-			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_token>());
+			REQUIRE(
+				tokens[2].is<tscc::lex::tokens::jsx_attribute_value_token>());
 			CHECK(tokens[2]->to_string() == "\"container\"");
-			
+
 			// >
 			CHECK(tokens[3].is<tscc::lex::tokens::jsx_element_end_token>());
 			CHECK(tokens[3]->to_string() == ">");
-			
+
 			// Text
 			CHECK(tokens[4].is<tscc::lex::tokens::jsx_text_token>());
 			CHECK(tokens[4]->to_string() == "Text");
-			
+
 			// </div>
 			CHECK(tokens[5].is<tscc::lex::tokens::jsx_element_close_token>());
 			CHECK(tokens[5]->to_string() == "</div>");
@@ -1556,8 +1788,10 @@ And some more
 
 		SECTION("JSX Element with Flag Attribute") {
 			// <div className="container">Text</div>
-			auto tokens = tokenize(R"(<div disabled className="container">Text</div>)");
-			REQUIRE(tokens.size() == 7);  // <div, className, ", "container", ", >, Text, </div>
+			auto tokens =
+				tokenize(R"(<div disabled className="container">Text</div>)");
+			REQUIRE(tokens.size() ==
+					7);	 // <div, className, ", "container", ", >, Text, </div>
 
 			// <div
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
@@ -1572,7 +1806,8 @@ And some more
 			CHECK(tokens[2]->to_string() == "className");
 
 			// ="container" (start) - properly check type
-			REQUIRE(tokens[3].is<tscc::lex::tokens::jsx_attribute_value_token>());
+			REQUIRE(
+				tokens[3].is<tscc::lex::tokens::jsx_attribute_value_token>());
 			CHECK(tokens[3]->to_string() == "\"container\"");
 
 			// >
@@ -1590,35 +1825,42 @@ And some more
 
 		SECTION("JSX Element with Expression Attribute") {
 			// <button onClick={handleClick}>Click</button>
-			auto tokens = tokenize("<button onClick={handleClick}>Click</button>");
-			REQUIRE(tokens.size() == 8);  // <button, onClick, {, handleClick, }, >, Click, </button>
-			
+			auto tokens =
+				tokenize("<button onClick={handleClick}>Click</button>");
+			REQUIRE(
+				tokens.size() ==
+				8);	 // <button, onClick, {, handleClick, }, >, Click, </button>
+
 			// <button
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
 			CHECK(tokens[0]->to_string() == "<button");
-			
+
 			// onClick
 			CHECK(tokens[1].is<tscc::lex::tokens::jsx_attribute_name_token>());
 			CHECK(tokens[1]->to_string() == "onClick");
-			
+
 			// ={handleClick} (start) - properly check type
-			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_start_token>());
+			REQUIRE(
+				tokens[2]
+					.is<tscc::lex::tokens::jsx_attribute_value_start_token>());
 
 			// handleClick (identifier inside expression)
 			CHECK(tokens[3].is<tscc::lex::tokens::identifier_token>());
 			CHECK(tokens[3]->to_string() == "handleClick");
-			
+
 			// } (end) - properly check type
-			REQUIRE(tokens[4].is<tscc::lex::tokens::jsx_attribute_value_end_token>());
+			REQUIRE(
+				tokens[4]
+					.is<tscc::lex::tokens::jsx_attribute_value_end_token>());
 
 			// >
 			CHECK(tokens[5].is<tscc::lex::tokens::jsx_element_end_token>());
 			CHECK(tokens[5]->to_string() == ">");
-			
+
 			// Click
 			CHECK(tokens[6].is<tscc::lex::tokens::jsx_text_token>());
 			CHECK(tokens[6]->to_string() == "Click");
-			
+
 			// </button>
 			CHECK(tokens[7].is<tscc::lex::tokens::jsx_element_close_token>());
 			CHECK(tokens[7]->to_string() == "</button>");
@@ -1626,34 +1868,47 @@ And some more
 
 		SECTION("JSX Element with Template Literal Expression") {
 			// <div className={`${base} ${modifier}`}>Content</div>
-			auto tokens = tokenize(R"(<div className={`${base} ${modifier}`}>Content</div>)");
-			REQUIRE(tokens.size() == 16);  // <div, className, {, `, ${, base, }, space, ${, modifier, }, `, }, >, Content, </div>
-			
+			auto tokens = tokenize(
+				R"(<div className={`${base} ${modifier}`}>Content</div>)");
+			REQUIRE(tokens.size() ==
+					16);  // <div, className, {, `, ${, base, }, space, ${,
+						  // modifier, }, `, }, >, Content, </div>
+
 			// <div
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
-			
+
 			// className
 			CHECK(tokens[1].is<tscc::lex::tokens::jsx_attribute_name_token>());
-			
-			// ={
-			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_start_token>());
 
-			// Template literal tokens: `, ${, base, }, space, ${, modifier, }, `
-			CHECK(tokens[3].is<tscc::lex::tokens::interpolated_string_start_token>());
+			// ={
+			REQUIRE(
+				tokens[2]
+					.is<tscc::lex::tokens::jsx_attribute_value_start_token>());
+
+			// Template literal tokens: `, ${, base, }, space, ${, modifier, },
+			// `
+			CHECK(
+				tokens[3]
+					.is<tscc::lex::tokens::interpolated_string_start_token>());
 			CHECK(tokens[4].is<tscc::lex::tokens::template_start_token>());
 			CHECK(tokens[5].is<tscc::lex::tokens::identifier_token>());
 			CHECK(tokens[5]->to_string() == "base");
 			CHECK(tokens[6].is<tscc::lex::tokens::template_end_token>());
-			CHECK(tokens[7].is<tscc::lex::tokens::interpolated_string_chunk_token>());
+			CHECK(
+				tokens[7]
+					.is<tscc::lex::tokens::interpolated_string_chunk_token>());
 			CHECK(tokens[7]->to_string() == " ");
 			CHECK(tokens[8].is<tscc::lex::tokens::template_start_token>());
 			CHECK(tokens[9].is<tscc::lex::tokens::identifier_token>());
 			CHECK(tokens[9]->to_string() == "modifier");
 			CHECK(tokens[10].is<tscc::lex::tokens::template_end_token>());
-			CHECK(tokens[11].is<tscc::lex::tokens::interpolated_string_end_token>());
-			
+			CHECK(tokens[11]
+					  .is<tscc::lex::tokens::interpolated_string_end_token>());
+
 			// }
-			REQUIRE(tokens[12].is<tscc::lex::tokens::jsx_attribute_value_end_token>());
+			REQUIRE(
+				tokens[12]
+					.is<tscc::lex::tokens::jsx_attribute_value_end_token>());
 
 			// >
 			CHECK(tokens[13].is<tscc::lex::tokens::jsx_element_end_token>());
@@ -1670,26 +1925,30 @@ And some more
 		SECTION("JSX with Multiple String Attributes") {
 			// <input type="text" value="default" />
 			auto tokens = tokenize(R"(<input type="text" value="default" />)");
-			REQUIRE(tokens.size() == 6);  // <input, type, ", "text", ", value, ", "default", ", />
-			
+			REQUIRE(
+				tokens.size() ==
+				6);	 // <input, type, ", "text", ", value, ", "default", ", />
+
 			// <input
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
 			CHECK(tokens[0]->to_string() == "<input");
-			
+
 			// type="text"
 			CHECK(tokens[1].is<tscc::lex::tokens::jsx_attribute_name_token>());
 			CHECK(tokens[1]->to_string() == "type");
-			
-			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_token>());
+
+			REQUIRE(
+				tokens[2].is<tscc::lex::tokens::jsx_attribute_value_token>());
 			CHECK(tokens[2]->to_string() == "\"text\"");
-			
+
 			// value="default"
 			CHECK(tokens[3].is<tscc::lex::tokens::jsx_attribute_name_token>());
 			CHECK(tokens[3]->to_string() == "value");
-			
-			REQUIRE(tokens[4].is<tscc::lex::tokens::jsx_attribute_value_token>());
+
+			REQUIRE(
+				tokens[4].is<tscc::lex::tokens::jsx_attribute_value_token>());
 			CHECK(tokens[4]->to_string() == "\"default\"");
-			
+
 			// />
 			CHECK(tokens[5].is<tscc::lex::tokens::jsx_self_closing_token>());
 			CHECK(tokens[5]->to_string() == "/>");
@@ -1698,26 +1957,27 @@ And some more
 		SECTION("Nested JSX Elements") {
 			// <div><span>Nested</span></div>
 			auto tokens = tokenize("<div><span>Nested</span></div>");
-			REQUIRE(tokens.size() == 7);  // <div, >, <span, >, Nested, </span>, </div>
-			
+			REQUIRE(tokens.size() ==
+					7);	 // <div, >, <span, >, Nested, </span>, </div>
+
 			// <div>
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
 			CHECK(tokens[0]->to_string() == "<div");
 			CHECK(tokens[1].is<tscc::lex::tokens::jsx_element_end_token>());
-			
+
 			// <span>
 			CHECK(tokens[2].is<tscc::lex::tokens::jsx_element_start_token>());
 			CHECK(tokens[2]->to_string() == "<span");
 			CHECK(tokens[3].is<tscc::lex::tokens::jsx_element_end_token>());
-			
+
 			// Nested
 			CHECK(tokens[4].is<tscc::lex::tokens::jsx_text_token>());
 			CHECK(tokens[4]->to_string() == "Nested");
-			
+
 			// </span>
 			CHECK(tokens[5].is<tscc::lex::tokens::jsx_element_close_token>());
 			CHECK(tokens[5]->to_string() == "</span>");
-			
+
 			// </div>
 			CHECK(tokens[6].is<tscc::lex::tokens::jsx_element_close_token>());
 			CHECK(tokens[6]->to_string() == "</div>");
@@ -1726,30 +1986,31 @@ And some more
 		SECTION("JSX with Mixed Content") {
 			// <div>Text {variable} more text</div>
 			auto tokens = tokenize("<div>Text {variable} more text</div>");
-			REQUIRE(tokens.size() == 8);  // <div, >, Text, {, variable, }, more text, </div>
-			
+			REQUIRE(tokens.size() ==
+					8);	 // <div, >, Text, {, variable, }, more text, </div>
+
 			// <div>
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
 			CHECK(tokens[1].is<tscc::lex::tokens::jsx_element_end_token>());
-			
-			// Text 
+
+			// Text
 			CHECK(tokens[2].is<tscc::lex::tokens::jsx_text_token>());
 			CHECK(tokens[2]->to_string() == "Text ");
-			
+
 			// {variable}
 			REQUIRE(tokens[3].is<tscc::lex::tokens::template_start_token>());
 			CHECK(tokens[3]->to_string() == "{");
-			
+
 			CHECK(tokens[4].is<tscc::lex::tokens::identifier_token>());
 			CHECK(tokens[4]->to_string() == "variable");
-			
+
 			REQUIRE(tokens[5].is<tscc::lex::tokens::template_end_token>());
 			CHECK(tokens[5]->to_string() == "}");
-			
+
 			// more text
 			CHECK(tokens[6].is<tscc::lex::tokens::jsx_text_token>());
 			CHECK(tokens[6]->to_string() == " more text");
-			
+
 			// </div>
 			CHECK(tokens[7].is<tscc::lex::tokens::jsx_element_close_token>());
 		}
@@ -1758,16 +2019,16 @@ And some more
 			// <>Fragment content</>
 			auto tokens = tokenize("<>Fragment content</>");
 			REQUIRE(tokens.size() == 4);  // <, >, Fragment content, </>
-			
+
 			// <> (React Fragment)
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
 			CHECK(tokens[0]->to_string() == "<");
 			CHECK(tokens[1].is<tscc::lex::tokens::jsx_element_end_token>());
-			
+
 			// Fragment content
 			CHECK(tokens[2].is<tscc::lex::tokens::jsx_text_token>());
 			CHECK(tokens[2]->to_string() == "Fragment content");
-			
+
 			// </>
 			CHECK(tokens[3].is<tscc::lex::tokens::jsx_element_close_token>());
 			CHECK(tokens[3]->to_string() == "</>");
@@ -1775,28 +2036,31 @@ And some more
 
 		SECTION("JSX with Unicode Element Names") {
 			// <MyComponent π="3.14">Content</MyComponent>
-			auto tokens = tokenize("<MyComponent ℼ=\"3.14\">Content</MyComponent>");
-			REQUIRE(tokens.size() == 6);  // <MyComponent, ℼ, ", "3.14", ", >, Content, </MyComponent>
-			
+			auto tokens =
+				tokenize("<MyComponent ℼ=\"3.14\">Content</MyComponent>");
+			REQUIRE(tokens.size() == 6);  // <MyComponent, ℼ, ", "3.14", ", >,
+										  // Content, </MyComponent>
+
 			// <MyComponent
 			CHECK(tokens[0].is<tscc::lex::tokens::jsx_element_start_token>());
 			CHECK(tokens[0]->to_string() == "<MyComponent");
-			
+
 			// π (Unicode attribute name)
 			CHECK(tokens[1].is<tscc::lex::tokens::jsx_attribute_name_token>());
 			CHECK(tokens[1]->to_string() == "ℼ");
-			
+
 			// ="3.14"
-			REQUIRE(tokens[2].is<tscc::lex::tokens::jsx_attribute_value_token>());
+			REQUIRE(
+				tokens[2].is<tscc::lex::tokens::jsx_attribute_value_token>());
 			CHECK(tokens[2]->to_string() == "\"3.14\"");
 
 			// >
 			CHECK(tokens[3].is<tscc::lex::tokens::jsx_element_end_token>());
-			
+
 			// Content
 			CHECK(tokens[4].is<tscc::lex::tokens::jsx_text_token>());
 			CHECK(tokens[4]->to_string() == "Content");
-			
+
 			// </MyComponent>
 			CHECK(tokens[5].is<tscc::lex::tokens::jsx_element_close_token>());
 			CHECK(tokens[5]->to_string() == "</MyComponent>");
@@ -1808,13 +2072,13 @@ And some more
 				REQUIRE_THROWS(
 					std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
 			}
-			
+
 			SECTION("Unterminated JSX Attribute String") {
 				auto lexer = create_lexer(R"(<div className="unterminated>)");
 				REQUIRE_THROWS(
 					std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
 			}
-			
+
 			SECTION("Unterminated JSX Attribute Expression") {
 				auto lexer = create_lexer("<div onClick={unterminated");
 				REQUIRE_THROWS(

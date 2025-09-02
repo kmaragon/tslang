@@ -24,8 +24,8 @@
 
 using namespace tscc::lex::tokens;
 
-regex_token::regex_token(
-	tsccore::regex::regular_expression&& expression, flags flags) noexcept
+regex_token::regex_token(tsccore::regex::regular_expression&& expression,
+						 flags flags) noexcept
 	: expr_(std::move(expression)), flags_(flags) {}
 
 bool regex_token::operator==(
@@ -42,7 +42,28 @@ std::string regex_token::to_string() const {
 	std::u32string result;
 	result.reserve(expr_.string_size());
 	expr_.to_string(result);
-	return utf8_encode(result);
+	auto res = utf8_encode(result);
+
+	res.reserve(res.size() + 2 +
+				__builtin_popcountll(static_cast<unsigned long long>(flags_)));
+	res.insert(res.begin(), 1, '/');
+	res.push_back('/');
+
+	if (has_flag(flags_, flags::ignore_case))
+		res.push_back('i');
+	if (has_flag(flags_, flags::global))
+		res.push_back('g');
+	if (has_flag(flags_, flags::multiline))
+		res.push_back('m');
+	if (has_flag(flags_, flags::dot_all))
+		res.push_back('s');
+	if (has_flag(flags_, flags::unicode))
+		res.push_back('u');
+	if (has_flag(flags_, flags::unicode_sets))
+		res.push_back('v');
+	if (has_flag(flags_, flags::sticky))
+		res.push_back('y');
+	return res;
 }
 
 regex_token::flags regex_token::get_flags() const noexcept {
