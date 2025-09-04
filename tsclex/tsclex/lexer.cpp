@@ -929,7 +929,7 @@ std::size_t lexer::scan_escape_sequence(char32_t& into, std::size_t skip) {
 									   is_curly_braced, false, gc + skip);
 
 		if (!scanned) {
-			return gc - is_curly_braced ? cc : 0;
+			return gc - (is_curly_braced ? cc : 0);
 		}
 
 		if (is_curly_braced) {
