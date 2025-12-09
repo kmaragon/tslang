@@ -19,6 +19,7 @@
 #pragma once
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <sstream>
 #include <tsclex/lexer.hpp>
 #include <tsclex/token.hpp>

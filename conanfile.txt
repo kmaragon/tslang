@@ -1,2 +1,2 @@
 [requires]
-catch2/3.8.0
+catch2/3.11.0

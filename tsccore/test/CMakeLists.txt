@@ -10,3 +10,5 @@ target_link_libraries(
         tsccore.test
         tsccore
         Catch2::Catch2WithMain)
+
+add_test(tsccore_test tsccore.test)

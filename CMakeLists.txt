@@ -9,5 +9,7 @@ add_compile_options("-Wall" "-Wno-trigraphs")
 cmake_minimum_required(VERSION 3.23)
 project(tscc)
 
+enable_testing()
+
 add_subdirectory(tsclex)
 add_subdirectory(tsccore)

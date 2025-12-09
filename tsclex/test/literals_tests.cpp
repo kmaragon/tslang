@@ -19,8 +19,9 @@
 #include "test_common.hpp"
 
 TEST_CASE("Literals", "[lexer]") {
-	auto [file, source, create_lexer, tokenize] = test_utils::create_test_setup();
+	using namespace Catch::literals;
 
+	auto [file, source, create_lexer, tokenize] = test_utils::create_test_setup();
 	SECTION("String Literals differnt quotes") {
 		auto tokens = tokenize(R"("string" 'string' "escaped\nstring")");
 		REQUIRE(tokens.size() == 3);
@@ -145,7 +146,7 @@ TEST_CASE("Literals", "[lexer]") {
 				CHECK(tokens[1]
 						  .is<tscc::lex::tokens::constant_value_token>());
 				CHECK(strtod(tokens[1]->to_string().c_str(), nullptr) ==
-					  0.789);
+					  0.789_a);
 				CHECK(tokens[2]
 						  .is<tscc::lex::tokens::constant_value_token>());
 				CHECK((tokens[2]->to_string() == "1" ||
@@ -159,12 +160,12 @@ TEST_CASE("Literals", "[lexer]") {
 				CHECK(tokens[1]
 						  .is<tscc::lex::tokens::constant_value_token>());
 				CHECK(strtod(tokens[1]->to_string().c_str(), nullptr) ==
-					  123.456);
+					  123.456_a);
 				CHECK(tokens[2].is<tscc::lex::tokens::minus_token>());
 				CHECK(tokens[3]
 						  .is<tscc::lex::tokens::constant_value_token>());
 				CHECK(strtod(tokens[3]->to_string().c_str(), nullptr) ==
-					  0.789);
+					  0.789_a);
 				CHECK(tokens[4].is<tscc::lex::tokens::minus_token>());
 				CHECK(tokens[5]
 						  .is<tscc::lex::tokens::constant_value_token>());
@@ -209,7 +210,7 @@ TEST_CASE("Literals", "[lexer]") {
 				CHECK(tokens[0]
 						  .is<tscc::lex::tokens::constant_value_token>());
 				CHECK(strtod(tokens[0]->to_string().c_str(), nullptr) ==
-					  0.123);
+					  0.123_a);
 				CHECK(tokens[1]
 						  .is<tscc::lex::tokens::constant_value_token>());
 				CHECK(tokens[1]->to_string() == "123");
@@ -225,7 +226,7 @@ TEST_CASE("Literals", "[lexer]") {
 				CHECK(tokens[1]
 						  .is<tscc::lex::tokens::constant_value_token>());
 				CHECK(strtod(tokens[1]->to_string().c_str(), nullptr) ==
-					  0.123);
+					  0.123_a);
 				CHECK(tokens[2].is<tscc::lex::tokens::minus_token>());
 				CHECK(tokens[3]
 						  .is<tscc::lex::tokens::constant_value_token>());

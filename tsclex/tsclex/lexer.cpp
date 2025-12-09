@@ -1096,7 +1096,7 @@ void lexer::scan_multiline_comment(token& into, bool is_jsdoc) {
 		if (first == '\n') {
 			// trim any whitespace off of the end
 			std::size_t end = wbuffer_.size();
-			while (std::iswspace(wbuffer_[end - 1])) {
+			while (end > 0 && std::iswspace(wbuffer_[end - 1])) {
 				end--;
 			}
 

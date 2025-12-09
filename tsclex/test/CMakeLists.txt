@@ -26,3 +26,5 @@ target_link_libraries(
         tsclex.test
         tsclex
         Catch2::Catch2WithMain)
+
+add_test(tsclex_test tsclex.test)
