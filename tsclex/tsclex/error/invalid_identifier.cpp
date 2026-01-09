@@ -28,6 +28,6 @@ const char* invalid_identifier::what() const noexcept {
 	return "Invalid Identifier";
 }
 
-error_code invalid_identifier::code() const noexcept {
+tscc::error_code invalid_identifier::code() const noexcept {
 	return error_code::ts1003;
 }

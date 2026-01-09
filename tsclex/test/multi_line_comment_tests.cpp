@@ -16,7 +16,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "test_common.hpp"
+#include <tscfakes/test_common.hpp>
 
 TEST_CASE("Multi line comment", "[lexer]") {
 	auto [file, source, create_lexer, tokenize] = test_utils::create_test_setup();
@@ -52,6 +52,43 @@ And some more
 			  "/**\n * @param {string} name - The name parameter\n * "
 			  "@returns {number} The result\n */");
 		CHECK(tokens[1].is<tscc::lex::tokens::newline_token>());
+	}
+
+	SECTION("Inline multiline comment") {
+		auto tokens = tokenize("/* inline comment */ let x = 1;");
+		REQUIRE(tokens.size() == 6);
+		CHECK(tokens[0].is<tscc::lex::tokens::multiline_comment_token>());
+		CHECK(tokens[0]->to_string() == "/* inline comment */");
+		CHECK(tokens[1].is<tscc::lex::tokens::let_token>());
+		CHECK(tokens[2].is<tscc::lex::tokens::identifier_token>());
+		CHECK(tokens[3].is<tscc::lex::tokens::eq_token>());
+		CHECK(tokens[4].is<tscc::lex::tokens::constant_value_token>());
+		CHECK(tokens[5].is<tscc::lex::tokens::semicolon_token>());
+	}
+
+	SECTION("Multiple inline multiline comments on same line") {
+		auto tokens = tokenize("/* a */ /* b */ /* c */");
+		REQUIRE(tokens.size() == 3);
+		CHECK(tokens[0].is<tscc::lex::tokens::multiline_comment_token>());
+		CHECK(tokens[0]->to_string() == "/* a */");
+		CHECK(tokens[1].is<tscc::lex::tokens::multiline_comment_token>());
+		CHECK(tokens[1]->to_string() == "/* b */");
+		CHECK(tokens[2].is<tscc::lex::tokens::multiline_comment_token>());
+		CHECK(tokens[2]->to_string() == "/* c */");
+	}
+
+	SECTION("Multiline comment with trailing newline before close") {
+		auto tokens = tokenize("/* comment\n*/");
+		REQUIRE(tokens.size() == 1);
+		CHECK(tokens[0].is<tscc::lex::tokens::multiline_comment_token>());
+		CHECK(tokens[0]->to_string() == "/* comment\n*/");
+	}
+
+	SECTION("Multiline comment without trailing newline before close") {
+		auto tokens = tokenize("/* line1\n * line2 */");
+		REQUIRE(tokens.size() == 1);
+		CHECK(tokens[0].is<tscc::lex::tokens::multiline_comment_token>());
+		CHECK(tokens[0]->to_string() == "/* line1\n * line2 */");
 	}
 
 	SECTION("Inline JSDoc Comment") {

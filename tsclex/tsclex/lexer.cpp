@@ -1126,7 +1126,9 @@ void lexer::scan_multiline_comment(token& into, bool is_jsdoc) {
 		append_wbuffer(first);
 	}
 
-	if (!wbuffer_.empty()) {
+	// Add final content after the last newline (or the entire content if no newlines).
+	// If wbuffer_ is empty but we had newlines, add empty string to preserve trailing newline.
+	if (!wbuffer_.empty() || multiline_index > 0) {
 		if (multiline_buffer_.size() == multiline_index) {
 			std::size_t new_size = multiline_buffer_.size() >= 1024
 									   ? multiline_buffer_.size() + 1024

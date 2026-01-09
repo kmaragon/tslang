@@ -28,6 +28,6 @@ const char* separators_not_allowed_here::what() const noexcept {
 	return "Numeric separators are not allowed here.";
 }
 
-error_code separators_not_allowed_here::code() const noexcept {
+tscc::error_code separators_not_allowed_here::code() const noexcept {
 	return error_code::ts6188;
 }

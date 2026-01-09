@@ -53,10 +53,13 @@ bool multiline_comment_token::operator!=(
 std::string multiline_comment_token::to_string() const {
 	std::stringstream out;
 	out << "/*";
-	for (auto& l : lines_) {
-		out << l << "\n";
+	const auto last = lines_.size() > 0 ? lines_.size() - 1 : 0;
+	for (std::size_t i = 0; i < last; ++i) {
+		out << lines_[i] << "\n";
 	}
-
+	if (!lines_.empty()) {
+		out << lines_[last];
+	}
 	out << "*/";
 	return out.str();
 }

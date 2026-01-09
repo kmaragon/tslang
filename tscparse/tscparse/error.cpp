@@ -16,21 +16,15 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fake_source.hpp"
+#include "error.hpp"
 
-fake_source::fake_source(std::string name,
-						 tscc::lex::ts_language_variant variant)
-	: name_(std::move(name)), variant_(variant) {}
+namespace tscc::parse {
 
-std::string_view fake_source::name() const {
-	return name_;
+parse_error::parse_error(const lex::source_location& location) noexcept
+	: location_(location) {}
+
+const lex::source_location& parse_error::location() const noexcept {
+	return location_;
 }
 
-void fake_source::language_variant(tscc::lex::ts_language_variant variant) {
-	variant_ = variant;
-}
-
-
-tscc::lex::ts_language_variant fake_source::language_variant() const {
-	return variant_;
-}
+}  // namespace tscc::parse

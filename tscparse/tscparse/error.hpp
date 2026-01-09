@@ -16,20 +16,32 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <tscfakes/test_common.hpp>
+#pragma once
 
-TEST_CASE("Single line comment", "[lexer]") {
-	auto [file, source, create_lexer, tokenize] = test_utils::create_test_setup();
+#include <tsccore/error.hpp>
+#include <tsclex/source_location.hpp>
 
-	SECTION("Single line comment at EOF") {
-		auto tokens = tokenize("  // this is a comment");
-		REQUIRE(tokens.size() == 1);
-		CHECK(tokens[0]->to_string() == "// this is a comment");
-	}
+namespace tscc::parse {
 
-	SECTION("Single line comment with spaces and newline") {
-		auto tokens = tokenize("  //~ this is a comment \t \n  ");
-		REQUIRE(tokens.size() == 1);
-		CHECK(tokens[0]->to_string() == "// ~ this is a comment");
-	}
-}
+/**
+ * \brief A generic exception while parsing
+ */
+class parse_error : public tscc_exception {
+public:
+	parse_error(const lex::source_location& location) noexcept;
+
+	/**
+	 * \brief Get the location where the error occurred
+	 */
+	const lex::source_location& location() const noexcept;
+
+	/**
+	 * \brief Get the error code
+	 */
+	virtual error_code code() const noexcept = 0;
+
+private:
+	lex::source_location location_;
+};
+
+}  // namespace tscc::parse

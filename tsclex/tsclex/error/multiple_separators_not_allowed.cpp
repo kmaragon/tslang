@@ -28,6 +28,6 @@ const char* multiple_separators_not_allowed::what() const noexcept {
 	return "Multiple consecutive numeric separators are not permitted.";
 }
 
-error_code multiple_separators_not_allowed::code() const noexcept {
+tscc::error_code multiple_separators_not_allowed::code() const noexcept {
 	return error_code::ts6189;
 }

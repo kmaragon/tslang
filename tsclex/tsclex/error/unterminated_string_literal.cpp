@@ -28,6 +28,6 @@ const char* unterminated_string_literal::what() const noexcept {
 	return "Unterminated string literal";
 }
 
-error_code unterminated_string_literal::code() const noexcept {
+tscc::error_code unterminated_string_literal::code() const noexcept {
 	return error_code::ts1002;
 }

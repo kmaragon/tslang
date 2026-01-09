@@ -16,7 +16,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "test_common.hpp"
+#include <tscfakes/test_common.hpp>
 #include <tsclex/error/conflicting_regex_flags.hpp>
 #include <tsclex/error/regex_flag_unavailable.hpp>
 

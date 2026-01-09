@@ -28,6 +28,6 @@ const char* conflicting_regex_flags::what() const noexcept {
 	return "The 'u' and 'v' flags cannot be specified together.";
 }
 
-error_code conflicting_regex_flags::code() const noexcept {
+tscc::error_code conflicting_regex_flags::code() const noexcept {
 	return error_code::ts1502;
 }

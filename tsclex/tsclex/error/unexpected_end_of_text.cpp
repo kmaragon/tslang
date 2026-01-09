@@ -28,6 +28,6 @@ const char* unexpected_end_of_text::what() const noexcept {
 	return "Unexpected end of text.";
 }
 
-error_code unexpected_end_of_text::code() const noexcept {
+tscc::error_code unexpected_end_of_text::code() const noexcept {
 	return error_code::ts1126;
 }

@@ -18,37 +18,16 @@
 
 #pragma once
 
-#include <exception>
+#include <tsccore/error.hpp>
 #include "source_location.hpp"
 
 namespace tscc::lex
 {
 
-enum class error_code : std::uint16_t
-{
-	ts999 = 999,
-	ts1002 = 1002,
-	ts1003 = 1003,
-	ts1010 = 1010,
-	ts1125 = 1125,
-	ts1126 = 1126,
-	ts1127 = 1127,
-	ts1198 = 1198,
-	ts1199 = 1199,
-	ts1499 = 1499,
-	ts1500 = 1500,
-	ts1501 = 1501,
-	ts1502 = 1502,
-	ts6188 = 6188,
-	ts6189 = 6189,
-	ts17008 = 17008,
-	ts18026 = 18026,
-};
-
 /**
  * \brief A generic exception while lexing
  */
-class lex_error : public std::exception {
+class lex_error : public tscc_exception {
 public:
 	lex_error(const source_location& location) noexcept;
 

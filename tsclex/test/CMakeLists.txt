@@ -1,7 +1,6 @@
 find_package(Catch2 CONFIG REQUIRED)
 
 set(TESTS
-        fake_source.cpp
         shebang_tests.cpp
         single_line_comment_tests.cpp
         keywords_tests.cpp
@@ -25,6 +24,7 @@ add_executable(tsclex.test ${TESTS})
 target_link_libraries(
         tsclex.test
         tsclex
+        tscfakes
         Catch2::Catch2WithMain)
 
 add_test(tsclex_test tsclex.test)

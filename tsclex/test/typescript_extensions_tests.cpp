@@ -16,7 +16,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "test_common.hpp"
+#include <tscfakes/test_common.hpp>
 
 TEST_CASE("TypeScript Extensions", "[lexer]") {
 	auto [file, source, create_lexer, tokenize] = test_utils::create_test_setup();

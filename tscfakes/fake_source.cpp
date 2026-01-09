@@ -16,20 +16,20 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <tscfakes/test_common.hpp>
+#include "fake_source.hpp"
 
-TEST_CASE("Single line comment", "[lexer]") {
-	auto [file, source, create_lexer, tokenize] = test_utils::create_test_setup();
+fake_source::fake_source(std::string name,
+						 tscc::lex::ts_language_variant variant)
+	: name_(std::move(name)), variant_(variant) {}
 
-	SECTION("Single line comment at EOF") {
-		auto tokens = tokenize("  // this is a comment");
-		REQUIRE(tokens.size() == 1);
-		CHECK(tokens[0]->to_string() == "// this is a comment");
-	}
+std::string_view fake_source::name() const {
+	return name_;
+}
 
-	SECTION("Single line comment with spaces and newline") {
-		auto tokens = tokenize("  //~ this is a comment \t \n  ");
-		REQUIRE(tokens.size() == 1);
-		CHECK(tokens[0]->to_string() == "// ~ this is a comment");
-	}
+void fake_source::language_variant(tscc::lex::ts_language_variant variant) {
+	variant_ = variant;
+}
+
+tscc::lex::ts_language_variant fake_source::language_variant() const {
+	return variant_;
 }

@@ -28,6 +28,6 @@ const char* misplaced_shebang::what() const noexcept {
 	return "'#!' can only be used at the start of a file.";
 }
 
-error_code misplaced_shebang::code() const noexcept {
+tscc::error_code misplaced_shebang::code() const noexcept {
 	return error_code::ts18026;
 }

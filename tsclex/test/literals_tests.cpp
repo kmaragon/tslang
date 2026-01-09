@@ -16,7 +16,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "test_common.hpp"
+#include <tscfakes/test_common.hpp>
 
 TEST_CASE("Literals", "[lexer]") {
 	using namespace Catch::literals;

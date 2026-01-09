@@ -29,6 +29,6 @@ const char* unicode_value_out_of_range::what() const noexcept {
 		   "inclusive.";
 }
 
-error_code unicode_value_out_of_range::code() const noexcept {
+tscc::error_code unicode_value_out_of_range::code() const noexcept {
 	return error_code::ts1198;
 }

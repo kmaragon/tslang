@@ -82,3 +82,7 @@ bool token::operator==(const tscc::lex::token& other) const {
 bool token::operator!=(const tscc::lex::token& other) const {
 	return !operator==(other);
 }
+
+const char* token_undefined::what() const noexcept {
+	return "Token is undefined";
+}

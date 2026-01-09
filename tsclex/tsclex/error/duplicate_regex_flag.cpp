@@ -28,6 +28,6 @@ const char* duplicate_regex_flag::what() const noexcept {
 	return "Duplicate regular expression flag.";
 }
 
-error_code duplicate_regex_flag::code() const noexcept {
+tscc::error_code duplicate_regex_flag::code() const noexcept {
 	return error_code::ts1500;
 }

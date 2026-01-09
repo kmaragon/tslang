@@ -11,5 +11,7 @@ project(tscc)
 
 enable_testing()
 
-add_subdirectory(tsclex)
 add_subdirectory(tsccore)
+add_subdirectory(tsclex)
+add_subdirectory(tscparse)
+add_subdirectory(tscfakes)

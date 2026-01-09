@@ -28,6 +28,6 @@ const char* regex_flag_unavailable::what() const noexcept {
 	return "Regular expression flag is not available for the target ES version.";
 }
 
-error_code regex_flag_unavailable::code() const noexcept {
+tscc::error_code regex_flag_unavailable::code() const noexcept {
 	return error_code::ts1501;
 }

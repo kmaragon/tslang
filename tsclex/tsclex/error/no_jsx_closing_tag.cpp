@@ -34,6 +34,6 @@ const char* no_jsx_closing_tag::what() const noexcept {
 	return msg_.c_str();
 }
 
-error_code no_jsx_closing_tag::code() const noexcept {
+tscc::error_code no_jsx_closing_tag::code() const noexcept {
 	return error_code::ts17008;
 }

@@ -28,6 +28,6 @@ const char* hexidecimal_digit_expected::what() const noexcept {
 	return "Hexadecimal digit expected.";
 }
 
-error_code hexidecimal_digit_expected::code() const noexcept {
+tscc::error_code hexidecimal_digit_expected::code() const noexcept {
 	return error_code::ts1125;
 }

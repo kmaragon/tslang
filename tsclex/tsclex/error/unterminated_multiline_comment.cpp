@@ -28,6 +28,6 @@ const char* unterminated_multiline_comment::what() const noexcept {
 	return "'*/' expected.";
 }
 
-error_code unterminated_multiline_comment::code() const noexcept {
+tscc::error_code unterminated_multiline_comment::code() const noexcept {
 	return error_code::ts1010;
 }

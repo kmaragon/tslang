@@ -28,6 +28,6 @@ const char* unknown_regex_flag::what() const noexcept {
 	return "Unknown regular expression flag.";
 }
 
-error_code unknown_regex_flag::code() const noexcept {
+tscc::error_code unknown_regex_flag::code() const noexcept {
 	return error_code::ts1499;
 }

@@ -28,6 +28,6 @@ const char* unterminated_unicode_escape_sequence::what() const noexcept {
 	return "Unterminated Unicode escape sequence.";
 }
 
-error_code unterminated_unicode_escape_sequence::code() const noexcept {
+tscc::error_code unterminated_unicode_escape_sequence::code() const noexcept {
 	return error_code::ts1199;
 }
