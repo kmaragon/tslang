@@ -380,7 +380,7 @@ set(HEADERS
 
 add_library(tsclex ${SOURCES})
 target_include_directories(tsclex INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(tsclex tsccore)
+target_link_libraries(tsclex tsccore tscctypes)
 
 add_subdirectory(test)
 
@@ -398,6 +398,6 @@ foreach (header_path ${HEADERS})
     # install the header into the relative install path
     install(FILES "${header_path}"
             DESTINATION "include/${install_location}"
-            COMPONENT "tsclex")
+            COMPONENT "tscc")
 
 endforeach ()

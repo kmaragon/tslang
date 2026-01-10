@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <tsccore/error.hpp>
+#include <tscctypes/error.hpp>
 #include <tsclex/source_location.hpp>
 
 namespace tscc::parse {

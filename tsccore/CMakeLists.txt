@@ -50,6 +50,6 @@ foreach (header_path ${HEADERS})
     # install the header into the relative install path
     install(FILES "${header_path}"
             DESTINATION "include/$install_location"
-            COMPONENT "tsclex")
+            COMPONENT "tsbase")
 
 endforeach ()
