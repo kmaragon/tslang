@@ -29,10 +29,11 @@
 #include <tsclex/tokens/readonly_token.hpp>
 #include <tsclex/tokens/static_token.hpp>
 #include "error/expected_token.hpp"
+#include "error/unexpected_end_of_text.hpp"
+#include "state/module_scope_state.hpp"
+#include "state/state_result.hpp"
 
 namespace tscc::parse {
-
-// ==================== Iterator Implementation ====================
 
 parser::iterator::iterator(parser* p) : parser_(p), current_node_(nullptr) {
 	advance();
@@ -70,12 +71,12 @@ bool parser::iterator::operator!=(sentinel) const {
 	return current_node_ != nullptr;
 }
 
-// ==================== Parser Implementation ====================
-
 parser::parser(lex::lexer& lexer, trivia_index* trivia_idx)
 	: token_iter_(lexer.begin()),
 	  token_end_(lexer.end()),
-	  trivia_index_(trivia_idx) {}
+	  trivia_index_(trivia_idx) {
+	state_stack_.push_back(std::make_unique<module_scope_state>());
+}
 
 parser::iterator parser::begin() {
 	return iterator{this};
@@ -143,11 +144,70 @@ std::unique_ptr<ast::ast_node> parser::parse_top_level_element() {
 	collect_trivia();
 
 	if (at_token_end()) {
+		if (state_stack_.size() > 1) {
+			throw unexpected_end_of_text(last_location_);
+		}
 		return nullptr;
 	}
 
-	// TODO: Implement state transition visitor for top-level elements
-	// For now, just return nullptr to indicate end
+	while (!state_stack_.empty()) {
+		const auto& token = current_token();
+		auto result = state_stack_.back()->process(*this, token);
+
+		if (!result.should_reprocess()) {
+			advance_token();
+			collect_trivia();
+		}
+
+		if (result.is_stay()) {
+			if (at_token_end()) {
+				if (state_stack_.size() > 1) {
+					throw unexpected_end_of_text(last_location_);
+				}
+				return nullptr;
+			}
+			continue;
+		}
+
+		if (result.is_push()) {
+			state_stack_.push_back(std::move(result).take_child());
+			if (at_token_end()) {
+				if (state_stack_.size() > 1) {
+					throw unexpected_end_of_text(last_location_);
+				}
+				return nullptr;
+			}
+			continue;
+		}
+
+		if (result.is_complete()) {
+			auto node = std::move(result).take_node();
+			state_stack_.pop_back();
+
+			if (state_stack_.empty()) {
+				return node;
+			}
+
+			auto accept = state_stack_.back()->accept_child(std::move(node));
+
+			if (accept.is_complete()) {
+				auto parent_node = std::move(accept).take_node();
+				state_stack_.pop_back();
+
+				if (state_stack_.empty()) {
+					return parent_node;
+				}
+			}
+		}
+
+		if (at_token_end()) {
+			if (state_stack_.size() > 1) {
+				throw unexpected_end_of_text(last_location_);
+			}
+			return nullptr;
+		}
+	}
+
 	return nullptr;
 }
 

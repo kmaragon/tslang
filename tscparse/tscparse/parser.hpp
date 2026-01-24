@@ -24,6 +24,7 @@
 #include <tsclex/token.hpp>
 #include <vector>
 #include "ast/ast_node.hpp"
+#include "state/parser_state.hpp"
 #include "trivia_index.hpp"
 
 namespace tscc::parse {
@@ -107,6 +108,7 @@ private:
 	std::vector<lex::token> pending_trivia_;
 	lex::source_location
 		last_location_;	 // Track last valid location for EOF errors
+	std::vector<std::unique_ptr<parser_state>> state_stack_;
 
 	// Internal: advance token iterator
 	void advance_token();

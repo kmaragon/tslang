@@ -24,6 +24,7 @@
 #include <tsclex/tokens/jsdoc_token.hpp>
 #include <tsclex/tokens/multiline_comment_token.hpp>
 #include <tsclex/tokens/newline_token.hpp>
+#include <tscparse/error/declaration_or_statement_expected.hpp>
 #include <tscparse/error/expected_token.hpp>
 #include <tscparse/filtered_token_index.hpp>
 #include <tscparse/parser.hpp>
@@ -476,5 +477,25 @@ TEST_CASE("Parse Errors", "[parser][errors]") {
 		std::string msg = err.what();
 		REQUIRE(msg.find("identifier") != std::string::npos);
 		REQUIRE(msg.find("number") != std::string::npos);
+	}
+
+	// TODO: Once module_scope_state handles expression statements, add test
+	// verifying that naked expressions like "42" parse successfully
+
+	SECTION("TS1128: Unmatched closing brace at module scope") {
+		std::stringstream input("}");
+		auto source = std::make_shared<fake_source>("test.ts");
+		tscc::lex::lexer lexer(input, source);
+		tscc::parse::parser parser(lexer);
+
+		try {
+			parser.begin();
+			FAIL("Expected declaration_or_statement_expected exception");
+		} catch (const tscc::parse::declaration_or_statement_expected& e) {
+			REQUIRE(e.code() == tscc::error_code::ts1128);
+			REQUIRE(e.location().line() == 0);
+			REQUIRE(e.location().column() == 0);
+			REQUIRE(std::string(e.what()) == "Declaration or statement expected.");
+		}
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * TSCC - a Typescript Compiler
- * Copyright (c) 2025. Keef Aragon
+ * Copyright (c) 2025-2026. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -50,11 +50,11 @@ enum class error_code : std::uint16_t {
 	ts18026 = 18026,
 
 	// Parser errors
-	ts1005 = 1005,  // Expected token
-	ts1109 = 1109,  // Expression expected
-	ts1128 = 1128,  // Declaration or statement expected
-	ts1146 = 1146,  // Declaration expected
-	ts2304 = 2304,  // Cannot find name
+	ts1005 = 1005,
+	ts1109 = 1109,
+	ts1128 = 1128,
+	ts1146 = 1146,
+	ts2304 = 2304,
 };
 
 /**
