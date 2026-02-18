@@ -16,19 +16,33 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
+#include "../ast/import_node.hpp"
 #include "parser_state.hpp"
-#include "../error/declaration_or_statement_expected.hpp"
-#include "state_result.hpp"
 
 namespace tscc::parse {
 
-std::optional<state_result> parser_state::on_eof() {
-	return std::nullopt;
-}
+/**
+ * \brief Coordinator state for all forms of TypeScript import declarations
+ *
+ * Entered when module_scope_state encounters an import keyword.
+ * Immediately pushes after_import_state with reprocess; the chain of
+ * per-phase states handles the grammar. When the chain completes,
+ * accept_child returns the finished import_node.
+ */
+class import_state : public parser_state {
+public:
+	/**
+	 * \brief Construct from the consumed import keyword token
+	 */
+	explicit import_state(lex::token import_keyword);
 
-state_result basic_state_visitor::operator()(
-	const lex::tokens::basic_token&) const {
-	throw declaration_or_statement_expected(location);
-}
+	state_result process(parser& p, const lex::token& token) override;
+	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
+
+private:
+	std::unique_ptr<ast::import_node> node_;
+};
 
 }  // namespace tscc::parse

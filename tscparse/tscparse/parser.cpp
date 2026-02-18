@@ -145,6 +145,9 @@ std::unique_ptr<ast::ast_node> parser::parse_top_level_element() {
 
 	if (at_token_end()) {
 		if (state_stack_.size() > 1) {
+			if (auto eof_result = state_stack_.back()->on_eof()) {
+				return handle_complete(std::move(*eof_result));
+			}
 			throw unexpected_end_of_text(last_location_);
 		}
 		return nullptr;
@@ -162,6 +165,9 @@ std::unique_ptr<ast::ast_node> parser::parse_top_level_element() {
 		if (result.is_stay()) {
 			if (at_token_end()) {
 				if (state_stack_.size() > 1) {
+					if (auto eof_result = state_stack_.back()->on_eof()) {
+						return handle_complete(std::move(*eof_result));
+					}
 					throw unexpected_end_of_text(last_location_);
 				}
 				return nullptr;
@@ -173,6 +179,9 @@ std::unique_ptr<ast::ast_node> parser::parse_top_level_element() {
 			state_stack_.push_back(std::move(result).take_child());
 			if (at_token_end()) {
 				if (state_stack_.size() > 1) {
+					if (auto eof_result = state_stack_.back()->on_eof()) {
+						return handle_complete(std::move(*eof_result));
+					}
 					throw unexpected_end_of_text(last_location_);
 				}
 				return nullptr;
@@ -181,27 +190,17 @@ std::unique_ptr<ast::ast_node> parser::parse_top_level_element() {
 		}
 
 		if (result.is_complete()) {
-			auto node = std::move(result).take_node();
-			state_stack_.pop_back();
-
-			if (state_stack_.empty()) {
-				return node;
-			}
-
-			auto accept = state_stack_.back()->accept_child(std::move(node));
-
-			if (accept.is_complete()) {
-				auto parent_node = std::move(accept).take_node();
-				state_stack_.pop_back();
-
-				if (state_stack_.empty()) {
-					return parent_node;
-				}
+			auto completed_node = handle_complete(std::move(result));
+			if (completed_node) {
+				return completed_node;
 			}
 		}
 
 		if (at_token_end()) {
 			if (state_stack_.size() > 1) {
+				if (auto eof_result = state_stack_.back()->on_eof()) {
+					return handle_complete(std::move(*eof_result));
+				}
 				throw unexpected_end_of_text(last_location_);
 			}
 			return nullptr;
@@ -209,6 +208,25 @@ std::unique_ptr<ast::ast_node> parser::parse_top_level_element() {
 	}
 
 	return nullptr;
+}
+
+std::unique_ptr<ast::ast_node> parser::handle_complete(state_result result) {
+	auto node = std::move(result).take_node();
+	state_stack_.pop_back();
+
+	while (true) {
+		if (state_stack_.empty() || state_stack_.size() == 1) {
+			return node;
+		}
+
+		auto accept = state_stack_.back()->accept_child(std::move(node));
+		if (accept.is_stay()) {
+			return nullptr;
+		}
+
+		node = std::move(accept).take_node();
+		state_stack_.pop_back();
+	}
 }
 
 std::optional<lex::token> parser::try_consume_modifier() {

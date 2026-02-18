@@ -19,6 +19,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <tsclex/token.hpp>
 #include <tsclex/tokens/basic_token.hpp>
 
@@ -63,6 +64,15 @@ public:
 	 */
 	virtual accept_result accept_child(
 		std::unique_ptr<ast::ast_node> child) = 0;
+
+	/**
+	 * \brief Called when EOF is reached while this state is active
+	 *
+	 * States that can validly complete at EOF (e.g. import without
+	 * trailing semicolon) override this to return a complete result.
+	 * Default returns nullopt, which causes unexpected_end_of_text.
+	 */
+	virtual std::optional<state_result> on_eof();
 };
 
 /**

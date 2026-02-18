@@ -17,6 +17,8 @@
  */
 
 #include "module_scope_state.hpp"
+#include <tsclex/tokens/import_token.hpp>
+#include "import_state.hpp"
 #include "state_result.hpp"
 
 namespace tscc::parse {
@@ -33,11 +35,17 @@ namespace {
 class module_scope_visitor : public basic_state_visitor {
 public:
 	module_scope_visitor(module_scope_state* s,
-						 const lex::source_location& loc) noexcept
-		: basic_state_visitor(s, loc) {}
+						 const lex::source_location& loc,
+						 const lex::token& token) noexcept
+		: basic_state_visitor(s, loc), token_(token) {}
 
-	// TODO: Add handlers for tokens valid at module scope, state is a module_scope_state:
-	// - import_token -> parse import declaration
+	state_result operator()(const lex::tokens::import_token&) const {
+		return state_result::push<import_state>(token_);
+	}
+
+	using basic_state_visitor::operator();
+
+	// TODO: Add handlers for tokens valid at module scope:
 	// - export_token -> parse export declaration
 	// - class_token -> push class_declaration_state
 	// - function_token -> push function_declaration_state
@@ -48,19 +56,20 @@ public:
 	// - declare_token -> parse ambient declaration
 	// - async_token, abstract_token -> push modifier state
 	// - namespace_token, module_token -> parse namespace/module
+
+private:
+	const lex::token& token_;
 };
 
 }  // namespace
 
 state_result module_scope_state::process(parser& /*p*/,
 										 const lex::token& token) {
-	return token.visit(module_scope_visitor{this, token.location()});
+	return token.visit(module_scope_visitor{this, token.location(), token});
 }
 
 accept_result module_scope_state::accept_child(
 	std::unique_ptr<ast::ast_node> /*child*/) {
-	// TODO: Receive completed top-level declaration
-	// Store or yield the declaration
 	return accept_result::stay();
 }
 

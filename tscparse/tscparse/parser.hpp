@@ -25,6 +25,7 @@
 #include <vector>
 #include "ast/ast_node.hpp"
 #include "state/parser_state.hpp"
+#include "state/state_result.hpp"
 #include "trivia_index.hpp"
 
 namespace tscc::parse {
@@ -132,6 +133,10 @@ private:
 
 	// Parse top-level element (import, class, function, etc.)
 	std::unique_ptr<ast::ast_node> parse_top_level_element();
+
+	// Handle a complete state_result: pop state, yield if top-level,
+	// otherwise pass to parent. Returns node if yielded, nullptr if absorbed.
+	std::unique_ptr<ast::ast_node> handle_complete(state_result result);
 
 	// Expect a specific token type or throw
 	template <typename TokenType>

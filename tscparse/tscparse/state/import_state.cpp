@@ -16,19 +16,21 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "parser_state.hpp"
-#include "../error/declaration_or_statement_expected.hpp"
+#include "import_state.hpp"
+#include "import/initial_import_states.hpp"
 #include "state_result.hpp"
 
 namespace tscc::parse {
 
-std::optional<state_result> parser_state::on_eof() {
-	return std::nullopt;
+import_state::import_state(lex::token import_keyword)
+	: node_(std::make_unique<ast::import_node>(std::move(import_keyword))) {}
+
+state_result import_state::process(parser& /*p*/, const lex::token& /*token*/) {
+	return state_result::push<after_import_state>(node_.get()).reprocess();
 }
 
-state_result basic_state_visitor::operator()(
-	const lex::tokens::basic_token&) const {
-	throw declaration_or_statement_expected(location);
+accept_result import_state::accept_child(std::unique_ptr<ast::ast_node>) {
+	return accept_result::complete(std::move(node_));
 }
 
 }  // namespace tscc::parse
