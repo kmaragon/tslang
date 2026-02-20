@@ -41,9 +41,7 @@ struct trivia_ref {
 		orphaned   // Not attached to any node
 	} rel;
 
-	const lex::source_location& location() const {
-		return token.location();
-	}
+	const lex::source_location& location() const { return token.location(); }
 };
 
 /**

@@ -79,8 +79,10 @@ inline bool can_be_specifier_name(const lex::token& token) {
  * contextual keyword.
  */
 inline void normalize_identifier(lex::token& tok) {
-	if (tok.is<lex::tokens::identifier_token>()) return;
-	if (!can_be_identifier(tok)) return;
+	if (tok.is<lex::tokens::identifier_token>())
+		return;
+	if (!can_be_identifier(tok))
+		return;
 	auto name = tok->to_string();
 	std::u32string u32name(name.begin(), name.end());
 	tok.emplace_token<lex::tokens::identifier_token>(tok.location(), u32name);

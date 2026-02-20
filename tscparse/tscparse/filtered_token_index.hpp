@@ -66,8 +66,7 @@ public:
 	template <typename... Args>
 	void emplace(lex::token tok, Args&&... args) {
 		if (!detail::token_is_one_of<AllowedTokenTypes...>(tok)) {
-			throw std::invalid_argument(
-				"Token type not allowed in this index");
+			throw std::invalid_argument("Token type not allowed in this index");
 		}
 
 		tokens_.emplace_back(std::move(tok), std::forward<Args>(args)...);

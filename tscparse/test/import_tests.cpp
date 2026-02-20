@@ -356,8 +356,8 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.type_keyword() == nullptr);
 			REQUIRE(node.equals_name() != nullptr);
-			REQUIRE(node.equals_name()
-						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(
+				node.equals_name()->is<tscc::lex::tokens::identifier_token>());
 			REQUIRE((*node.equals_name())->to_string() == "type");
 			REQUIRE(node.require_module_specifier() != nullptr);
 		}
@@ -632,8 +632,7 @@ TEST_CASE("import", "[parser][import]") {
 
 	SECTION("contextual keyword normalization") {
 		SECTION("namespace name from contextual keyword") {
-			auto& node =
-				parse_import("import * as from from \"module\";");
+			auto& node = parse_import("import * as from from \"module\";");
 
 			REQUIRE(node.namespace_name() != nullptr);
 			REQUIRE(node.namespace_name()

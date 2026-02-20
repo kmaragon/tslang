@@ -36,8 +36,8 @@ void import_node_builder::set_default_binding(lex::token tok) {
 void import_node_builder::set_namespace_name(lex::token tok) {
 	detail::normalize_identifier(tok);
 	auto& f = node_->ensure_from();
-	f.secondary = ast::import_node::from_form::namespace_binding{
-		std::move(tok)};
+	f.secondary =
+		ast::import_node::from_form::namespace_binding{std::move(tok)};
 }
 
 void import_node_builder::init_named_imports() {
@@ -46,13 +46,13 @@ void import_node_builder::init_named_imports() {
 
 void import_node_builder::add_named_specifier(ast::import_specifier spec) {
 	detail::normalize_identifier(spec.name);
-	if (spec.alias) detail::normalize_identifier(*spec.alias);
+	if (spec.alias)
+		detail::normalize_identifier(*spec.alias);
 	node_->ensure_named().specifiers.push_back(std::move(spec));
 }
 
 void import_node_builder::set_module_specifier(lex::token tok) {
-	if (auto* f =
-			std::get_if<ast::import_node::from_form>(&node_->form_)) {
+	if (auto* f = std::get_if<ast::import_node::from_form>(&node_->form_)) {
 		f->module_specifier = std::move(tok);
 	} else {
 		node_->form_.emplace<ast::import_node::side_effect_form>(

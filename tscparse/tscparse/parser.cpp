@@ -211,7 +211,8 @@ std::unique_ptr<ast::ast_node> parser::parse_top_level_element() {
 	return nullptr;
 }
 
-std::unique_ptr<ast::ast_node> parser::handle_complete(state::state_result result) {
+std::unique_ptr<ast::ast_node> parser::handle_complete(
+	state::state_result result) {
 	auto node = std::move(result).take_node();
 	state_stack_.pop_back();
 

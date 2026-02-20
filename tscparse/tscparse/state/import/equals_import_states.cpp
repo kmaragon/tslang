@@ -125,8 +125,7 @@ accept_result expect_require_paren_state::accept_child(
 	return accept_result::complete(nullptr);
 }
 
-after_require_open_state::after_require_open_state(
-	import_node_builder* builder)
+after_require_open_state::after_require_open_state(import_node_builder* builder)
 	: builder_(builder) {}
 
 class after_require_open_state::visitor : public basic_state_visitor {

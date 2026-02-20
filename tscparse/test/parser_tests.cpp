@@ -132,9 +132,10 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		// Filter only comment tokens (not newlines)
 		for (const auto& tok : tokens) {
 			if (tok.is<tscc::lex::tokens::comment_token>() ||
-			    tok.is<tscc::lex::tokens::multiline_comment_token>() ||
-			    tok.is<tscc::lex::tokens::jsdoc_token>()) {
-				index.emplace(tok, nullptr, tscc::parse::trivia_ref::relationship::orphaned);
+				tok.is<tscc::lex::tokens::multiline_comment_token>() ||
+				tok.is<tscc::lex::tokens::jsdoc_token>()) {
+				index.emplace(tok, nullptr,
+							  tscc::parse::trivia_ref::relationship::orphaned);
 			}
 		}
 		index.finalize();
@@ -153,15 +154,16 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		tscc::parse::trivia_index index;
 		for (const auto& tok : tokens) {
 			if (tok.is<tscc::lex::tokens::comment_token>() ||
-			    tok.is<tscc::lex::tokens::multiline_comment_token>() ||
-			    tok.is<tscc::lex::tokens::jsdoc_token>()) {
-				index.emplace(tok, nullptr, tscc::parse::trivia_ref::relationship::orphaned);
+				tok.is<tscc::lex::tokens::multiline_comment_token>() ||
+				tok.is<tscc::lex::tokens::jsdoc_token>()) {
+				index.emplace(tok, nullptr,
+							  tscc::parse::trivia_ref::relationship::orphaned);
 			}
 		}
 		index.finalize();
 
 		auto comments = filter_comments(index.all());
-		REQUIRE(comments.size() == 2);  // single-line and block, not jsdoc
+		REQUIRE(comments.size() == 2);	// single-line and block, not jsdoc
 	}
 
 	SECTION("Filter JSDoc excludes regular comments") {
@@ -174,9 +176,10 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		tscc::parse::trivia_index index;
 		for (const auto& tok : tokens) {
 			if (tok.is<tscc::lex::tokens::comment_token>() ||
-			    tok.is<tscc::lex::tokens::multiline_comment_token>() ||
-			    tok.is<tscc::lex::tokens::jsdoc_token>()) {
-				index.emplace(tok, nullptr, tscc::parse::trivia_ref::relationship::orphaned);
+				tok.is<tscc::lex::tokens::multiline_comment_token>() ||
+				tok.is<tscc::lex::tokens::jsdoc_token>()) {
+				index.emplace(tok, nullptr,
+							  tscc::parse::trivia_ref::relationship::orphaned);
 			}
 		}
 		index.finalize();
@@ -194,11 +197,12 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		REQUIRE(tokens.size() > 0);
 
 		tscc::parse::trivia_index index;
-		// Should throw when trying to add a real token (like const, identifier, etc.)
+		// Should throw when trying to add a real token (like const, identifier,
+		// etc.)
 		REQUIRE_THROWS_AS(
-			index.emplace(tokens[0], nullptr, tscc::parse::trivia_ref::relationship::orphaned),
-			std::invalid_argument
-		);
+			index.emplace(tokens[0], nullptr,
+						  tscc::parse::trivia_ref::relationship::orphaned),
+			std::invalid_argument);
 	}
 
 	SECTION("Find trivia at specific location") {
@@ -212,9 +216,10 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		std::vector<tscc::lex::token> comment_tokens;
 		for (const auto& tok : tokens) {
 			if (tok.is<tscc::lex::tokens::comment_token>() ||
-			    tok.is<tscc::lex::tokens::multiline_comment_token>() ||
-			    tok.is<tscc::lex::tokens::jsdoc_token>()) {
-				index.emplace(tok, nullptr, tscc::parse::trivia_ref::relationship::orphaned);
+				tok.is<tscc::lex::tokens::multiline_comment_token>() ||
+				tok.is<tscc::lex::tokens::jsdoc_token>()) {
+				index.emplace(tok, nullptr,
+							  tscc::parse::trivia_ref::relationship::orphaned);
 				comment_tokens.push_back(tok);
 			}
 		}
@@ -240,9 +245,10 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		tscc::parse::trivia_index index;
 		for (const auto& tok : tokens) {
 			if (tok.is<tscc::lex::tokens::comment_token>() ||
-			    tok.is<tscc::lex::tokens::multiline_comment_token>() ||
-			    tok.is<tscc::lex::tokens::jsdoc_token>()) {
-				index.emplace(tok, nullptr, tscc::parse::trivia_ref::relationship::orphaned);
+				tok.is<tscc::lex::tokens::multiline_comment_token>() ||
+				tok.is<tscc::lex::tokens::jsdoc_token>()) {
+				index.emplace(tok, nullptr,
+							  tscc::parse::trivia_ref::relationship::orphaned);
 			}
 		}
 		index.finalize();
@@ -267,15 +273,17 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		std::vector<tscc::lex::token> comment_tokens;
 		for (const auto& tok : tokens) {
 			if (tok.is<tscc::lex::tokens::comment_token>() ||
-			    tok.is<tscc::lex::tokens::multiline_comment_token>() ||
-			    tok.is<tscc::lex::tokens::jsdoc_token>()) {
+				tok.is<tscc::lex::tokens::multiline_comment_token>() ||
+				tok.is<tscc::lex::tokens::jsdoc_token>()) {
 				comment_tokens.push_back(tok);
 			}
 		}
 
 		// Add in reverse order
-		for (auto it = comment_tokens.rbegin(); it != comment_tokens.rend(); ++it) {
-			index.emplace(*it, nullptr, tscc::parse::trivia_ref::relationship::orphaned);
+		for (auto it = comment_tokens.rbegin(); it != comment_tokens.rend();
+			 ++it) {
+			index.emplace(*it, nullptr,
+						  tscc::parse::trivia_ref::relationship::orphaned);
 		}
 		index.finalize();
 
@@ -284,7 +292,7 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		REQUIRE(all.size() > 0);
 		// Should be sorted by location
 		for (size_t i = 1; i < all.size(); ++i) {
-			const auto& prev_loc = all[i-1].token.location();
+			const auto& prev_loc = all[i - 1].token.location();
 			const auto& curr_loc = all[i].token.location();
 			REQUIRE(prev_loc.line() <= curr_loc.line());
 			if (prev_loc.line() == curr_loc.line()) {
@@ -304,9 +312,10 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		std::vector<tscc::lex::token> comment_tokens;
 		for (const auto& tok : tokens) {
 			if (tok.is<tscc::lex::tokens::comment_token>() ||
-			    tok.is<tscc::lex::tokens::multiline_comment_token>() ||
-			    tok.is<tscc::lex::tokens::jsdoc_token>()) {
-				index.emplace(tok, nullptr, tscc::parse::trivia_ref::relationship::orphaned);
+				tok.is<tscc::lex::tokens::multiline_comment_token>() ||
+				tok.is<tscc::lex::tokens::jsdoc_token>()) {
+				index.emplace(tok, nullptr,
+							  tscc::parse::trivia_ref::relationship::orphaned);
 				comment_tokens.push_back(tok);
 			}
 		}
@@ -333,16 +342,18 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		std::vector<tscc::lex::token> comment_tokens;
 		for (const auto& tok : tokens) {
 			if (tok.is<tscc::lex::tokens::comment_token>() ||
-			    tok.is<tscc::lex::tokens::multiline_comment_token>() ||
-			    tok.is<tscc::lex::tokens::jsdoc_token>()) {
-				index.emplace(tok, nullptr, tscc::parse::trivia_ref::relationship::orphaned);
+				tok.is<tscc::lex::tokens::multiline_comment_token>() ||
+				tok.is<tscc::lex::tokens::jsdoc_token>()) {
+				index.emplace(tok, nullptr,
+							  tscc::parse::trivia_ref::relationship::orphaned);
 				comment_tokens.push_back(tok);
 			}
 		}
 		index.finalize();
 
 		REQUIRE(comment_tokens.size() >= 1);
-		// Query from exactly the first comment's location - nothing strictly before it
+		// Query from exactly the first comment's location - nothing strictly
+		// before it
 		auto first_line = comment_tokens[0].location().line();
 		auto first_col = comment_tokens[0].location().column();
 		tscc::lex::source_location query(source, first_line, first_col, 0);
@@ -371,9 +382,10 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		std::vector<tscc::lex::token> comment_tokens;
 		for (const auto& tok : tokens) {
 			if (tok.is<tscc::lex::tokens::comment_token>() ||
-			    tok.is<tscc::lex::tokens::multiline_comment_token>() ||
-			    tok.is<tscc::lex::tokens::jsdoc_token>()) {
-				index.emplace(tok, nullptr, tscc::parse::trivia_ref::relationship::orphaned);
+				tok.is<tscc::lex::tokens::multiline_comment_token>() ||
+				tok.is<tscc::lex::tokens::jsdoc_token>()) {
+				index.emplace(tok, nullptr,
+							  tscc::parse::trivia_ref::relationship::orphaned);
 				comment_tokens.push_back(tok);
 			}
 		}
@@ -399,9 +411,10 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		tscc::parse::trivia_index index;
 		for (const auto& tok : tokens) {
 			if (tok.is<tscc::lex::tokens::comment_token>() ||
-			    tok.is<tscc::lex::tokens::multiline_comment_token>() ||
-			    tok.is<tscc::lex::tokens::jsdoc_token>()) {
-				index.emplace(tok, nullptr, tscc::parse::trivia_ref::relationship::orphaned);
+				tok.is<tscc::lex::tokens::multiline_comment_token>() ||
+				tok.is<tscc::lex::tokens::jsdoc_token>()) {
+				index.emplace(tok, nullptr,
+							  tscc::parse::trivia_ref::relationship::orphaned);
 			}
 		}
 		index.finalize();
@@ -434,9 +447,10 @@ TEST_CASE("Trivia Index", "[trivia]") {
 		std::vector<tscc::lex::token> comment_tokens;
 		for (const auto& tok : tokens) {
 			if (tok.is<tscc::lex::tokens::comment_token>() ||
-			    tok.is<tscc::lex::tokens::multiline_comment_token>() ||
-			    tok.is<tscc::lex::tokens::jsdoc_token>()) {
-				index.emplace(tok, nullptr, tscc::parse::trivia_ref::relationship::orphaned);
+				tok.is<tscc::lex::tokens::multiline_comment_token>() ||
+				tok.is<tscc::lex::tokens::jsdoc_token>()) {
+				index.emplace(tok, nullptr,
+							  tscc::parse::trivia_ref::relationship::orphaned);
 				comment_tokens.push_back(tok);
 			}
 		}
@@ -495,7 +509,8 @@ TEST_CASE("Parse Errors", "[parser][errors]") {
 			REQUIRE(e.code() == tscc::error_code::ts1128);
 			REQUIRE(e.location().line() == 0);
 			REQUIRE(e.location().column() == 0);
-			REQUIRE(std::string(e.what()) == "Declaration or statement expected.");
+			REQUIRE(std::string(e.what()) ==
+					"Declaration or statement expected.");
 		}
 	}
 }

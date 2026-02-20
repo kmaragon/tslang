@@ -78,7 +78,8 @@ const lex::token* import_node::default_binding() const noexcept {
 
 const lex::token* import_node::namespace_name() const noexcept {
 	auto* f = std::get_if<from_form>(&form_);
-	if (!f) return nullptr;
+	if (!f)
+		return nullptr;
 	auto* ns = std::get_if<from_form::namespace_binding>(&f->secondary);
 	return ns ? &ns->name : nullptr;
 }
@@ -88,7 +89,8 @@ const std::vector<import_specifier>& import_node::named_specifiers()
 	auto* f = std::get_if<from_form>(&form_);
 	if (f) {
 		auto* n = std::get_if<from_form::named_binding>(&f->secondary);
-		if (n) return n->specifiers;
+		if (n)
+			return n->specifiers;
 	}
 	static const std::vector<import_specifier> empty;
 	return empty;
@@ -107,7 +109,8 @@ const lex::token* import_node::attributes_keyword() const noexcept {
 }
 
 const std::vector<import_attribute>& import_node::attributes() const noexcept {
-	if (attributes_) return attributes_->entries;
+	if (attributes_)
+		return attributes_->entries;
 	static const std::vector<import_attribute> empty;
 	return empty;
 }
@@ -119,7 +122,8 @@ const lex::token* import_node::equals_name() const noexcept {
 
 const lex::token* import_node::require_module_specifier() const noexcept {
 	auto* e = std::get_if<equals_form>(&form_);
-	if (!e) return nullptr;
+	if (!e)
+		return nullptr;
 	auto* r = std::get_if<equals_form::require_data>(&e->rhs);
 	return r ? &r->module_specifier : nullptr;
 }
@@ -129,7 +133,8 @@ const std::vector<lex::token>& import_node::entity_identifiers()
 	auto* e = std::get_if<equals_form>(&form_);
 	if (e) {
 		auto* d = std::get_if<equals_form::entity_data>(&e->rhs);
-		if (d) return d->identifiers;
+		if (d)
+			return d->identifiers;
 	}
 	static const std::vector<lex::token> empty;
 	return empty;
