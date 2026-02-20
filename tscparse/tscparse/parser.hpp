@@ -109,7 +109,7 @@ private:
 	std::vector<lex::token> pending_trivia_;
 	lex::source_location
 		last_location_;	 // Track last valid location for EOF errors
-	std::vector<std::unique_ptr<parser_state>> state_stack_;
+	std::vector<std::unique_ptr<state::parser_state>> state_stack_;
 
 	// Internal: advance token iterator
 	void advance_token();
@@ -136,7 +136,7 @@ private:
 
 	// Handle a complete state_result: pop state, yield if top-level,
 	// otherwise pass to parent. Returns node if yielded, nullptr if absorbed.
-	std::unique_ptr<ast::ast_node> handle_complete(state_result result);
+	std::unique_ptr<ast::ast_node> handle_complete(state::state_result result);
 
 	// Expect a specific token type or throw
 	template <typename TokenType>

@@ -19,7 +19,8 @@
 #include "expected_token.hpp"
 #include <format>
 
-namespace tscc::parse {
+using namespace tscc;
+using namespace tscc::parse;
 
 expected_token::expected_token(const lex::source_location& location,
 							   std::string expected,
@@ -47,5 +48,3 @@ const std::string& expected_token::expected() const noexcept {
 const std::string& expected_token::found() const noexcept {
 	return found_;
 }
-
-}  // namespace tscc::parse

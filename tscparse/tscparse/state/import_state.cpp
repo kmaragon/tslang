@@ -20,17 +20,16 @@
 #include "import/initial_import_states.hpp"
 #include "state_result.hpp"
 
-namespace tscc::parse {
+using namespace tscc::parse::state;
 
 import_state::import_state(lex::token import_keyword)
-	: node_(std::make_unique<ast::import_node>(std::move(import_keyword))) {}
+	: node_(std::make_unique<ast::import_node>(std::move(import_keyword))),
+	  builder_(node_.get()) {}
 
 state_result import_state::process(parser& /*p*/, const lex::token& /*token*/) {
-	return state_result::push<after_import_state>(node_.get()).reprocess();
+	return state_result::push<after_import_state>(&builder_).reprocess();
 }
 
 accept_result import_state::accept_child(std::unique_ptr<ast::ast_node>) {
 	return accept_result::complete(std::move(node_));
 }
-
-}  // namespace tscc::parse

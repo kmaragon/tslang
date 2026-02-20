@@ -24,10 +24,10 @@
 #include "../state_result.hpp"
 #include "import_attributes_state.hpp"
 
-namespace tscc::parse {
+using namespace tscc::parse::state;
 
-after_module_spec_state::after_module_spec_state(ast::import_node* node)
-	: node_(node) {}
+after_module_spec_state::after_module_spec_state(import_node_builder* builder)
+	: builder_(builder) {}
 
 class after_module_spec_state::initial_visitor : public basic_state_visitor {
 public:
@@ -37,7 +37,6 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::semicolon_token&) const {
-		s_->node_->set_semicolon(token_);
 		return state_result::complete(nullptr);
 	}
 
@@ -56,9 +55,9 @@ public:
 
 private:
 	state_result push_attributes() const {
-		s_->node_->set_attributes_keyword(token_);
+		s_->builder_->set_attributes_keyword(token_);
 		s_->mode_ = mode::awaiting_sub;
-		return state_result::push<import_attributes_state>(s_->node_);
+		return state_result::push<import_attributes_state>(s_->builder_);
 	}
 
 	after_module_spec_state* s_;
@@ -69,11 +68,10 @@ class after_module_spec_state::post_sub_visitor : public basic_state_visitor {
 public:
 	post_sub_visitor(after_module_spec_state* s,
 					 const lex::source_location& loc,
-					 const lex::token& token) noexcept
-		: basic_state_visitor(s, loc), s_(s), token_(token) {}
+					 const lex::token& /*token*/) noexcept
+		: basic_state_visitor(s, loc) {}
 
 	state_result operator()(const lex::tokens::semicolon_token&) const {
-		s_->node_->set_semicolon(token_);
 		return state_result::complete(nullptr);
 	}
 
@@ -81,10 +79,6 @@ public:
 	state_result operator()(const lex::tokens::basic_token&) const {
 		return state_result::complete(nullptr).reprocess();
 	}
-
-private:
-	after_module_spec_state* s_;
-	const lex::token& token_;
 };
 
 state_result after_module_spec_state::process(parser& /*p*/,
@@ -106,5 +100,3 @@ accept_result after_module_spec_state::accept_child(
 std::optional<state_result> after_module_spec_state::on_eof() {
 	return state_result::complete(nullptr);
 }
-
-}  // namespace tscc::parse

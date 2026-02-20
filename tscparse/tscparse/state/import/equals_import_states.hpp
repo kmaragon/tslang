@@ -18,10 +18,10 @@
 
 #pragma once
 
-#include "../../ast/import_node.hpp"
 #include "../parser_state.hpp"
+#include "import_node_builder.hpp"
 
-namespace tscc::parse {
+namespace tscc::parse::state {
 
 /**
  * \brief Expects `require` or an identifier after `=` in import-equals
@@ -30,13 +30,13 @@ namespace tscc::parse {
  */
 class after_equals_state : public parser_state {
 public:
-	explicit after_equals_state(ast::import_node* node);
+	explicit after_equals_state(import_node_builder* builder);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-	ast::import_node* node_;
+	import_node_builder* builder_;
 
 	class visitor;
 };
@@ -46,13 +46,13 @@ private:
  */
 class expect_require_paren_state : public parser_state {
 public:
-	explicit expect_require_paren_state(ast::import_node* node);
+	explicit expect_require_paren_state(import_node_builder* builder);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-	ast::import_node* node_;
+	import_node_builder* builder_;
 
 	class visitor;
 };
@@ -62,13 +62,13 @@ private:
  */
 class after_require_open_state : public parser_state {
 public:
-	explicit after_require_open_state(ast::import_node* node);
+	explicit after_require_open_state(import_node_builder* builder);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-	ast::import_node* node_;
+	import_node_builder* builder_;
 
 	class visitor;
 };
@@ -81,14 +81,13 @@ private:
  */
 class after_require_module_state : public parser_state {
 public:
-	explicit after_require_module_state(ast::import_node* node);
+	after_require_module_state();
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 	std::optional<state_result> on_eof() override;
 
 private:
-	ast::import_node* node_;
 	bool closed_ = false;
 
 	class expect_close_visitor;
@@ -103,18 +102,18 @@ private:
  */
 class import_entity_state : public parser_state {
 public:
-	explicit import_entity_state(ast::import_node* node);
+	explicit import_entity_state(import_node_builder* builder);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 	std::optional<state_result> on_eof() override;
 
 private:
-	ast::import_node* node_;
+	import_node_builder* builder_;
 	bool expecting_id_ = false;
 
 	class after_id_visitor;
 	class expect_id_visitor;
 };
 
-}  // namespace tscc::parse
+}  // namespace tscc::parse::state

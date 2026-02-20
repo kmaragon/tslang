@@ -19,27 +19,22 @@
 #pragma once
 
 #include <optional>
-#include "../../ast/import_node.hpp"
 #include "../parser_state.hpp"
+#include "import_node_builder.hpp"
 
-namespace tscc::parse {
+namespace tscc::parse::state {
 
 /**
  * \brief Parser sub-state for the contents of an import attributes clause
  *
- * Entered after the parent (import_state) consumes the attributes keyword
- * (with/assert). Handles the open brace, key: value pairs, commas,
- * and close brace.
+ * Entered after the parent consumes the attributes keyword (with/assert).
+ * Handles the open brace, key: value pairs, commas, and close brace.
  *
- * Mutates the parent's import_node directly. Completes with nullptr
- * since no separate AST node is produced.
+ * Completes with nullptr since no separate AST node is produced.
  */
 class import_attributes_state : public parser_state {
 public:
-	/**
-	 * \brief Construct from a pointer to the import node being built
-	 */
-	explicit import_attributes_state(ast::import_node* node);
+	explicit import_attributes_state(import_node_builder* builder);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
@@ -53,11 +48,10 @@ private:
 		after_value,
 	};
 
-	ast::import_node* node_;
+	import_node_builder* builder_;
 	phase phase_ = phase::expect_open_brace;
 
 	std::optional<lex::token> pending_key_;
-	std::optional<lex::token> pending_colon_;
 
 	class expect_open_brace_visitor;
 	class expect_key_or_close_visitor;
@@ -66,4 +60,4 @@ private:
 	class after_value_visitor;
 };
 
-}  // namespace tscc::parse
+}  // namespace tscc::parse::state

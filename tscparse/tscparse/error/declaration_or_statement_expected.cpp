@@ -18,7 +18,8 @@
 
 #include "declaration_or_statement_expected.hpp"
 
-namespace tscc::parse {
+using namespace tscc;
+using namespace tscc::parse;
 
 declaration_or_statement_expected::declaration_or_statement_expected(
 	const lex::source_location& location) noexcept
@@ -31,5 +32,3 @@ const char* declaration_or_statement_expected::what() const noexcept {
 error_code declaration_or_statement_expected::code() const noexcept {
 	return error_code::ts1128;
 }
-
-}  // namespace tscc::parse

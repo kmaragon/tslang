@@ -32,9 +32,10 @@
 #include "../../error/expected_token.hpp"
 #include "../state_result.hpp"
 
-namespace tscc::parse {
+using namespace tscc::parse::state;
 
-after_equals_state::after_equals_state(ast::import_node* node) : node_(node) {}
+after_equals_state::after_equals_state(import_node_builder* builder)
+	: builder_(builder) {}
 
 class after_equals_state::visitor : public basic_state_visitor {
 public:
@@ -44,8 +45,8 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::require_token&) const {
-		s_->node_->set_require_keyword(token_);
-		return state_result::push<expect_require_paren_state>(s_->node_);
+		s_->builder_->init_require();
+		return state_result::push<expect_require_paren_state>(s_->builder_);
 	}
 
 	state_result operator()(const lex::tokens::identifier_token&) const {
@@ -72,8 +73,8 @@ public:
 
 private:
 	state_result handle_identifier() const {
-		s_->node_->add_entity_identifier(token_);
-		return state_result::push<import_entity_state>(s_->node_);
+		s_->builder_->add_entity_identifier(token_);
+		return state_result::push<import_entity_state>(s_->builder_);
 	}
 
 	after_equals_state* s_;
@@ -89,8 +90,9 @@ accept_result after_equals_state::accept_child(std::unique_ptr<ast::ast_node>) {
 	return accept_result::complete(nullptr);
 }
 
-expect_require_paren_state::expect_require_paren_state(ast::import_node* node)
-	: node_(node) {}
+expect_require_paren_state::expect_require_paren_state(
+	import_node_builder* builder)
+	: builder_(builder) {}
 
 class expect_require_paren_state::visitor : public basic_state_visitor {
 public:
@@ -100,8 +102,7 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::open_paren_token&) const {
-		s_->node_->set_require_open_paren(token_);
-		return state_result::push<after_require_open_state>(s_->node_);
+		return state_result::push<after_require_open_state>(s_->builder_);
 	}
 
 	[[noreturn]] state_result operator()(
@@ -124,8 +125,9 @@ accept_result expect_require_paren_state::accept_child(
 	return accept_result::complete(nullptr);
 }
 
-after_require_open_state::after_require_open_state(ast::import_node* node)
-	: node_(node) {}
+after_require_open_state::after_require_open_state(
+	import_node_builder* builder)
+	: builder_(builder) {}
 
 class after_require_open_state::visitor : public basic_state_visitor {
 public:
@@ -135,8 +137,8 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::constant_value_token&) const {
-		s_->node_->set_require_module_specifier(token_);
-		return state_result::push<after_require_module_state>(s_->node_);
+		s_->builder_->set_require_module_specifier(token_);
+		return state_result::push<after_require_module_state>();
 	}
 
 	[[noreturn]] state_result operator()(
@@ -159,8 +161,7 @@ accept_result after_require_open_state::accept_child(
 	return accept_result::complete(nullptr);
 }
 
-after_require_module_state::after_require_module_state(ast::import_node* node)
-	: node_(node) {}
+after_require_module_state::after_require_module_state() = default;
 
 class after_require_module_state::expect_close_visitor
 	: public basic_state_visitor {
@@ -171,7 +172,6 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::close_paren_token&) const {
-		s_->node_->set_require_close_paren(token_);
 		s_->closed_ = true;
 		return state_result::stay();
 	}
@@ -191,11 +191,10 @@ class after_require_module_state::after_close_visitor
 public:
 	after_close_visitor(after_require_module_state* s,
 						const lex::source_location& loc,
-						const lex::token& token) noexcept
-		: basic_state_visitor(s, loc), s_(s), token_(token) {}
+						const lex::token& /*token*/) noexcept
+		: basic_state_visitor(s, loc) {}
 
 	state_result operator()(const lex::tokens::semicolon_token&) const {
-		s_->node_->set_semicolon(token_);
 		return state_result::complete(nullptr);
 	}
 
@@ -203,10 +202,6 @@ public:
 	state_result operator()(const lex::tokens::basic_token&) const {
 		return state_result::complete(nullptr).reprocess();
 	}
-
-private:
-	after_require_module_state* s_;
-	const lex::token& token_;
 };
 
 state_result after_require_module_state::process(parser& /*p*/,
@@ -227,24 +222,22 @@ std::optional<state_result> after_require_module_state::on_eof() {
 	return std::nullopt;
 }
 
-import_entity_state::import_entity_state(ast::import_node* node)
-	: node_(node) {}
+import_entity_state::import_entity_state(import_node_builder* builder)
+	: builder_(builder) {}
 
 class import_entity_state::after_id_visitor : public basic_state_visitor {
 public:
 	after_id_visitor(import_entity_state* s,
 					 const lex::source_location& loc,
-					 const lex::token& token) noexcept
-		: basic_state_visitor(s, loc), s_(s), token_(token) {}
+					 const lex::token& /*token*/) noexcept
+		: basic_state_visitor(s, loc), s_(s) {}
 
 	state_result operator()(const lex::tokens::dot_token&) const {
-		s_->node_->add_entity_dot(token_);
 		s_->expecting_id_ = true;
 		return state_result::stay();
 	}
 
 	state_result operator()(const lex::tokens::semicolon_token&) const {
-		s_->node_->set_semicolon(token_);
 		return state_result::complete(nullptr);
 	}
 
@@ -255,7 +248,6 @@ public:
 
 private:
 	import_entity_state* s_;
-	const lex::token& token_;
 };
 
 class import_entity_state::expect_id_visitor : public basic_state_visitor {
@@ -291,7 +283,7 @@ public:
 
 private:
 	state_result handle_identifier() const {
-		s_->node_->add_entity_identifier(token_);
+		s_->builder_->add_entity_identifier(token_);
 		s_->expecting_id_ = false;
 		return state_result::stay();
 	}
@@ -317,5 +309,3 @@ std::optional<state_result> import_entity_state::on_eof() {
 		return state_result::complete(nullptr);
 	return std::nullopt;
 }
-
-}  // namespace tscc::parse

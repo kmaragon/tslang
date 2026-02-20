@@ -28,13 +28,14 @@
 #include <tsclex/tokens/require_token.hpp>
 #include <tsclex/tokens/type_token.hpp>
 
-namespace tscc::parse::import_helpers {
+namespace tscc::parse::state::detail {
 
 /**
- * \brief Check if a token can serve as an identifier in import context
+ * \brief Check if a token can serve as an identifier
  *
- * TypeScript allows contextual keywords as identifiers in binding
- * positions. This accepts identifier_token and all non-reserved keywords.
+ * TypeScript allows contextual keywords as identifiers in many
+ * positions. This accepts identifier_token and all non-reserved keywords
+ * that can appear where an identifier is expected.
  */
 inline bool can_be_identifier(const lex::token& token) {
 	struct visitor {
@@ -66,4 +67,23 @@ inline bool can_be_specifier_name(const lex::token& token) {
 		   token.is<lex::tokens::default_token>();
 }
 
-}  // namespace tscc::parse::import_helpers
+/**
+ * \brief Normalize a contextual keyword token to an identifier_token
+ *
+ * If the token is a contextual keyword that can serve as an identifier
+ * (type, from, as, assert, require) but is not already an identifier_token,
+ * replaces its variant payload in place with an identifier_token whose
+ * name is the keyword text. Source location is preserved.
+ *
+ * No-op if the token is already an identifier_token or is not a
+ * contextual keyword.
+ */
+inline void normalize_identifier(lex::token& tok) {
+	if (tok.is<lex::tokens::identifier_token>()) return;
+	if (!can_be_identifier(tok)) return;
+	auto name = tok->to_string();
+	std::u32string u32name(name.begin(), name.end());
+	tok.emplace_token<lex::tokens::identifier_token>(tok.location(), u32name);
+}
+
+}  // namespace tscc::parse::state::detail

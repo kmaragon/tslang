@@ -20,7 +20,7 @@
 
 #include "parser_state.hpp"
 
-namespace tscc::parse {
+namespace tscc::parse::state {
 
 /**
  * \brief Root state for parsing at module/file scope
@@ -38,4 +38,4 @@ public:
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 };
 
-}  // namespace tscc::parse
+}  // namespace tscc::parse::state

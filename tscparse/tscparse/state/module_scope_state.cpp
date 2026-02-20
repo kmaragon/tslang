@@ -21,7 +21,8 @@
 #include "import_state.hpp"
 #include "state_result.hpp"
 
-namespace tscc::parse {
+using namespace tscc;
+using namespace tscc::parse::state;
 
 namespace {
 
@@ -72,5 +73,3 @@ accept_result module_scope_state::accept_child(
 	std::unique_ptr<ast::ast_node> /*child*/) {
 	return accept_result::stay();
 }
-
-}  // namespace tscc::parse

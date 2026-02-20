@@ -30,14 +30,14 @@
 #include <tsclex/tokens/type_token.hpp>
 #include "../../error/expected_token.hpp"
 #include "../state_result.hpp"
-#include "import_token_helpers.hpp"
+#include "../token_helpers.hpp"
 
-namespace tscc::parse {
+using namespace tscc::parse::state;
+using detail::can_be_identifier;
+using detail::can_be_specifier_name;
 
-using import_helpers::can_be_identifier;
-using import_helpers::can_be_specifier_name;
-
-named_import_state::named_import_state(ast::import_node* node) : node_(node) {}
+named_import_state::named_import_state(import_node_builder* builder)
+	: builder_(builder) {}
 
 class named_import_state::expect_specifier_or_close_visitor
 	: public basic_state_visitor {
@@ -48,7 +48,6 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::close_brace_token&) const {
-		s_->node_->set_named_close_brace(token_);
 		return state_result::complete(nullptr);
 	}
 
@@ -109,7 +108,6 @@ public:
 		// "type" is the specifier name: import { type as X }
 		s_->pending_name_ = std::move(s_->pending_type_);
 		s_->pending_type_.reset();
-		s_->pending_as_ = token_;
 		s_->phase_ = phase::after_as;
 		return state_result::stay();
 	}
@@ -119,7 +117,6 @@ public:
 		s_->pending_name_ = std::move(s_->pending_type_);
 		s_->pending_type_.reset();
 		s_->flush_specifier();
-		s_->node_->add_named_comma(token_);
 		s_->phase_ = phase::expect_specifier_or_close;
 		return state_result::stay();
 	}
@@ -129,7 +126,6 @@ public:
 		s_->pending_name_ = std::move(s_->pending_type_);
 		s_->pending_type_.reset();
 		s_->flush_specifier();
-		s_->node_->set_named_close_brace(token_);
 		return state_result::complete(nullptr);
 	}
 
@@ -179,21 +175,18 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::as_token&) const {
-		s_->pending_as_ = token_;
 		s_->phase_ = phase::after_as;
 		return state_result::stay();
 	}
 
 	state_result operator()(const lex::tokens::comma_token&) const {
 		s_->flush_specifier();
-		s_->node_->add_named_comma(token_);
 		s_->phase_ = phase::expect_specifier_or_close;
 		return state_result::stay();
 	}
 
 	state_result operator()(const lex::tokens::close_brace_token&) const {
 		s_->flush_specifier();
-		s_->node_->set_named_close_brace(token_);
 		return state_result::complete(nullptr);
 	}
 
@@ -258,13 +251,11 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::comma_token&) const {
-		s_->node_->add_named_comma(token_);
 		s_->phase_ = phase::expect_specifier_or_close;
 		return state_result::stay();
 	}
 
 	state_result operator()(const lex::tokens::close_brace_token&) const {
-		s_->node_->set_named_close_brace(token_);
 		return state_result::complete(nullptr);
 	}
 
@@ -309,23 +300,17 @@ void named_import_state::flush_specifier() {
 	ast::import_specifier spec;
 	spec.type_keyword = std::move(pending_type_);
 	spec.name = std::move(*pending_name_);
-	spec.as_keyword = std::move(pending_as_);
-	node_->add_named_specifier(std::move(spec));
+	builder_->add_named_specifier(std::move(spec));
 	pending_type_.reset();
 	pending_name_.reset();
-	pending_as_.reset();
 }
 
 void named_import_state::flush_specifier_with_alias(lex::token alias) {
 	ast::import_specifier spec;
 	spec.type_keyword = std::move(pending_type_);
 	spec.name = std::move(*pending_name_);
-	spec.as_keyword = std::move(*pending_as_);
 	spec.alias = std::move(alias);
-	node_->add_named_specifier(std::move(spec));
+	builder_->add_named_specifier(std::move(spec));
 	pending_type_.reset();
 	pending_name_.reset();
-	pending_as_.reset();
 }
-
-}  // namespace tscc::parse

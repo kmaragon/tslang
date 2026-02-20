@@ -19,9 +19,10 @@
 #pragma once
 
 #include "../ast/import_node.hpp"
+#include "import/import_node_builder.hpp"
 #include "parser_state.hpp"
 
-namespace tscc::parse {
+namespace tscc::parse::state {
 
 /**
  * \brief Coordinator state for all forms of TypeScript import declarations
@@ -43,6 +44,7 @@ public:
 
 private:
 	std::unique_ptr<ast::import_node> node_;
+	import_node_builder builder_;
 };
 
-}  // namespace tscc::parse
+}  // namespace tscc::parse::state

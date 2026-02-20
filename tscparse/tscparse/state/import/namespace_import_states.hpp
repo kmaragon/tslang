@@ -18,28 +18,25 @@
 
 #pragma once
 
-#include <tsclex/token.hpp>
-#include "../../ast/import_node.hpp"
 #include "../parser_state.hpp"
+#include "import_node_builder.hpp"
 
-namespace tscc::parse {
+namespace tscc::parse::state {
 
 /**
  * \brief Expects the `as` keyword after `*` in a namespace import
  *
- * Receives the pending asterisk token. On seeing `as`, pushes
- * expect_namespace_name_state with both pending tokens.
+ * On seeing `as`, pushes expect_namespace_name_state.
  */
 class expect_as_state : public parser_state {
 public:
-	expect_as_state(ast::import_node* node, lex::token asterisk_tok);
+	explicit expect_as_state(import_node_builder* builder);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-	ast::import_node* node_;
-	lex::token pending_asterisk_;
+	import_node_builder* builder_;
 
 	class visitor;
 };
@@ -47,24 +44,20 @@ private:
 /**
  * \brief Expects an identifier for the namespace binding after `* as`
  *
- * Receives pending asterisk and as tokens. On seeing an identifier,
- * commits the namespace binding and pushes expect_from_state.
+ * On seeing an identifier, commits the namespace binding and pushes
+ * expect_from_state.
  */
 class expect_namespace_name_state : public parser_state {
 public:
-	expect_namespace_name_state(ast::import_node* node,
-								lex::token asterisk_tok,
-								lex::token as_tok);
+	explicit expect_namespace_name_state(import_node_builder* builder);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-	ast::import_node* node_;
-	lex::token pending_asterisk_;
-	lex::token pending_as_;
+	import_node_builder* builder_;
 
 	class visitor;
 };
 
-}  // namespace tscc::parse
+}  // namespace tscc::parse::state

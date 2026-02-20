@@ -18,10 +18,10 @@
 
 #pragma once
 
-#include "../../ast/import_node.hpp"
 #include "../parser_state.hpp"
+#include "import_node_builder.hpp"
 
-namespace tscc::parse {
+namespace tscc::parse::state {
 
 /**
  * \brief Handles completion after a module specifier string
@@ -32,14 +32,14 @@ namespace tscc::parse {
  */
 class after_module_spec_state : public parser_state {
 public:
-	explicit after_module_spec_state(ast::import_node* node);
+	explicit after_module_spec_state(import_node_builder* builder);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 	std::optional<state_result> on_eof() override;
 
 private:
-	ast::import_node* node_;
+	import_node_builder* builder_;
 
 	enum class mode { initial, awaiting_sub, post_sub };
 	mode mode_ = mode::initial;
@@ -48,4 +48,4 @@ private:
 	class post_sub_visitor;
 };
 
-}  // namespace tscc::parse
+}  // namespace tscc::parse::state

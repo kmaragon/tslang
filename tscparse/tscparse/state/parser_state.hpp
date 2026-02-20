@@ -24,13 +24,16 @@
 #include <tsclex/tokens/basic_token.hpp>
 
 namespace tscc::parse {
-
 class parser;
-class state_result;
-class accept_result;
 namespace ast {
 class ast_node;
 }
+}  // namespace tscc::parse
+
+namespace tscc::parse::state {
+
+class state_result;
+class accept_result;
 
 /**
  * \brief Base class for parser state machine states
@@ -95,4 +98,4 @@ public:
 	[[noreturn]] state_result operator()(const lex::tokens::basic_token&) const;
 };
 
-}  // namespace tscc::parse
+}  // namespace tscc::parse::state

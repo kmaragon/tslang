@@ -18,7 +18,8 @@
 
 #include "unexpected_end_of_text.hpp"
 
-namespace tscc::parse {
+using namespace tscc;
+using namespace tscc::parse;
 
 unexpected_end_of_text::unexpected_end_of_text(
 	const lex::source_location& location) noexcept
@@ -31,5 +32,3 @@ const char* unexpected_end_of_text::what() const noexcept {
 error_code unexpected_end_of_text::code() const noexcept {
 	return error_code::ts1126;
 }
-
-}  // namespace tscc::parse

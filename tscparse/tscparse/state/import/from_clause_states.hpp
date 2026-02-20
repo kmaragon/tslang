@@ -18,10 +18,10 @@
 
 #pragma once
 
-#include "../../ast/import_node.hpp"
 #include "../parser_state.hpp"
+#include "import_node_builder.hpp"
 
-namespace tscc::parse {
+namespace tscc::parse::state {
 
 /**
  * \brief Expects the `from` keyword in a from-style import
@@ -31,13 +31,13 @@ namespace tscc::parse {
  */
 class expect_from_state : public parser_state {
 public:
-	explicit expect_from_state(ast::import_node* node);
+	explicit expect_from_state(import_node_builder* builder);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-	ast::import_node* node_;
+	import_node_builder* builder_;
 
 	class visitor;
 };
@@ -50,15 +50,15 @@ private:
  */
 class after_from_state : public parser_state {
 public:
-	explicit after_from_state(ast::import_node* node);
+	explicit after_from_state(import_node_builder* builder);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-	ast::import_node* node_;
+	import_node_builder* builder_;
 
 	class visitor;
 };
 
-}  // namespace tscc::parse
+}  // namespace tscc::parse::state

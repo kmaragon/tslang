@@ -19,10 +19,10 @@
 #pragma once
 
 #include <tsclex/token.hpp>
-#include "../../ast/import_node.hpp"
 #include "../parser_state.hpp"
+#include "import_node_builder.hpp"
 
-namespace tscc::parse {
+namespace tscc::parse::state {
 
 /**
  * \brief Phase after consuming a default binding identifier
@@ -32,13 +32,13 @@ namespace tscc::parse {
  */
 class after_default_state : public parser_state {
 public:
-	after_default_state(ast::import_node* node, lex::token binding_tok);
+	after_default_state(import_node_builder* builder, lex::token binding_tok);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-	ast::import_node* node_;
+	import_node_builder* builder_;
 	lex::token pending_binding_;
 
 	class visitor;
@@ -52,13 +52,13 @@ private:
  */
 class after_comma_state : public parser_state {
 public:
-	explicit after_comma_state(ast::import_node* node);
+	explicit after_comma_state(import_node_builder* builder);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-	ast::import_node* node_;
+	import_node_builder* builder_;
 
 	enum class mode { initial, awaiting_sub, post_sub };
 	mode mode_ = mode::initial;
@@ -66,4 +66,4 @@ private:
 	class visitor;
 };
 
-}  // namespace tscc::parse
+}  // namespace tscc::parse::state

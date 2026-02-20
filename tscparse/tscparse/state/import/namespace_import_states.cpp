@@ -28,11 +28,10 @@
 #include "../state_result.hpp"
 #include "from_clause_states.hpp"
 
-namespace tscc::parse {
+using namespace tscc::parse::state;
 
-expect_as_state::expect_as_state(ast::import_node* node,
-								 lex::token asterisk_tok)
-	: node_(node), pending_asterisk_(std::move(asterisk_tok)) {}
+expect_as_state::expect_as_state(import_node_builder* builder)
+	: builder_(builder) {}
 
 class expect_as_state::visitor : public basic_state_visitor {
 public:
@@ -42,8 +41,7 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::as_token&) const {
-		return state_result::push<expect_namespace_name_state>(
-			s_->node_, std::move(s_->pending_asterisk_), token_);
+		return state_result::push<expect_namespace_name_state>(s_->builder_);
 	}
 
 	[[noreturn]] state_result operator()(
@@ -65,12 +63,8 @@ accept_result expect_as_state::accept_child(std::unique_ptr<ast::ast_node>) {
 }
 
 expect_namespace_name_state::expect_namespace_name_state(
-	ast::import_node* node,
-	lex::token asterisk_tok,
-	lex::token as_tok)
-	: node_(node),
-	  pending_asterisk_(std::move(asterisk_tok)),
-	  pending_as_(std::move(as_tok)) {}
+	import_node_builder* builder)
+	: builder_(builder) {}
 
 class expect_namespace_name_state::visitor : public basic_state_visitor {
 public:
@@ -105,9 +99,8 @@ public:
 
 private:
 	state_result handle_identifier() const {
-		s_->node_->set_namespace_binding(std::move(s_->pending_asterisk_),
-										 std::move(s_->pending_as_), token_);
-		return state_result::push<expect_from_state>(s_->node_);
+		s_->builder_->set_namespace_name(token_);
+		return state_result::push<expect_from_state>(s_->builder_);
 	}
 
 	expect_namespace_name_state* s_;
@@ -123,5 +116,3 @@ accept_result expect_namespace_name_state::accept_child(
 	std::unique_ptr<ast::ast_node>) {
 	return accept_result::complete(nullptr);
 }
-
-}  // namespace tscc::parse

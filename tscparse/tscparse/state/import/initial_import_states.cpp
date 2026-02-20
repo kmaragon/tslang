@@ -38,9 +38,10 @@
 #include "named_import_state.hpp"
 #include "namespace_import_states.hpp"
 
-namespace tscc::parse {
+using namespace tscc::parse::state;
 
-after_import_state::after_import_state(ast::import_node* node) : node_(node) {}
+after_import_state::after_import_state(import_node_builder* builder)
+	: builder_(builder) {}
 
 class after_import_state::visitor : public basic_state_visitor {
 public:
@@ -50,22 +51,22 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::constant_value_token&) const {
-		s_->node_->set_module_specifier(token_);
-		return state_result::push<after_module_spec_state>(s_->node_);
+		s_->builder_->set_module_specifier(token_);
+		return state_result::push<after_module_spec_state>(s_->builder_);
 	}
 
 	state_result operator()(const lex::tokens::type_token&) const {
-		return state_result::push<after_type_state>(s_->node_, token_);
+		return state_result::push<after_type_state>(s_->builder_, token_);
 	}
 
 	state_result operator()(const lex::tokens::asterisk_token&) const {
-		return state_result::push<expect_as_state>(s_->node_, token_);
+		return state_result::push<expect_as_state>(s_->builder_);
 	}
 
 	state_result operator()(const lex::tokens::open_brace_token&) const {
-		s_->node_->set_named_open_brace(token_);
+		s_->builder_->init_named_imports();
 		s_->mode_ = mode::awaiting_sub;
-		return state_result::push<named_import_state>(s_->node_);
+		return state_result::push<named_import_state>(s_->builder_);
 	}
 
 	state_result operator()(const lex::tokens::identifier_token&) const {
@@ -93,7 +94,7 @@ public:
 
 private:
 	state_result handle_identifier() const {
-		return state_result::push<after_default_state>(s_->node_, token_);
+		return state_result::push<after_default_state>(s_->builder_, token_);
 	}
 
 	after_import_state* s_;
@@ -103,7 +104,7 @@ private:
 state_result after_import_state::process(parser& /*p*/,
 										 const lex::token& token) {
 	if (mode_ == mode::post_sub)
-		return state_result::push<expect_from_state>(node_).reprocess();
+		return state_result::push<expect_from_state>(builder_).reprocess();
 	return token.visit(visitor{this, token.location(), token});
 }
 
@@ -115,8 +116,9 @@ accept_result after_import_state::accept_child(std::unique_ptr<ast::ast_node>) {
 	return accept_result::complete(nullptr);
 }
 
-after_type_state::after_type_state(ast::import_node* node, lex::token type_tok)
-	: node_(node), pending_type_(std::move(type_tok)) {}
+after_type_state::after_type_state(import_node_builder* builder,
+								   lex::token type_tok)
+	: builder_(builder), pending_type_(std::move(type_tok)) {}
 
 class after_type_state::visitor : public basic_state_visitor {
 public:
@@ -127,32 +129,29 @@ public:
 
 	state_result operator()(const lex::tokens::open_brace_token&) const {
 		s_->classify_type_as_modifier();
-		s_->node_->set_named_open_brace(token_);
+		s_->builder_->init_named_imports();
 		s_->mode_ = mode::awaiting_sub;
-		return state_result::push<named_import_state>(s_->node_);
+		return state_result::push<named_import_state>(s_->builder_);
 	}
 
 	state_result operator()(const lex::tokens::asterisk_token&) const {
 		s_->classify_type_as_modifier();
-		return state_result::push<expect_as_state>(s_->node_, token_);
+		return state_result::push<expect_as_state>(s_->builder_);
 	}
 
 	state_result operator()(const lex::tokens::from_token&) const {
 		s_->classify_type_as_binding();
-		s_->node_->set_from_keyword(token_);
-		return state_result::push<after_from_state>(s_->node_);
+		return state_result::push<after_from_state>(s_->builder_);
 	}
 
 	state_result operator()(const lex::tokens::comma_token&) const {
 		s_->classify_type_as_binding();
-		s_->node_->set_binding_comma(token_);
-		return state_result::push<after_comma_state>(s_->node_);
+		return state_result::push<after_comma_state>(s_->builder_);
 	}
 
 	state_result operator()(const lex::tokens::eq_token&) const {
-		s_->node_->set_equals_name(std::move(s_->pending_type_));
-		s_->node_->set_equals(token_);
-		return state_result::push<after_equals_state>(s_->node_);
+		s_->builder_->set_equals_name(std::move(s_->pending_type_));
+		return state_result::push<after_equals_state>(s_->builder_);
 	}
 
 	state_result operator()(const lex::tokens::identifier_token&) const {
@@ -180,7 +179,7 @@ public:
 private:
 	state_result handle_identifier() const {
 		s_->classify_type_as_modifier();
-		return state_result::push<after_default_state>(s_->node_, token_);
+		return state_result::push<after_default_state>(s_->builder_, token_);
 	}
 
 	after_type_state* s_;
@@ -189,7 +188,7 @@ private:
 
 state_result after_type_state::process(parser& /*p*/, const lex::token& token) {
 	if (mode_ == mode::post_sub)
-		return state_result::push<expect_from_state>(node_).reprocess();
+		return state_result::push<expect_from_state>(builder_).reprocess();
 	return token.visit(visitor{this, token.location(), token});
 }
 
@@ -202,11 +201,9 @@ accept_result after_type_state::accept_child(std::unique_ptr<ast::ast_node>) {
 }
 
 void after_type_state::classify_type_as_modifier() {
-	node_->set_type_keyword(std::move(pending_type_));
+	builder_->set_type_keyword(std::move(pending_type_));
 }
 
 void after_type_state::classify_type_as_binding() {
-	node_->set_default_binding(std::move(pending_type_));
+	builder_->set_default_binding(std::move(pending_type_));
 }
-
-}  // namespace tscc::parse

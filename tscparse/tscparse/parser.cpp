@@ -33,7 +33,8 @@
 #include "state/module_scope_state.hpp"
 #include "state/state_result.hpp"
 
-namespace tscc::parse {
+using namespace tscc;
+using namespace tscc::parse;
 
 parser::iterator::iterator(parser* p) : parser_(p), current_node_(nullptr) {
 	advance();
@@ -75,7 +76,7 @@ parser::parser(lex::lexer& lexer, trivia_index* trivia_idx)
 	: token_iter_(lexer.begin()),
 	  token_end_(lexer.end()),
 	  trivia_index_(trivia_idx) {
-	state_stack_.push_back(std::make_unique<module_scope_state>());
+	state_stack_.push_back(std::make_unique<state::module_scope_state>());
 }
 
 parser::iterator parser::begin() {
@@ -210,7 +211,7 @@ std::unique_ptr<ast::ast_node> parser::parse_top_level_element() {
 	return nullptr;
 }
 
-std::unique_ptr<ast::ast_node> parser::handle_complete(state_result result) {
+std::unique_ptr<ast::ast_node> parser::handle_complete(state::state_result result) {
 	auto node = std::move(result).take_node();
 	state_stack_.pop_back();
 
@@ -298,5 +299,3 @@ lex::token parser::expect_token(std::string_view token_name) {
 
 	return consume_token();
 }
-
-}  // namespace tscc::parse

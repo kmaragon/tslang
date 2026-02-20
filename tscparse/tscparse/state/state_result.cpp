@@ -18,7 +18,8 @@
 
 #include "state_result.hpp"
 
-namespace tscc::parse {
+using namespace tscc::parse;
+using namespace tscc::parse::state;
 
 state_result state_result::stay() {
 	state_result r;
@@ -93,5 +94,3 @@ bool accept_result::is_complete() const noexcept {
 std::unique_ptr<ast::ast_node> accept_result::take_node() && {
 	return std::move(node_);
 }
-
-}  // namespace tscc::parse

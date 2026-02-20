@@ -22,7 +22,7 @@
 #include "../ast/ast_node.hpp"
 #include "parser_state.hpp"
 
-namespace tscc::parse {
+namespace tscc::parse::state {
 
 /**
  * \brief Result of a parser state processing a token
@@ -128,4 +128,4 @@ private:
 	std::unique_ptr<ast::ast_node> node_;
 };
 
-}  // namespace tscc::parse
+}  // namespace tscc::parse::state

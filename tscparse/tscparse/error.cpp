@@ -18,7 +18,8 @@
 
 #include "error.hpp"
 
-namespace tscc::parse {
+using namespace tscc;
+using namespace tscc::parse;
 
 parse_error::parse_error(const lex::source_location& location) noexcept
 	: location_(location) {}
@@ -26,5 +27,3 @@ parse_error::parse_error(const lex::source_location& location) noexcept
 const lex::source_location& parse_error::location() const noexcept {
 	return location_;
 }
-
-}  // namespace tscc::parse

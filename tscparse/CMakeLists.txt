@@ -8,6 +8,7 @@ set(SOURCES
         tscparse/state/import/equals_import_states.cpp
         tscparse/state/import/from_clause_states.cpp
         tscparse/state/import/import_attributes_state.cpp
+        tscparse/state/import/import_node_builder.cpp
         tscparse/state/import/initial_import_states.cpp
         tscparse/state/import/module_completion_states.cpp
         tscparse/state/import/named_import_state.cpp
@@ -30,7 +31,8 @@ set(HEADERS
         tscparse/state/import/equals_import_states.hpp
         tscparse/state/import/from_clause_states.hpp
         tscparse/state/import/import_attributes_state.hpp
-        tscparse/state/import/import_token_helpers.hpp
+        tscparse/state/import/import_node_builder.hpp
+        tscparse/state/token_helpers.hpp
         tscparse/state/import/initial_import_states.hpp
         tscparse/state/import/module_completion_states.hpp
         tscparse/state/import/named_import_state.hpp

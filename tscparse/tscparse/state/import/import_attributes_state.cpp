@@ -32,10 +32,10 @@
 #include "../../error/expected_token.hpp"
 #include "../state_result.hpp"
 
-namespace tscc::parse {
+using namespace tscc::parse::state;
 
-import_attributes_state::import_attributes_state(ast::import_node* node)
-	: node_(node) {}
+import_attributes_state::import_attributes_state(import_node_builder* builder)
+	: builder_(builder) {}
 
 class import_attributes_state::expect_open_brace_visitor
 	: public basic_state_visitor {
@@ -46,7 +46,6 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::open_brace_token&) const {
-		s_->node_->set_attributes_open_brace(token_);
 		s_->phase_ = phase::expect_key_or_close;
 		return state_result::stay();
 	}
@@ -70,7 +69,6 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::close_brace_token&) const {
-		s_->node_->set_attributes_close_brace(token_);
 		return state_result::complete(nullptr);
 	}
 
@@ -121,7 +119,6 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::colon_token&) const {
-		s_->pending_colon_ = token_;
 		s_->phase_ = phase::after_colon;
 		return state_result::stay();
 	}
@@ -145,13 +142,11 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::constant_value_token&) const {
-		s_->node_->add_attribute(ast::import_attribute{
+		s_->builder_->add_attribute(ast::import_attribute{
 			std::move(*s_->pending_key_),
-			std::move(*s_->pending_colon_),
 			token_,
 		});
 		s_->pending_key_.reset();
-		s_->pending_colon_.reset();
 		s_->phase_ = phase::after_value;
 		return state_result::stay();
 	}
@@ -175,13 +170,11 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::comma_token&) const {
-		s_->node_->add_attribute_comma(token_);
 		s_->phase_ = phase::expect_key_or_close;
 		return state_result::stay();
 	}
 
 	state_result operator()(const lex::tokens::close_brace_token&) const {
-		s_->node_->set_attributes_close_brace(token_);
 		return state_result::complete(nullptr);
 	}
 
@@ -224,5 +217,3 @@ accept_result import_attributes_state::accept_child(
 	throw std::logic_error(
 		"import_attributes_state does not push child states");
 }
-
-}  // namespace tscc::parse

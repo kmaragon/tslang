@@ -20,7 +20,7 @@
 #include "../error/declaration_or_statement_expected.hpp"
 #include "state_result.hpp"
 
-namespace tscc::parse {
+using namespace tscc::parse::state;
 
 std::optional<state_result> parser_state::on_eof() {
 	return std::nullopt;
@@ -30,5 +30,3 @@ state_result basic_state_visitor::operator()(
 	const lex::tokens::basic_token&) const {
 	throw declaration_or_statement_expected(location);
 }
-
-}  // namespace tscc::parse

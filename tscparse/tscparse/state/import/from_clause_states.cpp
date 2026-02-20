@@ -24,9 +24,10 @@
 #include "../state_result.hpp"
 #include "module_completion_states.hpp"
 
-namespace tscc::parse {
+using namespace tscc::parse::state;
 
-expect_from_state::expect_from_state(ast::import_node* node) : node_(node) {}
+expect_from_state::expect_from_state(import_node_builder* builder)
+	: builder_(builder) {}
 
 class expect_from_state::visitor : public basic_state_visitor {
 public:
@@ -36,8 +37,7 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::from_token&) const {
-		s_->node_->set_from_keyword(token_);
-		return state_result::push<after_from_state>(s_->node_);
+		return state_result::push<after_from_state>(s_->builder_);
 	}
 
 	[[noreturn]] state_result operator()(
@@ -59,7 +59,8 @@ accept_result expect_from_state::accept_child(std::unique_ptr<ast::ast_node>) {
 	return accept_result::complete(nullptr);
 }
 
-after_from_state::after_from_state(ast::import_node* node) : node_(node) {}
+after_from_state::after_from_state(import_node_builder* builder)
+	: builder_(builder) {}
 
 class after_from_state::visitor : public basic_state_visitor {
 public:
@@ -69,8 +70,8 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::constant_value_token&) const {
-		s_->node_->set_module_specifier(token_);
-		return state_result::push<after_module_spec_state>(s_->node_);
+		s_->builder_->set_module_specifier(token_);
+		return state_result::push<after_module_spec_state>(s_->builder_);
 	}
 
 	[[noreturn]] state_result operator()(
@@ -90,5 +91,3 @@ state_result after_from_state::process(parser& /*p*/, const lex::token& token) {
 accept_result after_from_state::accept_child(std::unique_ptr<ast::ast_node>) {
 	return accept_result::complete(nullptr);
 }
-
-}  // namespace tscc::parse
