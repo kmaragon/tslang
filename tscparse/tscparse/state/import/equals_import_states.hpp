@@ -30,15 +30,18 @@ namespace tscc::parse::state {
  */
 class after_equals_state : public parser_state {
 public:
-	explicit after_equals_state(import_node_builder* builder);
+	explicit after_equals_state(import_node_builder* builder,
+								bool equals_only = false);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
 	import_node_builder* builder_;
+	bool equals_only_;
 
 	class visitor;
+	class equals_only_visitor;
 };
 
 /**

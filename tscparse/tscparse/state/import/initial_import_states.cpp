@@ -40,8 +40,9 @@
 
 using namespace tscc::parse::state;
 
-after_import_state::after_import_state(import_node_builder* builder)
-	: builder_(builder) {}
+after_import_state::after_import_state(import_node_builder* builder,
+									   bool equals_only)
+	: builder_(builder), equals_only_(equals_only) {}
 
 class after_import_state::visitor : public basic_state_visitor {
 public:
@@ -101,8 +102,54 @@ private:
 	const lex::token& token_;
 };
 
+/// Restricted visitor for namespace scope: only accepts identifiers
+/// (the binding name for `import name = QualifiedName`).
+/// Contextual keywords like `type` are treated as plain names here.
+class after_import_state::equals_only_visitor : public basic_state_visitor {
+public:
+	equals_only_visitor(after_import_state* s,
+						const lex::source_location& loc,
+						const lex::token& token) noexcept
+		: basic_state_visitor(s, loc), s_(s), token_(token) {}
+
+	state_result operator()(const lex::tokens::identifier_token&) const {
+		return handle_name();
+	}
+	state_result operator()(const lex::tokens::type_token&) const {
+		return handle_name();
+	}
+	state_result operator()(const lex::tokens::from_token&) const {
+		return handle_name();
+	}
+	state_result operator()(const lex::tokens::as_token&) const {
+		return handle_name();
+	}
+	state_result operator()(const lex::tokens::assert_token&) const {
+		return handle_name();
+	}
+	state_result operator()(const lex::tokens::require_token&) const {
+		return handle_name();
+	}
+
+	[[noreturn]] state_result operator()(
+		const lex::tokens::basic_token&) const {
+		throw expected_token(location, "identifier", token_->to_string());
+	}
+
+private:
+	state_result handle_name() const {
+		return state_result::push<after_default_state>(s_->builder_, token_,
+													   true);
+	}
+
+	after_import_state* s_;
+	const lex::token& token_;
+};
+
 state_result after_import_state::process(parser& /*p*/,
 										 const lex::token& token) {
+	if (equals_only_)
+		return token.visit(equals_only_visitor{this, token.location(), token});
 	if (mode_ == mode::post_sub)
 		return state_result::push<expect_from_state>(builder_).reprocess();
 	return token.visit(visitor{this, token.location(), token});

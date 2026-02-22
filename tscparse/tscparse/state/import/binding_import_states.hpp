@@ -32,7 +32,9 @@ namespace tscc::parse::state {
  */
 class after_default_state : public parser_state {
 public:
-	after_default_state(import_node_builder* builder, lex::token binding_tok);
+	after_default_state(import_node_builder* builder,
+						lex::token binding_tok,
+						bool equals_only = false);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
@@ -40,8 +42,10 @@ public:
 private:
 	import_node_builder* builder_;
 	lex::token pending_binding_;
+	bool equals_only_;
 
 	class visitor;
+	class equals_only_visitor;
 };
 
 /**

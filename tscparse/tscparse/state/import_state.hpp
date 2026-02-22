@@ -31,13 +31,20 @@ namespace tscc::parse::state {
  * Immediately pushes after_import_state with reprocess; the chain of
  * per-phase states handles the grammar. When the chain completes,
  * accept_child returns the finished import_node.
+ *
+ * When \p equals_only is true, only the `import name = QualifiedName`
+ * form is accepted. This supports namespace scope where ES module
+ * imports and require() are not allowed (TS1147).
  */
 class import_state : public parser_state {
 public:
 	/**
 	 * \brief Construct from the consumed import keyword token
+	 *
+	 * \param import_keyword The consumed import keyword token
+	 * \param equals_only When true, restrict to `import x = A.B.C` form
 	 */
-	explicit import_state(lex::token import_keyword);
+	explicit import_state(lex::token import_keyword, bool equals_only = false);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
@@ -45,6 +52,7 @@ public:
 private:
 	std::unique_ptr<ast::import_node> node_;
 	import_node_builder builder_;
+	bool equals_only_;
 };
 
 }  // namespace tscc::parse::state

@@ -22,12 +22,14 @@
 
 using namespace tscc::parse::state;
 
-import_state::import_state(lex::token import_keyword)
+import_state::import_state(lex::token import_keyword, bool equals_only)
 	: node_(std::make_unique<ast::import_node>(std::move(import_keyword))),
-	  builder_(node_.get()) {}
+	  builder_(node_.get()),
+	  equals_only_(equals_only) {}
 
 state_result import_state::process(parser& /*p*/, const lex::token& /*token*/) {
-	return state_result::push<after_import_state>(&builder_).reprocess();
+	return state_result::push<after_import_state>(&builder_, equals_only_)
+		.reprocess();
 }
 
 accept_result import_state::accept_child(std::unique_ptr<ast::ast_node>) {

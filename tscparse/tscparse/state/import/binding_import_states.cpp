@@ -33,8 +33,11 @@
 using namespace tscc::parse::state;
 
 after_default_state::after_default_state(import_node_builder* builder,
-										 lex::token binding_tok)
-	: builder_(builder), pending_binding_(std::move(binding_tok)) {}
+										 lex::token binding_tok,
+										 bool equals_only)
+	: builder_(builder),
+	  pending_binding_(std::move(binding_tok)),
+	  equals_only_(equals_only) {}
 
 class after_default_state::visitor : public basic_state_visitor {
 public:
@@ -69,8 +72,33 @@ private:
 	const lex::token& token_;
 };
 
+/// Restricted visitor for namespace scope: only accepts `=`.
+class after_default_state::equals_only_visitor : public basic_state_visitor {
+public:
+	equals_only_visitor(after_default_state* s,
+						const lex::source_location& loc,
+						const lex::token& token) noexcept
+		: basic_state_visitor(s, loc), s_(s), token_(token) {}
+
+	state_result operator()(const lex::tokens::eq_token&) const {
+		s_->builder_->set_equals_name(std::move(s_->pending_binding_));
+		return state_result::push<after_equals_state>(s_->builder_, true);
+	}
+
+	[[noreturn]] state_result operator()(
+		const lex::tokens::basic_token&) const {
+		throw expected_token(location, "'='", token_->to_string());
+	}
+
+private:
+	after_default_state* s_;
+	const lex::token& token_;
+};
+
 state_result after_default_state::process(parser& /*p*/,
 										  const lex::token& token) {
+	if (equals_only_)
+		return token.visit(equals_only_visitor{this, token.location(), token});
 	return token.visit(visitor{this, token.location(), token});
 }
 

@@ -34,8 +34,9 @@
 
 using namespace tscc::parse::state;
 
-after_equals_state::after_equals_state(import_node_builder* builder)
-	: builder_(builder) {}
+after_equals_state::after_equals_state(import_node_builder* builder,
+									   bool equals_only)
+	: builder_(builder), equals_only_(equals_only) {}
 
 class after_equals_state::visitor : public basic_state_visitor {
 public:
@@ -81,8 +82,51 @@ private:
 	const lex::token& token_;
 };
 
+/// Restricted visitor for namespace scope: only accepts identifiers
+/// (the first segment of a qualified name), not `require`.
+class after_equals_state::equals_only_visitor : public basic_state_visitor {
+public:
+	equals_only_visitor(after_equals_state* s,
+						const lex::source_location& loc,
+						const lex::token& token) noexcept
+		: basic_state_visitor(s, loc), s_(s), token_(token) {}
+
+	state_result operator()(const lex::tokens::identifier_token&) const {
+		return handle_identifier();
+	}
+	state_result operator()(const lex::tokens::type_token&) const {
+		return handle_identifier();
+	}
+	state_result operator()(const lex::tokens::from_token&) const {
+		return handle_identifier();
+	}
+	state_result operator()(const lex::tokens::as_token&) const {
+		return handle_identifier();
+	}
+	state_result operator()(const lex::tokens::assert_token&) const {
+		return handle_identifier();
+	}
+
+	[[noreturn]] state_result operator()(
+		const lex::tokens::basic_token&) const {
+		throw expected_token(location, "identifier", token_->to_string());
+	}
+
+private:
+	state_result handle_identifier() const {
+		s_->builder_->add_entity_identifier(token_);
+		return state_result::push<import_entity_state>(s_->builder_);
+	}
+
+	after_equals_state* s_;
+	const lex::token& token_;
+};
+
 state_result after_equals_state::process(parser& /*p*/,
 										 const lex::token& token) {
+	if (equals_only_)
+		return token.visit(
+			equals_only_visitor{this, token.location(), token});
 	return token.visit(visitor{this, token.location(), token});
 }
 

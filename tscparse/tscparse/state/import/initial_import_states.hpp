@@ -33,18 +33,21 @@ namespace tscc::parse::state {
  */
 class after_import_state : public parser_state {
 public:
-	explicit after_import_state(import_node_builder* builder);
+	explicit after_import_state(import_node_builder* builder,
+								bool equals_only = false);
 
 	state_result process(parser& p, const lex::token& token) override;
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
 	import_node_builder* builder_;
+	bool equals_only_;
 
 	enum class mode { initial, awaiting_sub, post_sub };
 	mode mode_ = mode::initial;
 
 	class visitor;
+	class equals_only_visitor;
 };
 
 /**
