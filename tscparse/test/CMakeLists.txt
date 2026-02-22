@@ -1,6 +1,7 @@
 find_package(Catch2 CONFIG REQUIRED)
 
 set(TESTS
+        declare_tests.cpp
         import_tests.cpp
         parser_tests.cpp
 )

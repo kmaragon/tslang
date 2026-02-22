@@ -1,5 +1,6 @@
 
 set(SOURCES
+        tscparse/ast/declare_module_node.cpp
         tscparse/ast/import_node.cpp
         tscparse/ast/module_node.cpp
         tscparse/ast/qualified_name.cpp
@@ -7,6 +8,9 @@ set(SOURCES
         tscparse/error/declaration_or_statement_expected.cpp
         tscparse/error/expected_token.cpp
         tscparse/error/unexpected_end_of_text.cpp
+        tscparse/state/declare/declare_module_header_state.cpp
+        tscparse/state/declare/declare_module_state.cpp
+        tscparse/state/declare_state.cpp
         tscparse/state/import/binding_import_states.cpp
         tscparse/state/import/equals_import_states.cpp
         tscparse/state/import/from_clause_states.cpp
@@ -26,6 +30,7 @@ set(SOURCES
 
 set(HEADERS
         tscparse/ast/ast_node.hpp
+        tscparse/ast/declare_module_node.hpp
         tscparse/ast/import_node.hpp
         tscparse/ast/lexeme.hpp
         tscparse/ast/module_node.hpp

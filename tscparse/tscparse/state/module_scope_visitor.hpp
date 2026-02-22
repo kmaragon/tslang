@@ -18,7 +18,9 @@
 
 #pragma once
 
+#include <tsclex/tokens/declare_token.hpp>
 #include <tsclex/tokens/import_token.hpp>
+#include "declare_state.hpp"
 #include "import_state.hpp"
 #include "parser_state.hpp"
 #include "state_result.hpp"
@@ -48,6 +50,10 @@ public:
 		return state_result::push<import_state>(token_);
 	}
 
+	state_result operator()(const lex::tokens::declare_token&) const {
+		return state_result::push<declare_state>(token_);
+	}
+
 	using basic_state_visitor::operator();
 
 	// TODO: Add handlers for tokens valid at module scope:
@@ -58,7 +64,6 @@ public:
 	// - enum_token -> parse enum declaration
 	// - type_token -> parse type alias
 	// - const_token, let_token, var_token -> parse variable declaration
-	// - declare_token -> parse ambient declaration
 	// - async_token, abstract_token -> push modifier state
 	// - namespace_token, module_token -> parse namespace/module
 
