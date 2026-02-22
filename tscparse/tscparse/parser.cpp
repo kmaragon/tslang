@@ -76,7 +76,7 @@ parser::parser(lex::lexer& lexer, trivia_index* trivia_idx)
 	: token_iter_(lexer.begin()),
 	  token_end_(lexer.end()),
 	  trivia_index_(trivia_idx) {
-	state_stack_.push_back(std::make_unique<state::module_scope_state>());
+	state_stack_.emplace_back(std::make_unique<state::module_scope_state>());
 }
 
 parser::iterator parser::begin() {
@@ -119,7 +119,7 @@ void parser::collect_trivia() {
 						  std::is_same_v<
 							  T, lex::tokens::multiline_comment_token> ||
 						  std::is_same_v<T, lex::tokens::jsdoc_token>) {
-				pending_trivia_.push_back(*token_iter_);
+				pending_trivia_.emplace_back(std::move(*token_iter_));
 				return true;
 			}
 			return false;
@@ -177,7 +177,7 @@ std::unique_ptr<ast::ast_node> parser::parse_top_level_element() {
 		}
 
 		if (result.is_push()) {
-			state_stack_.push_back(std::move(result).take_child());
+			state_stack_.emplace_back(std::move(result).take_child());
 			if (at_token_end()) {
 				if (state_stack_.size() > 1) {
 					if (auto eof_result = state_stack_.back()->on_eof()) {
@@ -280,7 +280,7 @@ std::vector<lex::token> parser::parse_modifiers() {
 	std::vector<lex::token> modifiers;
 
 	while (auto modifier = try_consume_modifier()) {
-		modifiers.push_back(std::move(*modifier));
+		modifiers.emplace_back(std::move(*modifier));
 	}
 
 	return modifiers;

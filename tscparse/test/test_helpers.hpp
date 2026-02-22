@@ -67,7 +67,7 @@ inline parse_result parse_first_node(const std::string& input) {
 template <typename Node>
 const Node& parse_node(const std::string& input) {
 	static std::vector<parse_result> results;
-	results.push_back(parse_first_node(input));
+	results.emplace_back(parse_first_node(input));
 	auto& r = results.back();
 	REQUIRE(r.node != nullptr);
 	auto* typed = dynamic_cast<const Node*>(r.node.get());

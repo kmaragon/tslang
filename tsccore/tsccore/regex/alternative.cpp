@@ -74,7 +74,7 @@ const std::vector<term>& alternative::get_terms() const {
 }
 
 void alternative::add_term(term term) {
-	terms_.push_back(std::move(term));
+	terms_.emplace_back(std::move(term));
 }
 
 std::size_t alternative::string_size() const noexcept {

@@ -38,7 +38,7 @@ std::vector<tscc::parse::trivia_ref> filter_comments(
 	for (const auto& ref : refs) {
 		if (ref.token.is<tscc::lex::tokens::comment_token>() ||
 			ref.token.is<tscc::lex::tokens::multiline_comment_token>()) {
-			result.push_back(ref);
+			result.emplace_back(ref);
 		}
 	}
 	return result;
@@ -50,7 +50,7 @@ std::vector<tscc::parse::trivia_ref> filter_jsdoc(
 	std::vector<tscc::parse::trivia_ref> result;
 	for (const auto& ref : refs) {
 		if (ref.token.is<tscc::lex::tokens::jsdoc_token>()) {
-			result.push_back(ref);
+			result.emplace_back(ref);
 		}
 	}
 	return result;
@@ -90,7 +90,7 @@ TEST_CASE("Parser Iterator", "[parser]") {
 
 		std::vector<std::unique_ptr<tscc::parse::ast::ast_node>> nodes;
 		for (auto& node : parser) {
-			nodes.push_back(std::move(node));
+			nodes.emplace_back(std::move(node));
 		}
 
 		REQUIRE(nodes.empty());

@@ -31,7 +31,7 @@ void character_class::add_range(char32_t start, char32_t end) {
 }
 
 void character_class::add_range(range range) {
-	ranges_.push_back(range);
+	ranges_.emplace_back(std::move(range));
 }
 
 bool character_class::is_negated() const {

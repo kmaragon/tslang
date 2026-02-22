@@ -429,7 +429,7 @@ alternative scan_alternative(const std::u32string_view& input, size_t& pos) {
 
 	while (!at_end(input, pos) && current_char(input, pos) != U'|' &&
 		   current_char(input, pos) != U')') {
-		terms.push_back(scan_term(input, pos));
+		terms.emplace_back(scan_term(input, pos));
 	}
 
 	return alternative(std::move(terms));

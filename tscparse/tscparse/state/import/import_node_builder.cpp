@@ -54,7 +54,7 @@ void import_node_builder::add_named_specifier(lex::token name,
 	spec.name_ = std::move(name);
 	spec.type_keyword_ = std::move(type_keyword);
 	spec.alias_ = std::move(alias);
-	node_->ensure_named().specifiers.push_back(std::move(spec));
+	node_->ensure_named().specifiers.emplace_back(std::move(spec));
 }
 
 void import_node_builder::set_module_specifier(lex::token tok) {
@@ -75,7 +75,7 @@ void import_node_builder::add_attribute(lex::token key, lex::token value) {
 	ast::import_attribute attr;
 	attr.key_ = std::move(key);
 	attr.value_ = std::move(value);
-	node_->ensure_attributes().entries.push_back(std::move(attr));
+	node_->ensure_attributes().entries.emplace_back(std::move(attr));
 }
 
 void import_node_builder::set_equals_name(lex::token tok) {
@@ -98,5 +98,5 @@ void import_node_builder::add_entity_identifier(lex::token tok) {
 	auto& e = std::get<ast::import_node::equals_form>(node_->form_);
 	if (std::holds_alternative<std::monostate>(e.rhs))
 		e.rhs.emplace<ast::qualified_name>();
-	std::get<ast::qualified_name>(e.rhs).segments_.push_back(std::move(tok));
+	std::get<ast::qualified_name>(e.rhs).segments_.emplace_back(std::move(tok));
 }

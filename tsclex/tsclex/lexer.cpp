@@ -847,7 +847,7 @@ void lexer::scan_template_string_part(token& into) {
 		if (gc && second == '{') {
 			into.emplace_token<tokens::template_start_token>(location(), false);
 			advance(nc + gc);
-			context_stack_.push_back(
+			context_stack_.emplace_back(
 				std::make_pair(in_template_expression, location()));
 			return;
 		}
@@ -1520,7 +1520,7 @@ bool lexer::scan_jsx_token(token& into) {
 			into.emplace_token<tokens::jsx_element_start_token>(location(),
 																wbuffer_);
 
-			context_stack_.push_back(std::make_pair(
+			context_stack_.emplace_back(std::make_pair(
 				in_jsx_element, stack_entry{start, std::move(wbuffer_)}));
 			return true;
 		}
@@ -1569,7 +1569,7 @@ bool lexer::scan_jsx_token(token& into) {
 	into.emplace_token<tokens::jsx_element_start_token>(location(), wbuffer_);
 
 	// add case insensitive buffer to the context
-	context_stack_.push_back(std::make_pair(
+	context_stack_.emplace_back(std::make_pair(
 		in_jsx_element, stack_entry{start, std::move(wbuffer_)}));
 	advance(element_name_end);
 	return true;
@@ -1618,7 +1618,7 @@ void lexer::scan_jsx_element_part(token& into) {
 		if (next == U'>') {
 			into.emplace_token<tokens::jsx_element_end_token>(location());
 			advance(nc);
-			context_stack_.push_back(std::make_pair(in_jsx_text, location()));
+			context_stack_.emplace_back(std::make_pair(in_jsx_text, location()));
 			return;
 		}
 
@@ -1642,7 +1642,7 @@ void lexer::scan_jsx_element_part(token& into) {
 			advance(nc);
 			into.emplace_token<tokens::jsx_attribute_name_token>(
 				start_name, std::move(wbuffer_));
-			context_stack_.push_back(
+			context_stack_.emplace_back(
 				std::make_pair(in_jsx_attribute, location()));
 			return;
 		}
@@ -1715,13 +1715,13 @@ void lexer::scan_jsx_attribute_part(token& into) {
 
 	if (next != U'{') {
 		into.emplace_token<tokens::jsx_attribute_value_start_token>(location());
-		context_stack_.push_back(std::make_pair(in_jsx_expression, location()));
+		context_stack_.emplace_back(std::make_pair(in_jsx_expression, location()));
 		advance(nc);
 		return;
 	}
 
 	advance(nc);
-	context_stack_.push_back(std::make_pair(in_jsx_expression, location()));
+	context_stack_.emplace_back(std::make_pair(in_jsx_expression, location()));
 	into.emplace_token<tokens::jsx_attribute_value_start_token>(location());
 }
 
@@ -1732,7 +1732,7 @@ void lexer::scan_jsx_text_part(token& into) {
 	auto nc = next_code_point(next);
 	if (next == U'{') {
 		into.emplace_token<tokens::template_start_token>(location(), true);
-		context_stack_.push_back(std::make_pair(in_jsx_expression, location()));
+		context_stack_.emplace_back(std::make_pair(in_jsx_expression, location()));
 		advance(nc);
 		return;
 	}
@@ -2566,7 +2566,7 @@ bool lexer::scan(token& into) {
 				scan_string(into);
 				return true;
 			case U'`':
-				context_stack_.push_back(
+				context_stack_.emplace_back(
 					std::make_pair(in_template_literal, location()));
 				into.emplace_token<tokens::interpolated_string_start_token>(
 					location());
@@ -3055,7 +3055,7 @@ bool lexer::scan(token& into) {
 						context_stack_.back().first == in_nested_brace ||
 						context_stack_.back().first == in_jsx_expression) {
 						// increase the brace depth if we are in a template
-						context_stack_.push_back(
+						context_stack_.emplace_back(
 							std::make_pair(in_nested_brace, location()));
 					}
 				}
