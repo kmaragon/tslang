@@ -289,12 +289,12 @@ std::vector<lex::token> parser::parse_modifiers() {
 template <typename TokenType>
 lex::token parser::expect_token(std::string_view token_name) {
 	if (at_token_end()) {
-		throw expected_token(last_location_, std::string(token_name), "EOF");
+		throw expected_token(last_location_, token_name, "EOF");
 	}
 
 	if (!current_token().is<TokenType>()) {
 		throw expected_token(current_token().location(),
-							 std::string(token_name),
+							 token_name,
 							 current_token()->to_string());
 	}
 

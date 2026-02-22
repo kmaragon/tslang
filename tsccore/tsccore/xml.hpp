@@ -18,10 +18,11 @@
 
 #pragma once
 #include <string>
+#include <string_view>
 
 namespace tscc {
 
-std::u32string xml_decode(const std::u32string& input);
-std::u32string xml_encode(const std::u32string& input);
+std::u32string xml_decode(const std::u32string_view& input);
+std::u32string xml_encode(const std::u32string_view& input);
 
 }

@@ -21,7 +21,7 @@
 using namespace tscc::lex;
 
 no_jsx_closing_tag::no_jsx_closing_tag(
-	const tscc::lex::source_location& location, const std::string& element)
+	const tscc::lex::source_location& location, const std::string_view& element)
 	: lex_error(location) {
 	constexpr std::string_view templ = "JSX element '{}' has no corresponding closing tag";
 	msg_.reserve(templ.size() + element.size() - 2);

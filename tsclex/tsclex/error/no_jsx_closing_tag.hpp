@@ -18,8 +18,7 @@
 
 #pragma once
 
-#pragma once
-
+#include <string_view>
 #include "../error.hpp"
 
 namespace tscc::lex {
@@ -29,7 +28,7 @@ class no_jsx_closing_tag : public lex_error {
 
 public:
 	no_jsx_closing_tag(const source_location& location,
-					   const std::string& element);
+					   const std::string_view& element);
 
 	const char* what() const noexcept override;
 

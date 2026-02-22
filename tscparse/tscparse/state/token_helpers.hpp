@@ -83,9 +83,25 @@ inline void normalize_identifier(lex::token& tok) {
 		return;
 	if (!can_be_identifier(tok))
 		return;
-	auto name = tok->to_string();
-	std::u32string u32name(name.begin(), name.end());
-	tok.emplace_token<lex::tokens::identifier_token>(tok.location(), u32name);
+
+	static const std::u32string kw_type    = U"type";
+	static const std::u32string kw_from    = U"from";
+	static const std::u32string kw_as      = U"as";
+	static const std::u32string kw_assert  = U"assert";
+	static const std::u32string kw_require = U"require";
+
+	struct name_visitor {
+		const std::u32string* operator()(const lex::tokens::type_token&) const { return &kw_type; }
+		const std::u32string* operator()(const lex::tokens::from_token&) const { return &kw_from; }
+		const std::u32string* operator()(const lex::tokens::as_token&) const { return &kw_as; }
+		const std::u32string* operator()(const lex::tokens::assert_token&) const { return &kw_assert; }
+		const std::u32string* operator()(const lex::tokens::require_token&) const { return &kw_require; }
+		const std::u32string* operator()(const lex::tokens::basic_token&) const { return nullptr; }
+	};
+
+	const auto* name = tok.visit(name_visitor{});
+	if (name)
+		tok.emplace_token<lex::tokens::identifier_token>(tok.location(), *name);
 }
 
 }  // namespace tscc::parse::state::detail

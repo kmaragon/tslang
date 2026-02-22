@@ -33,6 +33,31 @@ TEST_CASE("Additional Punctuation and Edge Cases", "[lexer]") {
 		CHECK(tokens[4].is<tscc::lex::tokens::close_brace_token>());
 	}
 
+	SECTION("Private field with keyword name") {
+		auto tokens = tokenize("class { #class; }");
+		REQUIRE(tokens.size() == 5);
+		CHECK(tokens[0].is<tscc::lex::tokens::class_token>());
+		CHECK(tokens[1].is<tscc::lex::tokens::open_brace_token>());
+		CHECK(tokens[2].is<tscc::lex::tokens::identifier_token>());
+		CHECK(tokens[2]->to_string() == "#class");
+		CHECK(tokens[3].is<tscc::lex::tokens::semicolon_token>());
+		CHECK(tokens[4].is<tscc::lex::tokens::close_brace_token>());
+	}
+
+	SECTION("Private field named constructor lexes as identifier") {
+		// #constructor is semantically forbidden (TS18012), but the
+		// lexer should still produce an identifier_token — the error
+		// is for a later pass to report.
+		auto tokens = tokenize("class { #constructor; }");
+		REQUIRE(tokens.size() == 5);
+		CHECK(tokens[0].is<tscc::lex::tokens::class_token>());
+		CHECK(tokens[1].is<tscc::lex::tokens::open_brace_token>());
+		CHECK(tokens[2].is<tscc::lex::tokens::identifier_token>());
+		CHECK(tokens[2]->to_string() == "#constructor");
+		CHECK(tokens[3].is<tscc::lex::tokens::semicolon_token>());
+		CHECK(tokens[4].is<tscc::lex::tokens::close_brace_token>());
+	}
+
 	SECTION("Private Field Invalid Identifier") {
 		// Test for invalid private field names
 		auto lexer = create_lexer("class { #123; }");

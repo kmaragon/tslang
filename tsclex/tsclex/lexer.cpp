@@ -1729,7 +1729,7 @@ void lexer::scan_jsx_text_part(token& into) {
 	// start off and see if we immediately end or immediately start an
 	// expression
 	char32_t next{};
-	auto nc = next_code_point(next);
+auto nc = next_code_point(next);
 	if (next == U'{') {
 		into.emplace_token<tokens::template_start_token>(location(), true);
 		context_stack_.emplace_back(std::make_pair(in_jsx_expression, location()));
@@ -2218,6 +2218,16 @@ void lexer::scan_identifier(token& into, bool is_private) {
 		throw invalid_identifier(identifier_start);
 	}
 
+	if (is_private) {
+		std::u32string name;
+		name.reserve(wbuffer_.size() + 1);
+		name += U'#';
+		name += wbuffer_;
+		into.emplace_token<tokens::identifier_token>(identifier_start,
+													 std::move(name));
+		return;
+	}
+
 	if (!force_identifier_) {
 		auto kit = keyword_lookup.find(wbuffer_);
 		if (kit != keyword_lookup.end() && vers_ >= kit->second.min_version) {
@@ -2225,9 +2235,6 @@ void lexer::scan_identifier(token& into, bool is_private) {
 			return;
 		}
 	}
-
-	if (is_private)
-		wbuffer_.insert(wbuffer_.begin(), 1, U'#');
 
 	into.emplace_token<tokens::identifier_token>(identifier_start,
 												 std::move(wbuffer_));

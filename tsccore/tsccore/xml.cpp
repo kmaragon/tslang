@@ -18,12 +18,12 @@
 
 #include "xml.hpp"
 
-std::u32string tscc::xml_decode(const std::u32string& input) {
+std::u32string tscc::xml_decode(const std::u32string_view& input) {
 	// TODO implement
-	return input;
+	return std::u32string(input);
 }
 
-std::u32string tscc::xml_encode(const std::u32string& input) {
+std::u32string tscc::xml_encode(const std::u32string_view& input) {
 	// TODO implement
-	return input;
+	return std::u32string(input);
 }

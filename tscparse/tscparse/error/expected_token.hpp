@@ -19,6 +19,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include "../error.hpp"
 
 namespace tscc::parse {
@@ -29,8 +30,8 @@ namespace tscc::parse {
 class expected_token : public parse_error {
 public:
 	expected_token(const lex::source_location& location,
-				   std::string expected,
-				   std::string found) noexcept;
+				   const std::string_view& expected,
+				   const std::string_view& found) noexcept;
 
 	const char* what() const noexcept override;
 

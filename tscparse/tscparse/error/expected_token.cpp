@@ -23,11 +23,11 @@ using namespace tscc;
 using namespace tscc::parse;
 
 expected_token::expected_token(const lex::source_location& location,
-							   std::string expected,
-							   std::string found) noexcept
+							   const std::string_view& expected,
+							   const std::string_view& found) noexcept
 	: parse_error(location),
-	  expected_(std::move(expected)),
-	  found_(std::move(found)) {}
+	  expected_(expected),
+	  found_(found) {}
 
 const char* expected_token::what() const noexcept {
 	if (message_.empty()) {
