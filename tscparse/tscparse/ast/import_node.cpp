@@ -165,12 +165,3 @@ const qualified_name& import_node::entity_name() const noexcept {
 	static const qualified_name empty;
 	return empty;
 }
-
-const tscc::lex::source_location& import_node::location() const {
-	return import_keyword_.location();
-}
-
-void import_node::visit_children(
-	std::function<void(const ast_node*)> /*visitor*/) const {
-	// import_node is a leaf - all data is in tokens, no child ast_nodes
-}

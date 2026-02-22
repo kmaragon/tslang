@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "../ast/module_node.hpp"
 #include "parser_state.hpp"
 
 namespace tscc::parse::state {
@@ -28,14 +29,20 @@ namespace tscc::parse::state {
  * This is the initial state when parsing a TypeScript file.
  * It handles top-level declarations: imports, exports, classes,
  * functions, interfaces, enums, type aliases, and variable declarations.
+ *
+ * Completed child nodes are integrated into the target module_node
+ * via accept_child.
  */
 class module_scope_state : public parser_state {
 public:
-	module_scope_state() = default;
+	explicit module_scope_state(ast::module_node* target);
 
 	state_result process(parser& p, const lex::token& token) override;
 
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
+
+private:
+	ast::module_node* target_;
 };
 
 }  // namespace tscc::parse::state

@@ -24,6 +24,7 @@
 #include <tsclex/token.hpp>
 #include <vector>
 #include "ast/ast_node.hpp"
+#include "ast/source_file_node.hpp"
 #include "state/parser_state.hpp"
 #include "state/state_result.hpp"
 #include "trivia_index.hpp"
@@ -31,54 +32,13 @@
 namespace tscc::parse {
 
 /**
- * \brief Parser that produces lazy stream of top-level AST nodes
+ * \brief Parser that eagerly produces a complete AST from a token stream
  *
- * The parser mirrors the lexer's iterator-based design, lazily parsing
- * top-level declarations as they are requested.
+ * Consumes all tokens from the lexer and returns a source_file_node
+ * containing all top-level declarations.
  */
 class parser {
 public:
-	struct sentinel {};	 // End marker - must be declared first
-
-	class iterator {
-	public:
-		using difference_type = std::ptrdiff_t;
-		using value_type = std::unique_ptr<ast::ast_node>;
-		using pointer = value_type*;
-		using reference = value_type&;
-		using iterator_category = std::input_iterator_tag;
-
-		// Move-only iterator
-		iterator(const iterator&) = delete;
-		iterator(iterator&&) noexcept = default;
-
-		iterator& operator=(const iterator&) = delete;
-		iterator& operator=(iterator&&) noexcept = default;
-
-		reference operator*() { return current_node_; }
-		pointer operator->() { return &current_node_; }
-
-		iterator& operator++();
-
-		// Comparison with other iterators
-		bool operator==(const iterator& other) const;
-		bool operator!=(const iterator& other) const;
-
-		// Comparison with sentinel
-		bool operator==(sentinel) const;
-		bool operator!=(sentinel) const;
-
-	private:
-		friend class parser;
-
-		explicit iterator(parser* p);
-
-		void advance();
-
-		parser* parser_;
-		std::unique_ptr<ast::ast_node> current_node_;
-	};
-
 	/**
 	 * \brief Construct a parser
 	 *
@@ -93,16 +53,12 @@ public:
 	parser(parser&&) = delete;
 
 	/**
-	 * \brief Get an iterator to the AST nodes
+	 * \brief Parse the entire source file and return the root AST node
 	 */
-	iterator begin();
-
-	/**
-	 * \brief Get sentinel for end of AST nodes
-	 */
-	sentinel end();
+	std::unique_ptr<ast::source_file_node> parse();
 
 private:
+	lex::lexer& lexer_;
 	lex::lexer::iterator token_iter_;
 	lex::lexer::iterator token_end_;
 	trivia_index* trivia_index_;
@@ -126,17 +82,11 @@ private:
 	// Skip trivia tokens and collect them
 	void collect_trivia();
 
-	// Attach collected trivia to a node
-	void attach_trivia_to_node(
-		ast::ast_node* node,
-		trivia_ref::relationship rel = trivia_ref::relationship::leading);
+	// Flush collected trivia to the trivia index associated with a node
+	void flush_trivia(ast::ast_node* node);
 
-	// Parse top-level element (import, class, function, etc.)
-	std::unique_ptr<ast::ast_node> parse_top_level_element();
-
-	// Handle a complete state_result: pop state, yield if top-level,
-	// otherwise pass to parent. Returns node if yielded, nullptr if absorbed.
-	std::unique_ptr<ast::ast_node> handle_complete(state::state_result result);
+	// Handle a complete state_result: pop state, flush trivia, pass to parent.
+	void handle_complete(state::state_result result);
 
 	// Expect a specific token type or throw
 	template <typename TokenType>

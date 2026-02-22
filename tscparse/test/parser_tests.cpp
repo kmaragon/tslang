@@ -59,14 +59,16 @@ std::vector<tscc::parse::trivia_ref> filter_jsdoc(
 }  // namespace
 
 TEST_CASE("Parser Basic Construction", "[parser]") {
-	SECTION("Parser can be constructed") {
+	SECTION("Parser can be constructed and parse empty input") {
 		std::stringstream input("");
 		auto source = std::make_shared<fake_source>("test.ts");
 		tscc::lex::lexer lexer(input, source);
 
 		tscc::parse::parser parser(lexer);
+		auto root = parser.parse();
 
-		REQUIRE(parser.begin() == parser.end());
+		REQUIRE(root != nullptr);
+		REQUIRE(root->children().empty());
 	}
 
 	SECTION("Parser with trivia index") {
@@ -76,24 +78,22 @@ TEST_CASE("Parser Basic Construction", "[parser]") {
 
 		tscc::parse::trivia_index trivia;
 		tscc::parse::parser parser(lexer, &trivia);
+		auto root = parser.parse();
 
-		REQUIRE(parser.begin() == parser.end());
+		REQUIRE(root != nullptr);
+		REQUIRE(root->children().empty());
 	}
-}
 
-TEST_CASE("Parser Iterator", "[parser]") {
-	SECTION("Empty input produces empty iterator range") {
+	SECTION("Source file node holds the source") {
 		std::stringstream input("");
 		auto source = std::make_shared<fake_source>("test.ts");
 		tscc::lex::lexer lexer(input, source);
+
 		tscc::parse::parser parser(lexer);
+		auto root = parser.parse();
 
-		std::vector<std::unique_ptr<tscc::parse::ast::ast_node>> nodes;
-		for (auto& node : parser) {
-			nodes.emplace_back(std::move(node));
-		}
-
-		REQUIRE(nodes.empty());
+		REQUIRE(root != nullptr);
+		REQUIRE(root->source() == source);
 	}
 }
 
@@ -503,7 +503,7 @@ TEST_CASE("Parse Errors", "[parser][errors]") {
 		tscc::parse::parser parser(lexer);
 
 		try {
-			parser.begin();
+			parser.parse();
 			FAIL("Expected declaration_or_statement_expected exception");
 		} catch (const tscc::parse::declaration_or_statement_expected& e) {
 			REQUIRE(e.code() == tscc::error_code::ts1128);

@@ -16,23 +16,11 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "module_scope_state.hpp"
-#include "module_scope_visitor.hpp"
+#include "module_node.hpp"
 
-using namespace tscc;
-using namespace tscc::parse::state;
+using namespace tscc::parse::ast;
 
-module_scope_state::module_scope_state(ast::module_node* target)
-	: target_(target) {}
-
-state_result module_scope_state::process(parser& /*p*/,
-										 const lex::token& token) {
-	return token.visit(module_scope_visitor{this, token.location(), token});
-}
-
-accept_result module_scope_state::accept_child(
-	std::unique_ptr<ast::ast_node> child) {
-	child = target_->adopt_child(std::move(child));
-	target_->children_.emplace_back(target_->adopt_child(std::move(child)));
-	return accept_result::stay();
+const std::vector<std::unique_ptr<const ast_node>>& module_node::children()
+	const noexcept {
+	return children_;
 }

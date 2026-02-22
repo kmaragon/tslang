@@ -1,6 +1,6 @@
 /*
  * TSCC - a Typescript Compiler
- * Copyright (c) 2025. Keef Aragon
+ * Copyright (c) 2026. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -19,42 +19,34 @@
 #pragma once
 
 #include <memory>
+#include <tsclex/source.hpp>
+#include "module_node.hpp"
+
+namespace tscc::parse {
+class parser;
+}
 
 namespace tscc::parse::ast {
 
 /**
- * \brief Base class for all AST nodes
+ * \brief Root AST node representing a translation unit (source file)
  *
- * Provides parent pointer for tree navigation and facilities for
- * managing child node ownership.
+ * Owns the top-level declarations parsed from a single file.
+ * Only the parser can construct instances and add children.
  */
-class ast_node {
-	const ast_node* parent_ = nullptr;
+class source_file_node final : public module_node {
+	friend class ::tscc::parse::parser;
 
 public:
-	virtual ~ast_node() = default;
-
 	/**
-	 * \brief Get the parent node
+	 * \brief Get the source file for this translation unit
 	 */
-	const ast_node* parent() const noexcept { return parent_; }
+	[[nodiscard]] const std::shared_ptr<lex::source>& source() const noexcept;
 
-protected:
-	/**
-	 * \brief Set the parent node
-	 */
-	void set_parent(const ast_node* p) noexcept { parent_ = p; }
+private:
+	explicit source_file_node(std::shared_ptr<lex::source> source);
 
-	/**
-	 * \brief Adopt a child node, setting its parent pointer
-	 */
-	template <typename T>
-	std::unique_ptr<T> adopt_child(std::unique_ptr<T> child) {
-		if (child) {
-			child->set_parent(this);
-		}
-		return child;
-	}
+	std::shared_ptr<lex::source> source_;
 };
 
 }  // namespace tscc::parse::ast

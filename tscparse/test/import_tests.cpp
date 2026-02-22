@@ -1246,50 +1246,43 @@ TEST_CASE("import", "[parser][import]") {
 		}
 
 		SECTION("ASI: two imports separated by newline") {
-			test_utils::parse_result r;
-			r.stream = std::make_unique<std::stringstream>(
+			auto r = test_utils::parse_source(
 				"import \"a\"\nimport \"b\"");
-			r.source = std::make_shared<fake_source>("test.ts");
-			r.lexer = std::make_unique<tscc::lex::lexer>(*r.stream, r.source);
-			r.parser = std::make_unique<tscc::parse::parser>(*r.lexer);
 
-			auto it = r.parser->begin();
-			REQUIRE(it != r.parser->end());
-			auto first = std::move(*it);
-			REQUIRE(first != nullptr);
-			auto* first_import =
-				dynamic_cast<tscc::parse::ast::import_node*>(first.get());
+			REQUIRE(r.root != nullptr);
+			REQUIRE(r.root->children().size() == 2);
+
+			auto* first_import = dynamic_cast<
+				const tscc::parse::ast::import_node*>(
+				r.root->children()[0].get());
 			REQUIRE(first_import != nullptr);
+			REQUIRE(first_import->parent() == r.root.get());
 			REQUIRE(first_import->module_specifier());
 			REQUIRE(first_import->module_specifier().value() == "a");
 			REQUIRE_FALSE(first_import->default_binding());
 
-			++it;
-			REQUIRE(it != r.parser->end());
-			auto second = std::move(*it);
-			REQUIRE(second != nullptr);
-			auto* second_import =
-				dynamic_cast<tscc::parse::ast::import_node*>(second.get());
+			auto* second_import = dynamic_cast<
+				const tscc::parse::ast::import_node*>(
+				r.root->children()[1].get());
 			REQUIRE(second_import != nullptr);
+			REQUIRE(second_import->parent() == r.root.get());
 			REQUIRE(second_import->module_specifier());
 			REQUIRE(second_import->module_specifier().value() == "b");
 			REQUIRE_FALSE(second_import->default_binding());
 		}
 
 		SECTION("ASI: import with bindings followed by another import") {
-			test_utils::parse_result r;
-			r.stream = std::make_unique<std::stringstream>(
+			auto r = test_utils::parse_source(
 				"import foo from \"a\"\nimport bar from \"b\"");
-			r.source = std::make_shared<fake_source>("test.ts");
-			r.lexer = std::make_unique<tscc::lex::lexer>(*r.stream, r.source);
-			r.parser = std::make_unique<tscc::parse::parser>(*r.lexer);
 
-			auto it = r.parser->begin();
-			REQUIRE(it != r.parser->end());
-			auto first = std::move(*it);
-			auto* first_import =
-				dynamic_cast<tscc::parse::ast::import_node*>(first.get());
+			REQUIRE(r.root != nullptr);
+			REQUIRE(r.root->children().size() == 2);
+
+			auto* first_import = dynamic_cast<
+				const tscc::parse::ast::import_node*>(
+				r.root->children()[0].get());
 			REQUIRE(first_import != nullptr);
+			REQUIRE(first_import->parent() == r.root.get());
 			REQUIRE(first_import->default_binding());
 			REQUIRE(
 				first_import->default_binding()
@@ -1298,12 +1291,11 @@ TEST_CASE("import", "[parser][import]") {
 			REQUIRE(first_import->module_specifier());
 			REQUIRE(first_import->module_specifier().value() == "a");
 
-			++it;
-			REQUIRE(it != r.parser->end());
-			auto second = std::move(*it);
-			auto* second_import =
-				dynamic_cast<tscc::parse::ast::import_node*>(second.get());
+			auto* second_import = dynamic_cast<
+				const tscc::parse::ast::import_node*>(
+				r.root->children()[1].get());
 			REQUIRE(second_import != nullptr);
+			REQUIRE(second_import->parent() == r.root.get());
 			REQUIRE(second_import->default_binding());
 			REQUIRE(
 				second_import->default_binding()
@@ -1315,18 +1307,18 @@ TEST_CASE("import", "[parser][import]") {
 	}
 
 	SECTION("source locations") {
-		SECTION("location points to import keyword") {
+		SECTION("import keyword location") {
 			auto& node = parse_import("import \"module\";");
 
-			REQUIRE(node.location().line() == 0);
-			REQUIRE(node.location().column() == 0);
+			REQUIRE(node.import_keyword()->location().line() == 0);
+			REQUIRE(node.import_keyword()->location().column() == 0);
 		}
 
 		SECTION("import on second line") {
 			auto& node = parse_import("\nimport \"module\";");
 
-			REQUIRE(node.location().line() == 1);
-			REQUIRE(node.location().column() == 0);
+			REQUIRE(node.import_keyword()->location().line() == 1);
+			REQUIRE(node.import_keyword()->location().column() == 0);
 		}
 	}
 

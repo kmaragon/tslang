@@ -103,7 +103,7 @@ public:
 	 *
 	 */
 	lexer(std::istream& stream,
-		  std::shared_ptr<source> stream_metadata,
+		  std::shared_ptr<class source> stream_metadata,
 		  language_version version = language_version::latest);
 
 	// disable copy / move
@@ -118,6 +118,16 @@ public:
 	 * \brief Get an end iterator for the tokens in the stream
 	 */
 	iterator end();
+
+	/**
+	 * \brief Get the source file associated with this lexer
+	 */
+	const std::shared_ptr<class source>& source() const noexcept { return source_; }
+
+	/**
+	 * \brief Get the ECMAScript language version
+	 */
+	language_version version() const noexcept { return vers_; }
 
 private:
 	using tokfactory = void (*)(token& into, const source_location& location);
@@ -214,7 +224,7 @@ private:
 	[[nodiscard]] source_location location() const;
 
 	std::istream& stream_;
-	std::shared_ptr<source> source_;
+	std::shared_ptr<class source> source_;
 
 	// input buffer
 	std::string rbuffer_;

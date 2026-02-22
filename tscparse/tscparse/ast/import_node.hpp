@@ -49,19 +49,27 @@ class import_specifier {
 	lex::token alias_;
 
 public:
-	/// Specifier name as a lexeme
-	///
-	/// Returns an invalid lexeme when the name is `default` —
-	/// use is_default() for that case.
+	/**
+	 * \brief Get the specifier name as a lexeme
+	 *
+	 * Returns an invalid lexeme when the name is `default` —
+	 * use is_default() for that case.
+	 */
 	lexeme<std::string_view> name() const;
 
-	/// Whether this specifier uses the `default` keyword as its name
+	/**
+	 * \brief Whether this specifier uses the `default` keyword as its name
+	 */
 	bool is_default() const noexcept;
 
-	/// Type-only modifier keyword, if present
+	/**
+	 * \brief Get the type-only modifier keyword, if present
+	 */
 	const lex::token* type_keyword() const noexcept;
 
-	/// Alias binding after `as`, if present
+	/**
+	 * \brief Get the alias binding after `as`, if present
+	 */
 	lexeme<std::string_view> alias() const;
 };
 
@@ -78,10 +86,14 @@ class import_attribute {
 	lex::token value_;
 
 public:
-	/// Attribute key (always normalized identifier)
+	/**
+	 * \brief Get the attribute key (always normalized identifier)
+	 */
 	lexeme<std::string_view> key() const;
 
-	/// Attribute value (always string literal)
+	/**
+	 * \brief Get the attribute value (always string literal)
+	 */
 	lexeme<std::string> value() const;
 };
 
@@ -185,10 +197,6 @@ public:
 	 * \brief Get the qualified entity name of an import-equals, if present
 	 */
 	const qualified_name& entity_name() const noexcept;
-
-	const lex::source_location& location() const override;
-	void visit_children(
-		std::function<void(const ast_node*)> visitor) const override;
 
 private:
 	struct side_effect_form {

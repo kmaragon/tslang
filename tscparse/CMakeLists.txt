@@ -1,7 +1,9 @@
 
 set(SOURCES
         tscparse/ast/import_node.cpp
+        tscparse/ast/module_node.cpp
         tscparse/ast/qualified_name.cpp
+        tscparse/ast/source_file_node.cpp
         tscparse/error/declaration_or_statement_expected.cpp
         tscparse/error/expected_token.cpp
         tscparse/error/unexpected_end_of_text.cpp
@@ -26,8 +28,10 @@ set(HEADERS
         tscparse/ast/ast_node.hpp
         tscparse/ast/import_node.hpp
         tscparse/ast/lexeme.hpp
+        tscparse/ast/module_node.hpp
         tscparse/ast/qualified_name.hpp
         tscparse/ast/lexeme_visitors.ipp
+        tscparse/ast/source_file_node.hpp
         tscparse/error/declaration_or_statement_expected.hpp
         tscparse/error/expected_token.hpp
         tscparse/error/unexpected_end_of_text.hpp
@@ -43,6 +47,7 @@ set(HEADERS
         tscparse/state/import/namespace_import_states.hpp
         tscparse/state/import_state.hpp
         tscparse/state/module_scope_state.hpp
+        tscparse/state/module_scope_visitor.hpp
         tscparse/state/parser_state.hpp
         tscparse/state/state_result.hpp
         tscparse/error.hpp

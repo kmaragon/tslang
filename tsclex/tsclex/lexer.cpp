@@ -87,7 +87,7 @@ lexer::iterator::iterator(lexer* source)
 	: token_(std::make_shared<token>()), lexer_(source) {}
 
 lexer::lexer(std::istream& stream,
-			 std::shared_ptr<source> stream_metadata,
+			 std::shared_ptr<class source> stream_metadata,
 			 language_version version)
 	: stream_(stream),
 	  source_(std::move(stream_metadata)),

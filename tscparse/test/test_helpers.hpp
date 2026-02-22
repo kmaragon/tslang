@@ -23,6 +23,7 @@
 #include <sstream>
 #include <tscfakes/fake_source.hpp>
 #include <tsclex/lexer.hpp>
+#include <tscparse/ast/source_file_node.hpp>
 #include <tscparse/parser.hpp>
 
 namespace test_utils {
@@ -38,40 +39,39 @@ struct parse_result {
 	std::shared_ptr<fake_source> source;
 	std::unique_ptr<tscc::lex::lexer> lexer;
 	std::unique_ptr<tscc::parse::parser> parser;
-	std::unique_ptr<tscc::parse::ast::ast_node> node;
+	std::unique_ptr<tscc::parse::ast::source_file_node> root;
 };
 
 /**
- * \brief Parse a source string and return the first top-level AST node
+ * \brief Parse a source string and return the full AST
  */
-inline parse_result parse_first_node(const std::string& input) {
+inline parse_result parse_source(const std::string& input) {
 	parse_result r;
 	r.stream = std::make_unique<std::stringstream>(input);
 	r.source = std::make_shared<fake_source>("test.ts");
 	r.lexer = std::make_unique<tscc::lex::lexer>(*r.stream, r.source);
 	r.parser = std::make_unique<tscc::parse::parser>(*r.lexer);
-
-	auto it = r.parser->begin();
-	if (it != r.parser->end()) {
-		r.node = std::move(*it);
-	}
+	r.root = r.parser->parse();
 	return r;
 }
 
 /**
- * \brief Parse and return the first node cast to a specific type
+ * \brief Parse and return the first child node cast to a specific type
  *
- * Fails the test if the result is null or not the expected node type.
- * Results are kept alive in a static vector for the lifetime of the test run.
+ * Fails the test if the result has no children or the first child
+ * is not the expected node type. Results are kept alive in a static
+ * vector for the lifetime of the test run.
  */
 template <typename Node>
 const Node& parse_node(const std::string& input) {
 	static std::vector<parse_result> results;
-	results.emplace_back(parse_first_node(input));
+	results.emplace_back(parse_source(input));
 	auto& r = results.back();
-	REQUIRE(r.node != nullptr);
-	auto* typed = dynamic_cast<const Node*>(r.node.get());
+	REQUIRE(r.root != nullptr);
+	REQUIRE_FALSE(r.root->children().empty());
+	auto* typed = dynamic_cast<const Node*>(r.root->children().front().get());
 	REQUIRE(typed != nullptr);
+	REQUIRE(typed->parent() == r.root.get());
 	return *typed;
 }
 

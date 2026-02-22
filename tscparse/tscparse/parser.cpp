@@ -17,6 +17,7 @@
  */
 
 #include "parser.hpp"
+#include <cassert>
 #include <tsclex/tokens/abstract_token.hpp>
 #include <tsclex/tokens/async_token.hpp>
 #include <tsclex/tokens/comment_token.hpp>
@@ -36,55 +37,62 @@
 using namespace tscc;
 using namespace tscc::parse;
 
-parser::iterator::iterator(parser* p) : parser_(p), current_node_(nullptr) {
-	advance();
-}
+parser::parser(lex::lexer& lexer, trivia_index* trivia_idx)
+	: lexer_(lexer),
+	  token_iter_(lexer.begin()),
+	  token_end_(lexer.end()),
+	  trivia_index_(trivia_idx) {}
 
-void parser::iterator::advance() {
-	if (parser_->at_token_end()) {
-		current_node_ = nullptr;
-		return;
+std::unique_ptr<ast::source_file_node> parser::parse() {
+	auto root = std::unique_ptr<ast::source_file_node>(
+		new ast::source_file_node(lexer_.source()));
+	state_stack_.emplace_back(
+		std::make_unique<state::module_scope_state>(root.get()));
+
+	collect_trivia();
+
+	while (!at_token_end()) {
+		const auto& token = current_token();
+		auto result = state_stack_.back()->process(*this, token);
+
+		if (!result.should_reprocess()) {
+			advance_token();
+			collect_trivia();
+		}
+
+		if (result.is_stay()) {
+			continue;
+		}
+
+		if (result.is_push()) {
+			state_stack_.emplace_back(std::move(result).take_child());
+			continue;
+		}
+
+		if (result.is_complete()) {
+			handle_complete(std::move(result));
+		}
 	}
 
-	current_node_ = parser_->parse_top_level_element();
-}
+	// Handle EOF: unwind any states that can complete at EOF
+	while (state_stack_.size() > 1) {
+		if (auto eof_result = state_stack_.back()->on_eof()) {
+			handle_complete(std::move(*eof_result));
+		} else {
+			throw unexpected_end_of_text(last_location_);
+		}
+	}
 
-parser::iterator& parser::iterator::operator++() {
-	advance();
-	return *this;
-}
+	// Flush any remaining trivia as orphaned
+	if (trivia_index_) {
+		for (auto& tok : pending_trivia_) {
+			trivia_index_->emplace(std::move(tok), nullptr,
+								   trivia_ref::relationship::orphaned);
+		}
+	}
+	pending_trivia_.clear();
 
-bool parser::iterator::operator==(const iterator& other) const {
-	// For move-only iterators, this is rarely used
-	// Two iterators are the same if they refer to the same object
-	return this == &other;
-}
-
-bool parser::iterator::operator!=(const iterator& other) const {
-	return !(*this == other);
-}
-
-bool parser::iterator::operator==(sentinel) const {
-	return current_node_ == nullptr;
-}
-
-bool parser::iterator::operator!=(sentinel) const {
-	return current_node_ != nullptr;
-}
-
-parser::parser(lex::lexer& lexer, trivia_index* trivia_idx)
-	: token_iter_(lexer.begin()),
-	  token_end_(lexer.end()),
-	  trivia_index_(trivia_idx) {
-	state_stack_.emplace_back(std::make_unique<state::module_scope_state>());
-}
-
-parser::iterator parser::begin() {
-	return iterator{this};
-}
-
-parser::sentinel parser::end() {
-	return sentinel{};
+	return root;
 }
 
 void parser::advance_token() {
@@ -109,8 +117,6 @@ lex::token parser::consume_token() {
 }
 
 void parser::collect_trivia() {
-	pending_trivia_.clear();
-
 	while (!at_token_end()) {
 		bool is_trivia = current_token().visit([&](const auto& tok) {
 			using T = std::decay_t<decltype(tok)>;
@@ -131,99 +137,31 @@ void parser::collect_trivia() {
 	}
 }
 
-void parser::attach_trivia_to_node(ast::ast_node* node,
-								   trivia_ref::relationship rel) {
+void parser::flush_trivia(ast::ast_node* node) {
 	if (trivia_index_ && node) {
-		for (const auto& tok : pending_trivia_) {
-			trivia_index_->emplace(tok, node, rel);
+		for (auto& tok : pending_trivia_) {
+			trivia_index_->emplace(std::move(tok), node,
+								   trivia_ref::relationship::leading);
 		}
 	}
 	pending_trivia_.clear();
 }
 
-std::unique_ptr<ast::ast_node> parser::parse_top_level_element() {
-	collect_trivia();
-
-	if (at_token_end()) {
-		if (state_stack_.size() > 1) {
-			if (auto eof_result = state_stack_.back()->on_eof()) {
-				return handle_complete(std::move(*eof_result));
-			}
-			throw unexpected_end_of_text(last_location_);
-		}
-		return nullptr;
-	}
-
-	while (!state_stack_.empty()) {
-		const auto& token = current_token();
-		auto result = state_stack_.back()->process(*this, token);
-
-		if (!result.should_reprocess()) {
-			advance_token();
-			collect_trivia();
-		}
-
-		if (result.is_stay()) {
-			if (at_token_end()) {
-				if (state_stack_.size() > 1) {
-					if (auto eof_result = state_stack_.back()->on_eof()) {
-						return handle_complete(std::move(*eof_result));
-					}
-					throw unexpected_end_of_text(last_location_);
-				}
-				return nullptr;
-			}
-			continue;
-		}
-
-		if (result.is_push()) {
-			state_stack_.emplace_back(std::move(result).take_child());
-			if (at_token_end()) {
-				if (state_stack_.size() > 1) {
-					if (auto eof_result = state_stack_.back()->on_eof()) {
-						return handle_complete(std::move(*eof_result));
-					}
-					throw unexpected_end_of_text(last_location_);
-				}
-				return nullptr;
-			}
-			continue;
-		}
-
-		if (result.is_complete()) {
-			auto completed_node = handle_complete(std::move(result));
-			if (completed_node) {
-				return completed_node;
-			}
-		}
-
-		if (at_token_end()) {
-			if (state_stack_.size() > 1) {
-				if (auto eof_result = state_stack_.back()->on_eof()) {
-					return handle_complete(std::move(*eof_result));
-				}
-				throw unexpected_end_of_text(last_location_);
-			}
-			return nullptr;
-		}
-	}
-
-	return nullptr;
-}
-
-std::unique_ptr<ast::ast_node> parser::handle_complete(
-	state::state_result result) {
+void parser::handle_complete(state::state_result result) {
 	auto node = std::move(result).take_node();
 	state_stack_.pop_back();
 
 	while (true) {
-		if (state_stack_.empty() || state_stack_.size() == 1) {
-			return node;
+		assert(!state_stack_.empty() &&
+			   "state stack unexpectedly empty during handle_complete");
+		if (state_stack_.empty()) {
+			return;
 		}
 
+		flush_trivia(node.get());
 		auto accept = state_stack_.back()->accept_child(std::move(node));
 		if (accept.is_stay()) {
-			return nullptr;
+			return;
 		}
 
 		node = std::move(accept).take_node();
