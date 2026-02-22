@@ -34,6 +34,10 @@ bool identifier_token::operator!=(
 	return id_ != other.id_;
 }
 
+const std::string& identifier_token::id() const noexcept {
+	return id_;
+}
+
 std::string identifier_token::to_string() const {
 	return id_;
 }

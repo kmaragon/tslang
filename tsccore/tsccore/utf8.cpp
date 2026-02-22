@@ -18,7 +18,7 @@
 
 #include "utf8.hpp"
 
-std::size_t tscc::utf8_size(const std::u32string& str) noexcept {
+std::size_t tscc::utf8_size(const std::u32string_view& str) noexcept {
 	std::size_t len = str.size();
 	for (std::size_t i = 0; i < str.size(); i++) {
 		if (str[i] <= 0x7f)
@@ -46,7 +46,7 @@ std::size_t tscc::utf8_size(const std::u32string& str) noexcept {
 	return len;
 }
 
-std::string tscc::utf8_encode(const std::u32string& str) noexcept
+std::string tscc::utf8_encode(const std::u32string_view& str) noexcept
 {
 	std::string result;
 	result.resize(utf8_size(str));

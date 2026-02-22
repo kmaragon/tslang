@@ -30,6 +30,8 @@ public:
 	bool operator==(const identifier_token& other) const;
 	bool operator!=(const identifier_token& other) const;
 
+	const std::string& id() const noexcept;
+
 	std::string to_string() const override;
 
 private:

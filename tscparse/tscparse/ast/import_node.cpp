@@ -18,8 +18,34 @@
 
 #include "import_node.hpp"
 
-using namespace tscc;
 using namespace tscc::parse::ast;
+
+lexeme<std::string_view> import_specifier::name() const {
+	if (name_.is<lex::tokens::default_token>())
+		return {};
+	return {&name_};
+}
+
+bool import_specifier::is_default() const noexcept {
+	return name_.is<lex::tokens::default_token>();
+}
+
+const tscc::lex::token* import_specifier::type_keyword() const noexcept {
+	return type_keyword_ ? &type_keyword_ : nullptr;
+}
+
+lexeme<std::string_view> import_specifier::alias() const {
+	return alias_ ? lexeme<std::string_view>{&alias_}
+				  : lexeme<std::string_view>{};
+}
+
+lexeme<std::string_view> import_attribute::key() const {
+	return {&key_};
+}
+
+lexeme<std::string> import_attribute::value() const {
+	return {&value_};
+}
 
 import_node::from_form& import_node::ensure_from() {
 	if (std::holds_alternative<std::monostate>(form_))
@@ -47,13 +73,6 @@ import_node::equals_form::require_data& import_node::ensure_require() {
 	return std::get<equals_form::require_data>(e.rhs);
 }
 
-import_node::equals_form::entity_data& import_node::ensure_entity() {
-	auto& e = std::get<equals_form>(form_);
-	if (std::holds_alternative<std::monostate>(e.rhs))
-		e.rhs.emplace<equals_form::entity_data>();
-	return std::get<equals_form::entity_data>(e.rhs);
-}
-
 import_node::attributes_data& import_node::ensure_attributes() {
 	if (!attributes_)
 		attributes_.emplace();
@@ -63,25 +82,29 @@ import_node::attributes_data& import_node::ensure_attributes() {
 import_node::import_node(lex::token import_keyword)
 	: import_keyword_(std::move(import_keyword)) {}
 
-const lex::token* import_node::import_keyword() const noexcept {
+const tscc::lex::token* import_node::import_keyword() const noexcept {
 	return &import_keyword_;
 }
 
-const lex::token* import_node::type_keyword() const noexcept {
+const tscc::lex::token* import_node::type_keyword() const noexcept {
 	return type_keyword_ ? &*type_keyword_ : nullptr;
 }
 
-const lex::token* import_node::default_binding() const noexcept {
+lexeme<std::string_view> import_node::default_binding() const {
 	auto* f = std::get_if<from_form>(&form_);
-	return (f && f->default_binding) ? &*f->default_binding : nullptr;
+	if (f && f->default_binding)
+		return {&*f->default_binding};
+	return {};
 }
 
-const lex::token* import_node::namespace_name() const noexcept {
+lexeme<std::string_view> import_node::namespace_name() const {
 	auto* f = std::get_if<from_form>(&form_);
 	if (!f)
-		return nullptr;
+		return {};
 	auto* ns = std::get_if<from_form::namespace_binding>(&f->secondary);
-	return ns ? &ns->name : nullptr;
+	if (ns)
+		return {&ns->name};
+	return {};
 }
 
 const std::vector<import_specifier>& import_node::named_specifiers()
@@ -96,15 +119,15 @@ const std::vector<import_specifier>& import_node::named_specifiers()
 	return empty;
 }
 
-const lex::token* import_node::module_specifier() const noexcept {
+lexeme<std::string> import_node::module_specifier() const {
 	if (auto* s = std::get_if<side_effect_form>(&form_))
-		return &s->module_specifier;
+		return {&s->module_specifier};
 	if (auto* f = std::get_if<from_form>(&form_))
-		return &f->module_specifier;
-	return nullptr;
+		return {&f->module_specifier};
+	return {};
 }
 
-const lex::token* import_node::attributes_keyword() const noexcept {
+const tscc::lex::token* import_node::attributes_keyword() const noexcept {
 	return attributes_ ? &attributes_->keyword : nullptr;
 }
 
@@ -115,32 +138,35 @@ const std::vector<import_attribute>& import_node::attributes() const noexcept {
 	return empty;
 }
 
-const lex::token* import_node::equals_name() const noexcept {
+lexeme<std::string_view> import_node::equals_name() const {
 	auto* e = std::get_if<equals_form>(&form_);
-	return e ? &e->name : nullptr;
+	if (e)
+		return {&e->name};
+	return {};
 }
 
-const lex::token* import_node::require_module_specifier() const noexcept {
+lexeme<std::string> import_node::require_module_specifier() const {
 	auto* e = std::get_if<equals_form>(&form_);
 	if (!e)
-		return nullptr;
+		return {};
 	auto* r = std::get_if<equals_form::require_data>(&e->rhs);
-	return r ? &r->module_specifier : nullptr;
+	if (r)
+		return {&r->module_specifier};
+	return {};
 }
 
-const std::vector<lex::token>& import_node::entity_identifiers()
-	const noexcept {
+const qualified_name& import_node::entity_name() const noexcept {
 	auto* e = std::get_if<equals_form>(&form_);
 	if (e) {
-		auto* d = std::get_if<equals_form::entity_data>(&e->rhs);
-		if (d)
-			return d->identifiers;
+		auto* q = std::get_if<qualified_name>(&e->rhs);
+		if (q)
+			return *q;
 	}
-	static const std::vector<lex::token> empty;
+	static const qualified_name empty;
 	return empty;
 }
 
-const lex::source_location& import_node::location() const {
+const tscc::lex::source_location& import_node::location() const {
 	return import_keyword_.location();
 }
 

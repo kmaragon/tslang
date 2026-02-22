@@ -286,6 +286,16 @@ public:
 	}
 
 	/**
+	 * \brief Whether the token holds no value
+	 */
+	[[nodiscard]] bool undefined() const noexcept;
+
+	/**
+	 * \brief Whether the token holds a value
+	 */
+	operator bool() const noexcept;
+
+	/**
 	 * \brief Set the token to an undefined value
 	 */
 	void undefine();

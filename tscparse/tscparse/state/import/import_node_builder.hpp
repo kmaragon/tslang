@@ -39,10 +39,11 @@ public:
 	void set_default_binding(lex::token tok);
 	void set_namespace_name(lex::token tok);
 	void init_named_imports();
-	void add_named_specifier(ast::import_specifier spec);
+	void add_named_specifier(lex::token name, lex::token type_keyword,
+							 lex::token alias);
 	void set_module_specifier(lex::token tok);
 	void set_attributes_keyword(lex::token tok);
-	void add_attribute(ast::import_attribute attr);
+	void add_attribute(lex::token key, lex::token value);
 	void set_equals_name(lex::token tok);
 	void init_require();
 	void set_require_module_specifier(lex::token tok);

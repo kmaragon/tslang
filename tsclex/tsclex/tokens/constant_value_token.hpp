@@ -49,6 +49,8 @@ public:
 	std::optional<tscc_big_int> integer_value() const noexcept;
 	bool is_bigint() const noexcept;
 	std::optional<long double> decimal_value() const noexcept;
+
+	bool is_string() const;
 	std::optional<std::u32string_view> string_value() const noexcept;
 
 private:

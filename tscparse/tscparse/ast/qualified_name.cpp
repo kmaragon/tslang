@@ -1,6 +1,6 @@
 /*
  * TSCC - a Typescript Compiler
- * Copyright (c) 2025. Keef Aragon
+ * Copyright (c) 2026. Keef Aragon
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -16,14 +16,26 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "qualified_name.hpp"
 
-#include <string>
+using namespace tscc::parse::ast;
 
-namespace tscc
-{
+bool qualified_name::empty() const noexcept {
+	return segments_.empty();
+}
 
-std::size_t utf8_size(const std::u32string_view& str) noexcept;
-std::string utf8_encode(const std::u32string_view& str) noexcept;
+size_t qualified_name::size() const noexcept {
+	return segments_.size();
+}
 
+qualified_name::operator bool() const noexcept {
+	return !segments_.empty();
+}
+
+lexeme<std::string_view> qualified_name::operator[](size_t i) const {
+	return {&segments_[i]};
+}
+
+const std::vector<tscc::lex::token>& qualified_name::tokens() const noexcept {
+	return segments_;
 }

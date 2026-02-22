@@ -65,6 +65,14 @@ const source_location& token::location() const noexcept {
 	return location_;
 }
 
+bool token::undefined() const noexcept {
+	return !token_.has_value();
+}
+
+token::operator bool() const noexcept {
+	return !undefined();
+}
+
 void token::undefine() {
 	token_.reset();
 }

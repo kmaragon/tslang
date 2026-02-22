@@ -44,10 +44,16 @@ void import_node_builder::init_named_imports() {
 	node_->ensure_named();
 }
 
-void import_node_builder::add_named_specifier(ast::import_specifier spec) {
-	detail::normalize_identifier(spec.name);
-	if (spec.alias)
-		detail::normalize_identifier(*spec.alias);
+void import_node_builder::add_named_specifier(lex::token name,
+											  lex::token type_keyword,
+											  lex::token alias) {
+	detail::normalize_identifier(name);
+	if (alias)
+		detail::normalize_identifier(alias);
+	ast::import_specifier spec;
+	spec.name_ = std::move(name);
+	spec.type_keyword_ = std::move(type_keyword);
+	spec.alias_ = std::move(alias);
 	node_->ensure_named().specifiers.push_back(std::move(spec));
 }
 
@@ -64,8 +70,11 @@ void import_node_builder::set_attributes_keyword(lex::token tok) {
 	node_->ensure_attributes().keyword = std::move(tok);
 }
 
-void import_node_builder::add_attribute(ast::import_attribute attr) {
-	detail::normalize_identifier(attr.key);
+void import_node_builder::add_attribute(lex::token key, lex::token value) {
+	detail::normalize_identifier(key);
+	ast::import_attribute attr;
+	attr.key_ = std::move(key);
+	attr.value_ = std::move(value);
 	node_->ensure_attributes().entries.push_back(std::move(attr));
 }
 
@@ -86,5 +95,8 @@ void import_node_builder::set_require_module_specifier(lex::token tok) {
 
 void import_node_builder::add_entity_identifier(lex::token tok) {
 	detail::normalize_identifier(tok);
-	node_->ensure_entity().identifiers.push_back(std::move(tok));
+	auto& e = std::get<ast::import_node::equals_form>(node_->form_);
+	if (std::holds_alternative<std::monostate>(e.rhs))
+		e.rhs.emplace<ast::qualified_name>();
+	std::get<ast::qualified_name>(e.rhs).segments_.push_back(std::move(tok));
 }

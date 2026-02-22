@@ -297,20 +297,18 @@ accept_result named_import_state::accept_child(std::unique_ptr<ast::ast_node>) {
 }
 
 void named_import_state::flush_specifier() {
-	ast::import_specifier spec;
-	spec.type_keyword = std::move(pending_type_);
-	spec.name = std::move(*pending_name_);
-	builder_->add_named_specifier(std::move(spec));
+	builder_->add_named_specifier(
+		std::move(*pending_name_),
+		pending_type_ ? std::move(*pending_type_) : lex::token{}, {});
 	pending_type_.reset();
 	pending_name_.reset();
 }
 
 void named_import_state::flush_specifier_with_alias(lex::token alias) {
-	ast::import_specifier spec;
-	spec.type_keyword = std::move(pending_type_);
-	spec.name = std::move(*pending_name_);
-	spec.alias = std::move(alias);
-	builder_->add_named_specifier(std::move(spec));
+	builder_->add_named_specifier(
+		std::move(*pending_name_),
+		pending_type_ ? std::move(*pending_type_) : lex::token{},
+		std::move(alias));
 	pending_type_.reset();
 	pending_name_.reset();
 }

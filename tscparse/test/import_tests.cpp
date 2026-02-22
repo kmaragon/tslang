@@ -34,18 +34,6 @@ static const tscc::parse::ast::import_node& parse_import(
 	return test_utils::parse_node<tscc::parse::ast::import_node>(input);
 }
 
-static std::optional<std::u32string_view> string_value(
-	const tscc::lex::token* tok) {
-	return static_cast<const tscc::lex::tokens::constant_value_token&>(**tok)
-		.string_value();
-}
-
-static std::optional<std::u32string_view> string_value(
-	const tscc::lex::token& tok) {
-	return static_cast<const tscc::lex::tokens::constant_value_token&>(*tok)
-		.string_value();
-}
-
 TEST_CASE("import", "[parser][import]") {
 	SECTION("side-effect") {
 		SECTION("import \"module\";") {
@@ -54,17 +42,17 @@ TEST_CASE("import", "[parser][import]") {
 			REQUIRE(
 				node.import_keyword()->is<tscc::lex::tokens::import_token>());
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
-			REQUIRE(node.require_module_specifier() == nullptr);
-			REQUIRE(node.entity_identifiers().empty());
+			REQUIRE_FALSE(node.equals_name());
+			REQUIRE_FALSE(node.require_module_specifier());
+			REQUIRE(node.entity_name().empty());
 			REQUIRE(node.attributes_keyword() == nullptr);
 			REQUIRE(node.attributes().empty());
 		}
@@ -75,17 +63,17 @@ TEST_CASE("import", "[parser][import]") {
 			REQUIRE(
 				node.import_keyword()->is<tscc::lex::tokens::import_token>());
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
-			REQUIRE(node.require_module_specifier() == nullptr);
-			REQUIRE(node.entity_identifiers().empty());
+			REQUIRE_FALSE(node.equals_name());
+			REQUIRE_FALSE(node.require_module_specifier());
+			REQUIRE(node.entity_name().empty());
 			REQUIRE(node.attributes_keyword() == nullptr);
 			REQUIRE(node.attributes().empty());
 		}
@@ -95,21 +83,21 @@ TEST_CASE("import", "[parser][import]") {
 		SECTION("import foo from \"module\";") {
 			auto& node = parse_import("import foo from \"module\";");
 
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
-			REQUIRE(node.require_module_specifier() == nullptr);
-			REQUIRE(node.entity_identifiers().empty());
+			REQUIRE_FALSE(node.equals_name());
+			REQUIRE_FALSE(node.require_module_specifier());
+			REQUIRE(node.entity_name().empty());
 			REQUIRE(node.attributes_keyword() == nullptr);
 			REQUIRE(node.attributes().empty());
 		}
@@ -119,21 +107,21 @@ TEST_CASE("import", "[parser][import]") {
 		SECTION("import * as ns from \"module\";") {
 			auto& node = parse_import("import * as ns from \"module\";");
 
-			REQUIRE(node.namespace_name() != nullptr);
+			REQUIRE(node.namespace_name());
 			REQUIRE(node.namespace_name()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.namespace_name())->to_string() == "ns");
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.namespace_name().value() == "ns");
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
-			REQUIRE(node.require_module_specifier() == nullptr);
-			REQUIRE(node.entity_identifiers().empty());
+			REQUIRE_FALSE(node.equals_name());
+			REQUIRE_FALSE(node.require_module_specifier());
+			REQUIRE(node.entity_name().empty());
 			REQUIRE(node.attributes_keyword() == nullptr);
 			REQUIRE(node.attributes().empty());
 		}
@@ -146,22 +134,23 @@ TEST_CASE("import", "[parser][import]") {
 			REQUIRE(node.named_specifiers().size() == 1);
 
 			auto& spec = node.named_specifiers()[0];
-			REQUIRE_FALSE(spec.type_keyword.has_value());
-			REQUIRE(spec.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(spec.name->to_string() == "foo");
-			REQUIRE_FALSE(spec.alias.has_value());
+			REQUIRE(spec.type_keyword() == nullptr);
+			REQUIRE(spec.name());
+			REQUIRE(spec.name()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.name().value() == "foo");
+			REQUIRE_FALSE(spec.alias());
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
-			REQUIRE(node.require_module_specifier() == nullptr);
-			REQUIRE(node.entity_identifiers().empty());
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
+			REQUIRE_FALSE(node.require_module_specifier());
+			REQUIRE(node.entity_name().empty());
 			REQUIRE(node.attributes_keyword() == nullptr);
 			REQUIRE(node.attributes().empty());
 		}
@@ -172,26 +161,28 @@ TEST_CASE("import", "[parser][import]") {
 			REQUIRE(node.named_specifiers().size() == 2);
 
 			auto& foo = node.named_specifiers()[0];
-			REQUIRE(foo.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(foo.name->to_string() == "foo");
-			REQUIRE_FALSE(foo.alias.has_value());
-			REQUIRE_FALSE(foo.type_keyword.has_value());
+			REQUIRE(foo.name());
+			REQUIRE(foo.name()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(foo.name().value() == "foo");
+			REQUIRE_FALSE(foo.alias());
+			REQUIRE(foo.type_keyword() == nullptr);
 
 			auto& bar = node.named_specifiers()[1];
-			REQUIRE(bar.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(bar.name->to_string() == "bar");
-			REQUIRE_FALSE(bar.alias.has_value());
-			REQUIRE_FALSE(bar.type_keyword.has_value());
+			REQUIRE(bar.name());
+			REQUIRE(bar.name()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(bar.name().value() == "bar");
+			REQUIRE_FALSE(bar.alias());
+			REQUIRE(bar.type_keyword() == nullptr);
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -200,22 +191,23 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.named_specifiers().size() == 1);
 			auto& spec = node.named_specifiers()[0];
-			REQUIRE_FALSE(spec.type_keyword.has_value());
-			REQUIRE(spec.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(spec.name->to_string() == "foo");
-			REQUIRE(spec.alias.has_value());
-			REQUIRE(spec.alias->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*spec.alias)->to_string() == "bar");
+			REQUIRE(spec.type_keyword() == nullptr);
+			REQUIRE(spec.name());
+			REQUIRE(spec.name()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.name().value() == "foo");
+			REQUIRE(spec.alias());
+			REQUIRE(spec.alias()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.alias().value() == "bar");
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -225,21 +217,21 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.named_specifiers().size() == 1);
 			auto& spec = node.named_specifiers()[0];
-			REQUIRE_FALSE(spec.type_keyword.has_value());
-			REQUIRE(spec.name.is<tscc::lex::tokens::default_token>());
-			REQUIRE(spec.alias.has_value());
-			REQUIRE(spec.alias->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*spec.alias)->to_string() == "foo");
+			REQUIRE(spec.type_keyword() == nullptr);
+			REQUIRE(spec.is_default());
+			REQUIRE(spec.alias());
+			REQUIRE(spec.alias()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.alias().value() == "foo");
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -248,15 +240,15 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.named_specifiers().size() == 0);
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -264,21 +256,23 @@ TEST_CASE("import", "[parser][import]") {
 			auto& node = parse_import("import { foo, } from \"module\";");
 
 			REQUIRE(node.named_specifiers().size() == 1);
+			REQUIRE(node.named_specifiers()[0].name());
 			REQUIRE(node.named_specifiers()[0]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[0].name->to_string() == "foo");
-			REQUIRE_FALSE(node.named_specifiers()[0].alias.has_value());
-			REQUIRE_FALSE(node.named_specifiers()[0].type_keyword.has_value());
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[0].name().value() == "foo");
+			REQUIRE_FALSE(node.named_specifiers()[0].alias());
+			REQUIRE(node.named_specifiers()[0].type_keyword() == nullptr);
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -288,36 +282,43 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.named_specifiers().size() == 3);
 
+			REQUIRE(node.named_specifiers()[0].name());
 			REQUIRE(node.named_specifiers()[0]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[0].name->to_string() == "foo");
-			REQUIRE_FALSE(node.named_specifiers()[0].alias.has_value());
-			REQUIRE_FALSE(node.named_specifiers()[0].type_keyword.has_value());
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[0].name().value() == "foo");
+			REQUIRE_FALSE(node.named_specifiers()[0].alias());
+			REQUIRE(node.named_specifiers()[0].type_keyword() == nullptr);
 
+			REQUIRE(node.named_specifiers()[1].name());
 			REQUIRE(node.named_specifiers()[1]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[1].name->to_string() == "bar");
-			REQUIRE(node.named_specifiers()[1].alias.has_value());
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[1].name().value() == "bar");
+			REQUIRE(node.named_specifiers()[1].alias());
 			REQUIRE(node.named_specifiers()[1]
-						.alias->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.named_specifiers()[1].alias)->to_string() == "baz");
-			REQUIRE_FALSE(node.named_specifiers()[1].type_keyword.has_value());
+						.alias()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[1].alias().value() == "baz");
+			REQUIRE(node.named_specifiers()[1].type_keyword() == nullptr);
 
+			REQUIRE(node.named_specifiers()[2].name());
 			REQUIRE(node.named_specifiers()[2]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[2].name->to_string() == "qux");
-			REQUIRE_FALSE(node.named_specifiers()[2].alias.has_value());
-			REQUIRE_FALSE(node.named_specifiers()[2].type_keyword.has_value());
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[2].name().value() == "qux");
+			REQUIRE_FALSE(node.named_specifiers()[2].alias());
+			REQUIRE(node.named_specifiers()[2].type_keyword() == nullptr);
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 	}
@@ -326,49 +327,51 @@ TEST_CASE("import", "[parser][import]") {
 		SECTION("import foo, { bar } from \"module\";") {
 			auto& node = parse_import("import foo, { bar } from \"module\";");
 
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "foo");
+			REQUIRE(node.default_binding().value() == "foo");
 
 			REQUIRE(node.named_specifiers().size() == 1);
+			REQUIRE(node.named_specifiers()[0].name());
 			REQUIRE(node.named_specifiers()[0]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[0].name->to_string() == "bar");
-			REQUIRE_FALSE(node.named_specifiers()[0].alias.has_value());
-			REQUIRE_FALSE(node.named_specifiers()[0].type_keyword.has_value());
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[0].name().value() == "bar");
+			REQUIRE_FALSE(node.named_specifiers()[0].alias());
+			REQUIRE(node.named_specifiers()[0].type_keyword() == nullptr);
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
 		SECTION("import foo, * as ns from \"module\";") {
 			auto& node = parse_import("import foo, * as ns from \"module\";");
 
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(node.namespace_name() != nullptr);
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.namespace_name());
 			REQUIRE(node.namespace_name()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.namespace_name())->to_string() == "ns");
+			REQUIRE(node.namespace_name().value() == "ns");
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 	}
@@ -379,19 +382,19 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.type_keyword() != nullptr);
 			REQUIRE(node.type_keyword()->is<tscc::lex::tokens::type_token>());
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "foo");
+			REQUIRE(node.default_binding().value() == "foo");
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -400,19 +403,19 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.type_keyword() != nullptr);
 			REQUIRE(node.type_keyword()->is<tscc::lex::tokens::type_token>());
-			REQUIRE(node.namespace_name() != nullptr);
+			REQUIRE(node.namespace_name());
 			REQUIRE(node.namespace_name()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.namespace_name())->to_string() == "ns");
+			REQUIRE(node.namespace_name().value() == "ns");
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
-			REQUIRE(node.default_binding() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -423,20 +426,22 @@ TEST_CASE("import", "[parser][import]") {
 			REQUIRE(node.type_keyword()->is<tscc::lex::tokens::type_token>());
 
 			REQUIRE(node.named_specifiers().size() == 1);
+			REQUIRE(node.named_specifiers()[0].name());
 			REQUIRE(node.named_specifiers()[0]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[0].name->to_string() == "foo");
-			REQUIRE_FALSE(node.named_specifiers()[0].alias.has_value());
-			REQUIRE_FALSE(node.named_specifiers()[0].type_keyword.has_value());
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[0].name().value() == "foo");
+			REQUIRE_FALSE(node.named_specifiers()[0].alias());
+			REQUIRE(node.named_specifiers()[0].type_keyword() == nullptr);
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -449,29 +454,34 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.named_specifiers().size() == 2);
 
+			REQUIRE(node.named_specifiers()[0].name());
 			REQUIRE(node.named_specifiers()[0]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[0].name->to_string() == "foo");
-			REQUIRE_FALSE(node.named_specifiers()[0].alias.has_value());
-			REQUIRE_FALSE(node.named_specifiers()[0].type_keyword.has_value());
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[0].name().value() == "foo");
+			REQUIRE_FALSE(node.named_specifiers()[0].alias());
+			REQUIRE(node.named_specifiers()[0].type_keyword() == nullptr);
 
+			REQUIRE(node.named_specifiers()[1].name());
 			REQUIRE(node.named_specifiers()[1]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[1].name->to_string() == "bar");
-			REQUIRE(node.named_specifiers()[1].alias.has_value());
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[1].name().value() == "bar");
+			REQUIRE(node.named_specifiers()[1].alias());
 			REQUIRE(node.named_specifiers()[1]
-						.alias->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.named_specifiers()[1].alias)->to_string() == "baz");
-			REQUIRE_FALSE(node.named_specifiers()[1].type_keyword.has_value());
+						.alias()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[1].alias().value() == "baz");
+			REQUIRE(node.named_specifiers()[1].type_keyword() == nullptr);
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 	}
@@ -484,20 +494,22 @@ TEST_CASE("import", "[parser][import]") {
 			REQUIRE(node.named_specifiers().size() == 1);
 
 			auto& spec = node.named_specifiers()[0];
-			REQUIRE(spec.type_keyword.has_value());
-			REQUIRE(spec.type_keyword->is<tscc::lex::tokens::type_token>());
-			REQUIRE(spec.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(spec.name->to_string() == "foo");
-			REQUIRE_FALSE(spec.alias.has_value());
+			REQUIRE(spec.type_keyword() != nullptr);
+			REQUIRE(
+				spec.type_keyword()->is<tscc::lex::tokens::type_token>());
+			REQUIRE(spec.name());
+			REQUIRE(spec.name()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.name().value() == "foo");
+			REQUIRE_FALSE(spec.alias());
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -509,22 +521,24 @@ TEST_CASE("import", "[parser][import]") {
 			REQUIRE(node.named_specifiers().size() == 1);
 
 			auto& spec = node.named_specifiers()[0];
-			REQUIRE(spec.type_keyword.has_value());
-			REQUIRE(spec.type_keyword->is<tscc::lex::tokens::type_token>());
-			REQUIRE(spec.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(spec.name->to_string() == "foo");
-			REQUIRE(spec.alias.has_value());
-			REQUIRE(spec.alias->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*spec.alias)->to_string() == "bar");
+			REQUIRE(spec.type_keyword() != nullptr);
+			REQUIRE(
+				spec.type_keyword()->is<tscc::lex::tokens::type_token>());
+			REQUIRE(spec.name());
+			REQUIRE(spec.name()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.name().value() == "foo");
+			REQUIRE(spec.alias());
+			REQUIRE(spec.alias()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.alias().value() == "bar");
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -536,26 +550,30 @@ TEST_CASE("import", "[parser][import]") {
 			REQUIRE(node.named_specifiers().size() == 2);
 
 			auto& typed = node.named_specifiers()[0];
-			REQUIRE(typed.type_keyword.has_value());
-			REQUIRE(typed.type_keyword->is<tscc::lex::tokens::type_token>());
-			REQUIRE(typed.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(typed.name->to_string() == "foo");
-			REQUIRE_FALSE(typed.alias.has_value());
+			REQUIRE(typed.type_keyword() != nullptr);
+			REQUIRE(
+				typed.type_keyword()->is<tscc::lex::tokens::type_token>());
+			REQUIRE(typed.name());
+			REQUIRE(typed.name()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(typed.name().value() == "foo");
+			REQUIRE_FALSE(typed.alias());
 
 			auto& untyped = node.named_specifiers()[1];
-			REQUIRE_FALSE(untyped.type_keyword.has_value());
-			REQUIRE(untyped.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(untyped.name->to_string() == "bar");
-			REQUIRE_FALSE(untyped.alias.has_value());
+			REQUIRE(untyped.type_keyword() == nullptr);
+			REQUIRE(untyped.name());
+			REQUIRE(
+				untyped.name()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(untyped.name().value() == "bar");
+			REQUIRE_FALSE(untyped.alias());
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 	}
@@ -565,19 +583,19 @@ TEST_CASE("import", "[parser][import]") {
 			auto& node = parse_import("import type from \"module\";");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "type");
+			REQUIRE(node.default_binding().value() == "type");
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -586,25 +604,27 @@ TEST_CASE("import", "[parser][import]") {
 			auto& node = parse_import("import type, { foo } from \"module\";");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "type");
+			REQUIRE(node.default_binding().value() == "type");
 
 			REQUIRE(node.named_specifiers().size() == 1);
+			REQUIRE(node.named_specifiers()[0].name());
 			REQUIRE(node.named_specifiers()[0]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[0].name->to_string() == "foo");
-			REQUIRE_FALSE(node.named_specifiers()[0].alias.has_value());
-			REQUIRE_FALSE(node.named_specifiers()[0].type_keyword.has_value());
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[0].name().value() == "foo");
+			REQUIRE_FALSE(node.named_specifiers()[0].alias());
+			REQUIRE(node.named_specifiers()[0].type_keyword() == nullptr);
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -613,20 +633,21 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.named_specifiers().size() == 1);
 			auto& spec = node.named_specifiers()[0];
-			REQUIRE_FALSE(spec.type_keyword.has_value());
-			REQUIRE(spec.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(spec.name->to_string() == "type");
-			REQUIRE_FALSE(spec.alias.has_value());
+			REQUIRE(spec.type_keyword() == nullptr);
+			REQUIRE(spec.name());
+			REQUIRE(spec.name()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.name().value() == "type");
+			REQUIRE_FALSE(spec.alias());
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -636,22 +657,23 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.named_specifiers().size() == 1);
 			auto& spec = node.named_specifiers()[0];
-			REQUIRE_FALSE(spec.type_keyword.has_value());
-			REQUIRE(spec.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(spec.name->to_string() == "type");
-			REQUIRE(spec.alias.has_value());
-			REQUIRE(spec.alias->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*spec.alias)->to_string() == "t");
+			REQUIRE(spec.type_keyword() == nullptr);
+			REQUIRE(spec.name());
+			REQUIRE(spec.name()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.name().value() == "type");
+			REQUIRE(spec.alias());
+			REQUIRE(spec.alias()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.alias().value() == "t");
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -661,27 +683,31 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.named_specifiers().size() == 2);
 
-			REQUIRE_FALSE(node.named_specifiers()[0].type_keyword.has_value());
+			REQUIRE(node.named_specifiers()[0].type_keyword() == nullptr);
+			REQUIRE(node.named_specifiers()[0].name());
 			REQUIRE(node.named_specifiers()[0]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[0].name->to_string() == "type");
-			REQUIRE_FALSE(node.named_specifiers()[0].alias.has_value());
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[0].name().value() == "type");
+			REQUIRE_FALSE(node.named_specifiers()[0].alias());
 
-			REQUIRE_FALSE(node.named_specifiers()[1].type_keyword.has_value());
+			REQUIRE(node.named_specifiers()[1].type_keyword() == nullptr);
+			REQUIRE(node.named_specifiers()[1].name());
 			REQUIRE(node.named_specifiers()[1]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[1].name->to_string() == "foo");
-			REQUIRE_FALSE(node.named_specifiers()[1].alias.has_value());
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[1].name().value() == "foo");
+			REQUIRE_FALSE(node.named_specifiers()[1].alias());
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
@@ -692,19 +718,19 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.type_keyword() != nullptr);
 			REQUIRE(node.type_keyword()->is<tscc::lex::tokens::type_token>());
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "type");
+			REQUIRE(node.default_binding().value() == "type");
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 	}
@@ -713,21 +739,21 @@ TEST_CASE("import", "[parser][import]") {
 		SECTION("import foo = require(\"module\");") {
 			auto& node = parse_import("import foo = require(\"module\");");
 
-			REQUIRE(node.equals_name() != nullptr);
+			REQUIRE(node.equals_name());
 			REQUIRE(
 				node.equals_name()->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.equals_name())->to_string() == "foo");
-			REQUIRE(node.require_module_specifier() != nullptr);
+			REQUIRE(node.equals_name().value() == "foo");
+			REQUIRE(node.require_module_specifier());
 			REQUIRE(node.require_module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.require_module_specifier()) == U"module");
+			REQUIRE(node.require_module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.module_specifier() == nullptr);
-			REQUIRE(node.entity_identifiers().empty());
+			REQUIRE_FALSE(node.module_specifier());
+			REQUIRE(node.entity_name().empty());
 			REQUIRE(node.attributes_keyword() == nullptr);
 			REQUIRE(node.attributes().empty());
 		}
@@ -737,20 +763,20 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.type_keyword() != nullptr);
 			REQUIRE(node.type_keyword()->is<tscc::lex::tokens::type_token>());
-			REQUIRE(node.equals_name() != nullptr);
+			REQUIRE(node.equals_name());
 			REQUIRE(
 				node.equals_name()->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.equals_name())->to_string() == "foo");
-			REQUIRE(node.require_module_specifier() != nullptr);
+			REQUIRE(node.equals_name().value() == "foo");
+			REQUIRE(node.require_module_specifier());
 			REQUIRE(node.require_module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.require_module_specifier()) == U"module");
+			REQUIRE(node.require_module_specifier().value() == "module");
 
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.module_specifier() == nullptr);
-			REQUIRE(node.entity_identifiers().empty());
+			REQUIRE_FALSE(node.module_specifier());
+			REQUIRE(node.entity_name().empty());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 	}
@@ -759,23 +785,23 @@ TEST_CASE("import", "[parser][import]") {
 		SECTION("import foo = Namespace.Thing;") {
 			auto& node = parse_import("import foo = Namespace.Thing;");
 
-			REQUIRE(node.equals_name() != nullptr);
+			REQUIRE(node.equals_name());
 			REQUIRE(
 				node.equals_name()->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.equals_name())->to_string() == "foo");
-			REQUIRE(node.entity_identifiers().size() == 2);
-			REQUIRE(node.entity_identifiers()[0]
-						.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.entity_identifiers()[0]->to_string() == "Namespace");
-			REQUIRE(node.entity_identifiers()[1]
-						.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.entity_identifiers()[1]->to_string() == "Thing");
+			REQUIRE(node.equals_name().value() == "foo");
+			REQUIRE(node.entity_name().size() == 2);
+			REQUIRE(node.entity_name()[0]
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.entity_name()[0].value() == "Namespace");
+			REQUIRE(node.entity_name()[1]
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.entity_name()[1].value() == "Thing");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.require_module_specifier() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.module_specifier() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.require_module_specifier());
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.module_specifier());
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
@@ -783,26 +809,26 @@ TEST_CASE("import", "[parser][import]") {
 		SECTION("import foo = A.B.C;") {
 			auto& node = parse_import("import foo = A.B.C;");
 
-			REQUIRE(node.equals_name() != nullptr);
+			REQUIRE(node.equals_name());
 			REQUIRE(
 				node.equals_name()->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.equals_name())->to_string() == "foo");
-			REQUIRE(node.entity_identifiers().size() == 3);
-			REQUIRE(node.entity_identifiers()[0]
-						.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.entity_identifiers()[0]->to_string() == "A");
-			REQUIRE(node.entity_identifiers()[1]
-						.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.entity_identifiers()[1]->to_string() == "B");
-			REQUIRE(node.entity_identifiers()[2]
-						.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.entity_identifiers()[2]->to_string() == "C");
+			REQUIRE(node.equals_name().value() == "foo");
+			REQUIRE(node.entity_name().size() == 3);
+			REQUIRE(node.entity_name()[0]
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.entity_name()[0].value() == "A");
+			REQUIRE(node.entity_name()[1]
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.entity_name()[1].value() == "B");
+			REQUIRE(node.entity_name()[2]
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.entity_name()[2].value() == "C");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.require_module_specifier() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.module_specifier() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.require_module_specifier());
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.module_specifier());
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
@@ -812,22 +838,22 @@ TEST_CASE("import", "[parser][import]") {
 
 			REQUIRE(node.type_keyword() != nullptr);
 			REQUIRE(node.type_keyword()->is<tscc::lex::tokens::type_token>());
-			REQUIRE(node.equals_name() != nullptr);
+			REQUIRE(node.equals_name());
 			REQUIRE(
 				node.equals_name()->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.equals_name())->to_string() == "foo");
-			REQUIRE(node.entity_identifiers().size() == 2);
-			REQUIRE(node.entity_identifiers()[0]
-						.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.entity_identifiers()[0]->to_string() == "Namespace");
-			REQUIRE(node.entity_identifiers()[1]
-						.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.entity_identifiers()[1]->to_string() == "Thing");
+			REQUIRE(node.equals_name().value() == "foo");
+			REQUIRE(node.entity_name().size() == 2);
+			REQUIRE(node.entity_name()[0]
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.entity_name()[0].value() == "Namespace");
+			REQUIRE(node.entity_name()[1]
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.entity_name()[1].value() == "Thing");
 
-			REQUIRE(node.require_module_specifier() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.module_specifier() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.require_module_specifier());
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.module_specifier());
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
@@ -836,19 +862,19 @@ TEST_CASE("import", "[parser][import]") {
 			auto& node = parse_import("import type = require(\"module\");");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.equals_name() != nullptr);
+			REQUIRE(node.equals_name());
 			REQUIRE(
 				node.equals_name()->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.equals_name())->to_string() == "type");
-			REQUIRE(node.require_module_specifier() != nullptr);
+			REQUIRE(node.equals_name().value() == "type");
+			REQUIRE(node.require_module_specifier());
 			REQUIRE(node.require_module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.require_module_specifier()) == U"module");
+			REQUIRE(node.require_module_specifier().value() == "module");
 
-			REQUIRE(node.entity_identifiers().empty());
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.module_specifier() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE(node.entity_name().empty());
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.module_specifier());
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
@@ -859,59 +885,66 @@ TEST_CASE("import", "[parser][import]") {
 			auto& node =
 				parse_import("import foo from \"m\" with { type: \"json\" };");
 
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"m");
+			REQUIRE(node.module_specifier().value() == "m");
 			REQUIRE(node.attributes_keyword() != nullptr);
 			REQUIRE(
 				node.attributes_keyword()->is<tscc::lex::tokens::with_token>());
 			REQUIRE(node.attributes().size() == 1);
 
 			auto& attr = node.attributes()[0];
-			REQUIRE(attr.key.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(attr.key->to_string() == "type");
-			REQUIRE(attr.value.is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(attr.value) == U"json");
+			REQUIRE(attr.key());
+			REQUIRE(attr.key()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(attr.key().value() == "type");
+			REQUIRE(attr.value());
+			REQUIRE(
+				attr.value()->is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(attr.value().value() == "json");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.equals_name());
 		}
 
 		SECTION("import foo from \"m\" assert { type: \"json\" };") {
 			auto& node = parse_import(
 				"import foo from \"m\" assert { type: \"json\" };");
 
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"m");
+			REQUIRE(node.module_specifier().value() == "m");
 
 			REQUIRE(node.attributes_keyword() != nullptr);
 			REQUIRE(node.attributes_keyword()
 						->is<tscc::lex::tokens::assert_token>());
 			REQUIRE(node.attributes().size() == 1);
+			REQUIRE(node.attributes()[0].key());
 			REQUIRE(node.attributes()[0]
-						.key.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.attributes()[0].key->to_string() == "type");
+						.key()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.attributes()[0].key().value() == "type");
+			REQUIRE(node.attributes()[0].value());
 			REQUIRE(node.attributes()[0]
-						.value.is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.attributes()[0].value) == U"json");
+						.value()
+						->is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(node.attributes()[0].value().value() == "json");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.equals_name());
 		}
 
 		SECTION(
@@ -919,26 +952,30 @@ TEST_CASE("import", "[parser][import]") {
 			"};") {
 			auto& node = parse_import("import \"m\" with { type: \"json\" };");
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"m");
+			REQUIRE(node.module_specifier().value() == "m");
 			REQUIRE(node.attributes_keyword() != nullptr);
 			REQUIRE(
 				node.attributes_keyword()->is<tscc::lex::tokens::with_token>());
 			REQUIRE(node.attributes().size() == 1);
+			REQUIRE(node.attributes()[0].key());
 			REQUIRE(node.attributes()[0]
-						.key.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.attributes()[0].key->to_string() == "type");
+						.key()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.attributes()[0].key().value() == "type");
+			REQUIRE(node.attributes()[0].value());
 			REQUIRE(node.attributes()[0]
-						.value.is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.attributes()[0].value) == U"json");
+						.value()
+						->is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(node.attributes()[0].value().value() == "json");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.equals_name());
 		}
 
 		SECTION("multiple attributes") {
@@ -946,66 +983,74 @@ TEST_CASE("import", "[parser][import]") {
 				"import foo from \"m\" with { type: \"json\", integrity: "
 				"\"sha\" };");
 
-			REQUIRE(node.default_binding() != nullptr);
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(node.module_specifier() != nullptr);
-			REQUIRE(string_value(node.module_specifier()) == U"m");
+			REQUIRE(node.default_binding());
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.module_specifier());
+			REQUIRE(node.module_specifier().value() == "m");
 
 			REQUIRE(node.attributes_keyword() != nullptr);
 			REQUIRE(
 				node.attributes_keyword()->is<tscc::lex::tokens::with_token>());
 			REQUIRE(node.attributes().size() == 2);
 
+			REQUIRE(node.attributes()[0].key());
 			REQUIRE(node.attributes()[0]
-						.key.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.attributes()[0].key->to_string() == "type");
+						.key()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.attributes()[0].key().value() == "type");
+			REQUIRE(node.attributes()[0].value());
 			REQUIRE(node.attributes()[0]
-						.value.is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.attributes()[0].value) == U"json");
+						.value()
+						->is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(node.attributes()[0].value().value() == "json");
 
+			REQUIRE(node.attributes()[1].key());
 			REQUIRE(node.attributes()[1]
-						.key.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.attributes()[1].key->to_string() == "integrity");
+						.key()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.attributes()[1].key().value() == "integrity");
+			REQUIRE(node.attributes()[1].value());
 			REQUIRE(node.attributes()[1]
-						.value.is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.attributes()[1].value) == U"sha");
+						.value()
+						->is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(node.attributes()[1].value().value() == "sha");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.equals_name());
 		}
 
 		SECTION("empty attributes") {
 			auto& node = parse_import("import foo from \"m\" with { };");
 
-			REQUIRE(node.default_binding() != nullptr);
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(node.module_specifier() != nullptr);
-			REQUIRE(string_value(node.module_specifier()) == U"m");
+			REQUIRE(node.default_binding());
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.module_specifier());
+			REQUIRE(node.module_specifier().value() == "m");
 			REQUIRE(node.attributes_keyword() != nullptr);
 			REQUIRE(
 				node.attributes_keyword()->is<tscc::lex::tokens::with_token>());
 			REQUIRE(node.attributes().empty());
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.equals_name());
 		}
 
 		SECTION("trailing comma in attributes") {
 			auto& node =
 				parse_import("import foo from \"m\" with { type: \"json\", };");
 
-			REQUIRE(node.default_binding() != nullptr);
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(node.module_specifier() != nullptr);
-			REQUIRE(string_value(node.module_specifier()) == U"m");
+			REQUIRE(node.default_binding());
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.module_specifier());
+			REQUIRE(node.module_specifier().value() == "m");
 			REQUIRE(node.attributes_keyword() != nullptr);
 			REQUIRE(node.attributes().size() == 1);
-			REQUIRE(node.attributes()[0].key->to_string() == "type");
-			REQUIRE(string_value(node.attributes()[0].value) == U"json");
+			REQUIRE(node.attributes()[0].key().value() == "type");
+			REQUIRE(node.attributes()[0].value().value() == "json");
 		}
 	}
 
@@ -1013,75 +1058,75 @@ TEST_CASE("import", "[parser][import]") {
 		SECTION("import \"module\" at EOF") {
 			auto& node = parse_import("import \"module\"");
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
 		SECTION("import foo from \"module\" at EOF") {
 			auto& node = parse_import("import foo from \"module\"");
 
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
-			REQUIRE(node.equals_name() == nullptr);
+			REQUIRE_FALSE(node.equals_name());
 			REQUIRE(node.attributes_keyword() == nullptr);
 		}
 
 		SECTION("import foo = require(\"module\") at EOF") {
 			auto& node = parse_import("import foo = require(\"module\")");
 
-			REQUIRE(node.equals_name() != nullptr);
+			REQUIRE(node.equals_name());
 			REQUIRE(
 				node.equals_name()->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.equals_name())->to_string() == "foo");
-			REQUIRE(node.require_module_specifier() != nullptr);
+			REQUIRE(node.equals_name().value() == "foo");
+			REQUIRE(node.require_module_specifier());
 			REQUIRE(node.require_module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.require_module_specifier()) == U"module");
+			REQUIRE(node.require_module_specifier().value() == "module");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.module_specifier() == nullptr);
-			REQUIRE(node.entity_identifiers().empty());
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.module_specifier());
+			REQUIRE(node.entity_name().empty());
 		}
 
 		SECTION("import foo = A.B at EOF") {
 			auto& node = parse_import("import foo = A.B");
 
-			REQUIRE(node.equals_name() != nullptr);
+			REQUIRE(node.equals_name());
 			REQUIRE(
 				node.equals_name()->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.equals_name())->to_string() == "foo");
-			REQUIRE(node.entity_identifiers().size() == 2);
-			REQUIRE(node.entity_identifiers()[0]
-						.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.entity_identifiers()[0]->to_string() == "A");
-			REQUIRE(node.entity_identifiers()[1]
-						.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.entity_identifiers()[1]->to_string() == "B");
+			REQUIRE(node.equals_name().value() == "foo");
+			REQUIRE(node.entity_name().size() == 2);
+			REQUIRE(node.entity_name()[0]
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.entity_name()[0].value() == "A");
+			REQUIRE(node.entity_name()[1]
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.entity_name()[1].value() == "B");
 
 			REQUIRE(node.type_keyword() == nullptr);
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.module_specifier() == nullptr);
-			REQUIRE(node.require_module_specifier() == nullptr);
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.module_specifier());
+			REQUIRE_FALSE(node.require_module_specifier());
 		}
 	}
 
@@ -1089,27 +1134,27 @@ TEST_CASE("import", "[parser][import]") {
 		SECTION("newline before module specifier") {
 			auto& node = parse_import("import\n\"module\";");
 
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE(node.module_specifier().value() == "module");
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
 		}
 
 		SECTION("newline between from and module specifier") {
 			auto& node = parse_import("import foo from\n\"module\";");
 
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE(node.module_specifier().value() == "module");
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
 		}
 
@@ -1118,45 +1163,49 @@ TEST_CASE("import", "[parser][import]") {
 				parse_import("import {\nfoo,\nbar\n} from \"module\";");
 
 			REQUIRE(node.named_specifiers().size() == 2);
+			REQUIRE(node.named_specifiers()[0].name());
 			REQUIRE(node.named_specifiers()[0]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[0].name->to_string() == "foo");
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[0].name().value() == "foo");
+			REQUIRE(node.named_specifiers()[1].name());
 			REQUIRE(node.named_specifiers()[1]
-						.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.named_specifiers()[1].name->to_string() == "bar");
-			REQUIRE(node.module_specifier() != nullptr);
-			REQUIRE(string_value(node.module_specifier()) == U"module");
-			REQUIRE(node.default_binding() == nullptr);
-			REQUIRE(node.namespace_name() == nullptr);
+						.name()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.named_specifiers()[1].name().value() == "bar");
+			REQUIRE(node.module_specifier());
+			REQUIRE(node.module_specifier().value() == "module");
+			REQUIRE_FALSE(node.default_binding());
+			REQUIRE_FALSE(node.namespace_name());
 		}
 
 		SECTION("newline before from keyword") {
 			auto& node = parse_import("import foo\nfrom \"module\";");
 
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
-			REQUIRE(node.namespace_name() == nullptr);
+			REQUIRE(node.module_specifier().value() == "module");
+			REQUIRE_FALSE(node.namespace_name());
 			REQUIRE(node.named_specifiers().empty());
 		}
 
 		SECTION("newline before as in namespace import") {
 			auto& node = parse_import("import *\nas ns from \"module\";");
 
-			REQUIRE(node.namespace_name() != nullptr);
+			REQUIRE(node.namespace_name());
 			REQUIRE(node.namespace_name()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.namespace_name())->to_string() == "ns");
-			REQUIRE(node.module_specifier() != nullptr);
+			REQUIRE(node.namespace_name().value() == "ns");
+			REQUIRE(node.module_specifier());
 			REQUIRE(node.module_specifier()
 						->is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.module_specifier()) == U"module");
-			REQUIRE(node.default_binding() == nullptr);
+			REQUIRE(node.module_specifier().value() == "module");
+			REQUIRE_FALSE(node.default_binding());
 			REQUIRE(node.named_specifiers().empty());
 		}
 
@@ -1164,36 +1213,36 @@ TEST_CASE("import", "[parser][import]") {
 			auto& node =
 				parse_import("import foo from \"m\"\nwith { type: \"json\" };");
 
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(node.module_specifier() != nullptr);
-			REQUIRE(string_value(node.module_specifier()) == U"m");
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.module_specifier());
+			REQUIRE(node.module_specifier().value() == "m");
 			REQUIRE(node.attributes_keyword() != nullptr);
 			REQUIRE(
 				node.attributes_keyword()->is<tscc::lex::tokens::with_token>());
 			REQUIRE(node.attributes().size() == 1);
-			REQUIRE(node.attributes()[0].key->to_string() == "type");
-			REQUIRE(string_value(node.attributes()[0].value) == U"json");
+			REQUIRE(node.attributes()[0].key().value() == "type");
+			REQUIRE(node.attributes()[0].value().value() == "json");
 		}
 
 		SECTION("newline before assert — continues as attributes") {
 			auto& node = parse_import(
 				"import foo from \"m\"\nassert { type: \"json\" };");
 
-			REQUIRE(node.default_binding() != nullptr);
+			REQUIRE(node.default_binding());
 			REQUIRE(node.default_binding()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(node.module_specifier() != nullptr);
-			REQUIRE(string_value(node.module_specifier()) == U"m");
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.module_specifier());
+			REQUIRE(node.module_specifier().value() == "m");
 			REQUIRE(node.attributes_keyword() != nullptr);
 			REQUIRE(node.attributes_keyword()
 						->is<tscc::lex::tokens::assert_token>());
 			REQUIRE(node.attributes().size() == 1);
-			REQUIRE(node.attributes()[0].key->to_string() == "type");
-			REQUIRE(string_value(node.attributes()[0].value) == U"json");
+			REQUIRE(node.attributes()[0].key().value() == "type");
+			REQUIRE(node.attributes()[0].value().value() == "json");
 		}
 
 		SECTION("ASI: two imports separated by newline") {
@@ -1211,9 +1260,9 @@ TEST_CASE("import", "[parser][import]") {
 			auto* first_import =
 				dynamic_cast<tscc::parse::ast::import_node*>(first.get());
 			REQUIRE(first_import != nullptr);
-			REQUIRE(first_import->module_specifier() != nullptr);
-			REQUIRE(string_value(first_import->module_specifier()) == U"a");
-			REQUIRE(first_import->default_binding() == nullptr);
+			REQUIRE(first_import->module_specifier());
+			REQUIRE(first_import->module_specifier().value() == "a");
+			REQUIRE_FALSE(first_import->default_binding());
 
 			++it;
 			REQUIRE(it != r.parser->end());
@@ -1222,9 +1271,9 @@ TEST_CASE("import", "[parser][import]") {
 			auto* second_import =
 				dynamic_cast<tscc::parse::ast::import_node*>(second.get());
 			REQUIRE(second_import != nullptr);
-			REQUIRE(second_import->module_specifier() != nullptr);
-			REQUIRE(string_value(second_import->module_specifier()) == U"b");
-			REQUIRE(second_import->default_binding() == nullptr);
+			REQUIRE(second_import->module_specifier());
+			REQUIRE(second_import->module_specifier().value() == "b");
+			REQUIRE_FALSE(second_import->default_binding());
 		}
 
 		SECTION("ASI: import with bindings followed by another import") {
@@ -1241,14 +1290,13 @@ TEST_CASE("import", "[parser][import]") {
 			auto* first_import =
 				dynamic_cast<tscc::parse::ast::import_node*>(first.get());
 			REQUIRE(first_import != nullptr);
-			REQUIRE(first_import->default_binding() != nullptr);
+			REQUIRE(first_import->default_binding());
 			REQUIRE(
 				first_import->default_binding()
 					->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(
-				(*first_import->default_binding())->to_string() == "foo");
-			REQUIRE(first_import->module_specifier() != nullptr);
-			REQUIRE(string_value(first_import->module_specifier()) == U"a");
+			REQUIRE(first_import->default_binding().value() == "foo");
+			REQUIRE(first_import->module_specifier());
+			REQUIRE(first_import->module_specifier().value() == "a");
 
 			++it;
 			REQUIRE(it != r.parser->end());
@@ -1256,14 +1304,13 @@ TEST_CASE("import", "[parser][import]") {
 			auto* second_import =
 				dynamic_cast<tscc::parse::ast::import_node*>(second.get());
 			REQUIRE(second_import != nullptr);
-			REQUIRE(second_import->default_binding() != nullptr);
+			REQUIRE(second_import->default_binding());
 			REQUIRE(
 				second_import->default_binding()
 					->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(
-				(*second_import->default_binding())->to_string() == "bar");
-			REQUIRE(second_import->module_specifier() != nullptr);
-			REQUIRE(string_value(second_import->module_specifier()) == U"b");
+			REQUIRE(second_import->default_binding().value() == "bar");
+			REQUIRE(second_import->module_specifier());
+			REQUIRE(second_import->module_specifier().value() == "b");
 		}
 	}
 
@@ -1351,26 +1398,26 @@ TEST_CASE("import", "[parser][import]") {
 		SECTION("namespace name from contextual keyword") {
 			auto& node = parse_import("import * as from from \"module\";");
 
-			REQUIRE(node.namespace_name() != nullptr);
+			REQUIRE(node.namespace_name());
 			REQUIRE(node.namespace_name()
 						->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*node.namespace_name())->to_string() == "from");
-			REQUIRE(node.module_specifier() != nullptr);
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.namespace_name().value() == "from");
+			REQUIRE(node.module_specifier());
+			REQUIRE(node.module_specifier().value() == "module");
 		}
 
 		SECTION("entity identifiers normalized") {
 			auto& node = parse_import("import foo = type.from.as;");
 
-			REQUIRE(node.entity_identifiers().size() == 3);
-			for (auto& id : node.entity_identifiers()) {
+			REQUIRE(node.entity_name().size() == 3);
+			for (auto& id : node.entity_name().tokens()) {
 				REQUIRE(id.is<tscc::lex::tokens::identifier_token>());
 			}
-			REQUIRE(node.entity_identifiers()[0]->to_string() == "type");
-			REQUIRE(node.entity_identifiers()[1]->to_string() == "from");
-			REQUIRE(node.entity_identifiers()[2]->to_string() == "as");
+			REQUIRE(node.entity_name()[0].value() == "type");
+			REQUIRE(node.entity_name()[1].value() == "from");
+			REQUIRE(node.entity_name()[2].value() == "as");
 
-			REQUIRE((*node.equals_name())->to_string() == "foo");
+			REQUIRE(node.equals_name().value() == "foo");
 		}
 
 		SECTION("attribute key normalized") {
@@ -1378,15 +1425,19 @@ TEST_CASE("import", "[parser][import]") {
 				"import foo from \"m\" with { assert: \"json\" };");
 
 			REQUIRE(node.attributes().size() == 1);
+			REQUIRE(node.attributes()[0].key());
 			REQUIRE(node.attributes()[0]
-						.key.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(node.attributes()[0].key->to_string() == "assert");
+						.key()
+						->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(node.attributes()[0].key().value() == "assert");
+			REQUIRE(node.attributes()[0].value());
 			REQUIRE(node.attributes()[0]
-						.value.is<tscc::lex::tokens::constant_value_token>());
-			REQUIRE(string_value(node.attributes()[0].value) == U"json");
+						.value()
+						->is<tscc::lex::tokens::constant_value_token>());
+			REQUIRE(node.attributes()[0].value().value() == "json");
 
-			REQUIRE((*node.default_binding())->to_string() == "foo");
-			REQUIRE(string_value(node.module_specifier()) == U"m");
+			REQUIRE(node.default_binding().value() == "foo");
+			REQUIRE(node.module_specifier().value() == "m");
 		}
 
 		SECTION("specifier alias normalized") {
@@ -1394,13 +1445,14 @@ TEST_CASE("import", "[parser][import]") {
 				parse_import("import { foo as type } from \"module\";");
 
 			auto& spec = node.named_specifiers()[0];
-			REQUIRE(spec.name.is<tscc::lex::tokens::identifier_token>());
-			REQUIRE(spec.name->to_string() == "foo");
-			REQUIRE(spec.alias.has_value());
-			REQUIRE(spec.alias->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*spec.alias)->to_string() == "type");
+			REQUIRE(spec.name());
+			REQUIRE(spec.name()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.name().value() == "foo");
+			REQUIRE(spec.alias());
+			REQUIRE(spec.alias()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.alias().value() == "type");
 
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 		}
 
 		SECTION("default_token not normalized in specifier name") {
@@ -1408,12 +1460,12 @@ TEST_CASE("import", "[parser][import]") {
 				parse_import("import { default as foo } from \"module\";");
 
 			auto& spec = node.named_specifiers()[0];
-			REQUIRE(spec.name.is<tscc::lex::tokens::default_token>());
-			REQUIRE(spec.alias.has_value());
-			REQUIRE(spec.alias->is<tscc::lex::tokens::identifier_token>());
-			REQUIRE((*spec.alias)->to_string() == "foo");
+			REQUIRE(spec.is_default());
+			REQUIRE(spec.alias());
+			REQUIRE(spec.alias()->is<tscc::lex::tokens::identifier_token>());
+			REQUIRE(spec.alias().value() == "foo");
 
-			REQUIRE(string_value(node.module_specifier()) == U"module");
+			REQUIRE(node.module_specifier().value() == "module");
 		}
 	}
 }

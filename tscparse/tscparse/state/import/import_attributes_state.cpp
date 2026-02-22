@@ -142,10 +142,7 @@ public:
 		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::constant_value_token&) const {
-		s_->builder_->add_attribute(ast::import_attribute{
-			std::move(*s_->pending_key_),
-			token_,
-		});
+		s_->builder_->add_attribute(std::move(*s_->pending_key_), token_);
 		s_->pending_key_.reset();
 		s_->phase_ = phase::after_value;
 		return state_result::stay();

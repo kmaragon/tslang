@@ -60,6 +60,10 @@ bool constant_value_token::operator!=(
 	return value_ != other.value_;
 }
 
+bool constant_value_token::is_string() const {
+	return std::holds_alternative<string_data>(value_);
+}
+
 std::optional<std::u32string_view> constant_value_token::string_value()
 	const noexcept {
 	if (!std::holds_alternative<string_data>(value_))

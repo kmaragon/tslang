@@ -23,6 +23,8 @@
 #include <variant>
 #include <vector>
 #include "ast_node.hpp"
+#include "lexeme.hpp"
+#include "qualified_name.hpp"
 
 namespace tscc::parse::state {
 class import_node_builder;
@@ -39,10 +41,28 @@ namespace tscc::parse::ast {
  * normalized), a constant_value_token (string literal), or a
  * default_token. The alias, when present, is always an identifier_token.
  */
-struct import_specifier {
-	std::optional<lex::token> type_keyword;
-	lex::token name;
-	std::optional<lex::token> alias;
+class import_specifier {
+	friend class state::import_node_builder;
+
+	lex::token name_;
+	lex::token type_keyword_;
+	lex::token alias_;
+
+public:
+	/// Specifier name as a lexeme
+	///
+	/// Returns an invalid lexeme when the name is `default` —
+	/// use is_default() for that case.
+	lexeme<std::string_view> name() const;
+
+	/// Whether this specifier uses the `default` keyword as its name
+	bool is_default() const noexcept;
+
+	/// Type-only modifier keyword, if present
+	const lex::token* type_keyword() const noexcept;
+
+	/// Alias binding after `as`, if present
+	lexeme<std::string_view> alias() const;
 };
 
 /**
@@ -51,9 +71,18 @@ struct import_specifier {
  * Represents one entry such as: type: "json"
  * The key is normalized to identifier_token when it was a contextual keyword.
  */
-struct import_attribute {
-	lex::token key;
-	lex::token value;
+class import_attribute {
+	friend class state::import_node_builder;
+
+	lex::token key_;
+	lex::token value_;
+
+public:
+	/// Attribute key (always normalized identifier)
+	lexeme<std::string_view> key() const;
+
+	/// Attribute value (always string literal)
+	lexeme<std::string> value() const;
 };
 
 /**
@@ -110,17 +139,13 @@ public:
 
 	/**
 	 * \brief Get the default binding identifier, if present
-	 *
-	 * Normalized to identifier_token when the source used a contextual keyword.
 	 */
-	const lex::token* default_binding() const noexcept;
+	lexeme<std::string_view> default_binding() const;
 
 	/**
 	 * \brief Get the namespace binding name, if present
-	 *
-	 * Normalized to identifier_token.
 	 */
-	const lex::token* namespace_name() const noexcept;
+	lexeme<std::string_view> namespace_name() const;
 
 	/**
 	 * \brief Get all specifiers in the named import list
@@ -129,8 +154,10 @@ public:
 
 	/**
 	 * \brief Get the module specifier string literal, if present
+	 *
+	 * The lexeme value is the module path as a UTF-8 std::string.
 	 */
-	const lex::token* module_specifier() const noexcept;
+	lexeme<std::string> module_specifier() const;
 
 	/**
 	 * \brief Get the attributes keyword (assert/with), if present
@@ -144,22 +171,20 @@ public:
 
 	/**
 	 * \brief Get the binding name of an import-equals, if present
-	 *
-	 * Normalized to identifier_token.
 	 */
-	const lex::token* equals_name() const noexcept;
+	lexeme<std::string_view> equals_name() const;
 
 	/**
 	 * \brief Get the module specifier inside require(), if present
+	 *
+	 * The lexeme value is the module path as a UTF-8 std::string.
 	 */
-	const lex::token* require_module_specifier() const noexcept;
+	lexeme<std::string> require_module_specifier() const;
 
 	/**
-	 * \brief Get identifier segments of an import-equals entity name
-	 *
-	 * Each identifier is normalized to identifier_token.
+	 * \brief Get the qualified entity name of an import-equals, if present
 	 */
-	const std::vector<lex::token>& entity_identifiers() const noexcept;
+	const qualified_name& entity_name() const noexcept;
 
 	const lex::source_location& location() const override;
 	void visit_children(
@@ -194,11 +219,7 @@ private:
 			lex::token module_specifier;
 		};
 
-		struct entity_data {
-			std::vector<lex::token> identifiers;
-		};
-
-		std::variant<std::monostate, require_data, entity_data> rhs;
+		std::variant<std::monostate, require_data, qualified_name> rhs;
 	};
 
 	struct attributes_data {
@@ -210,7 +231,6 @@ private:
 	equals_form& ensure_equals();
 	from_form::named_binding& ensure_named();
 	equals_form::require_data& ensure_require();
-	equals_form::entity_data& ensure_entity();
 	attributes_data& ensure_attributes();
 
 	lex::token import_keyword_;
