@@ -22,6 +22,7 @@
 #include <tsclex/tokens/module_token.hpp>
 #include <tscparse/ast/declare_module_node.hpp>
 #include <tscparse/ast/import_node.hpp>
+#include <tscparse/error/declare_in_ambient_context.hpp>
 #include <tscparse/error/expected_token.hpp>
 #include <tscparse/error/unexpected_end_of_text.hpp>
 #include "test_helpers.hpp"
@@ -36,13 +37,11 @@ TEST_CASE("declare", "[parser][declare][module]") {
 		auto& node = parse_declare_module("declare module \"foo\" { }");
 
 		REQUIRE(node.declare_keyword() != nullptr);
-		REQUIRE(
-			node.declare_keyword()->is<tscc::lex::tokens::declare_token>());
+		REQUIRE(node.declare_keyword()->is<tscc::lex::tokens::declare_token>());
 		REQUIRE(node.declare_keyword()->location().line() == 0);
 		REQUIRE(node.declare_keyword()->location().column() == 0);
 		REQUIRE(node.module_keyword() != nullptr);
-		REQUIRE(
-			node.module_keyword()->is<tscc::lex::tokens::module_token>());
+		REQUIRE(node.module_keyword()->is<tscc::lex::tokens::module_token>());
 		REQUIRE(node.module_name());
 		REQUIRE(
 			node.module_name()->is<tscc::lex::tokens::constant_value_token>());
@@ -51,8 +50,8 @@ TEST_CASE("declare", "[parser][declare][module]") {
 	}
 
 	SECTION("declare module with import") {
-		auto& node = parse_declare_module(
-			"declare module \"foo\" { import \"bar\"; }");
+		auto& node =
+			parse_declare_module("declare module \"foo\" { import \"bar\"; }");
 
 		REQUIRE(node.module_name().value() == "foo");
 		REQUIRE(node.children().size() == 1);
@@ -98,9 +97,19 @@ TEST_CASE("declare", "[parser][declare][module]") {
 		}
 
 		SECTION("unclosed brace") {
-			REQUIRE_THROWS_AS(
-				parse_declare_module("declare module \"foo\" { import \"bar\";"),
-				tscc::parse::unexpected_end_of_text);
+			REQUIRE_THROWS_AS(parse_declare_module(
+								  "declare module \"foo\" { import \"bar\";"),
+							  tscc::parse::unexpected_end_of_text);
+		}
+
+		SECTION("declare inside ambient context (TS1038)") {
+			try {
+				parse_declare_module(
+					"declare module \"foo\" { declare module \"bar\" { } }");
+				FAIL("Expected declare_in_ambient_context");
+			} catch (const tscc::parse::declare_in_ambient_context& e) {
+				REQUIRE(e.code() == tscc::error_code::ts1038);
+			}
 		}
 	}
 }

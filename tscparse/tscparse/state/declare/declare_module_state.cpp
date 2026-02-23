@@ -43,7 +43,8 @@ state_result declare_module_state::process(parser& /*p*/,
 		return state_result::complete(std::move(node_));
 	}
 
-	return token.visit(module_scope_visitor{this, token.location(), token});
+	return token.visit(
+		module_scope_visitor{this, token.location(), token, true});
 }
 
 accept_result declare_module_state::accept_child(

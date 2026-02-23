@@ -51,6 +51,7 @@ enum class error_code : std::uint16_t {
 
 	// Parser errors
 	ts1005 = 1005,
+	ts1038 = 1038,
 	ts1109 = 1109,
 	ts1128 = 1128,
 	ts1146 = 1146,

@@ -5,6 +5,7 @@ set(SOURCES
         tscparse/ast/module_node.cpp
         tscparse/ast/qualified_name.cpp
         tscparse/ast/source_file_node.cpp
+        tscparse/error/declare_in_ambient_context.cpp
         tscparse/error/declaration_or_statement_expected.cpp
         tscparse/error/expected_token.cpp
         tscparse/error/unexpected_end_of_text.cpp
@@ -37,6 +38,7 @@ set(HEADERS
         tscparse/ast/qualified_name.hpp
         tscparse/ast/lexeme_visitors.ipp
         tscparse/ast/source_file_node.hpp
+        tscparse/error/declare_in_ambient_context.hpp
         tscparse/error/declaration_or_statement_expected.hpp
         tscparse/error/expected_token.hpp
         tscparse/error/unexpected_end_of_text.hpp

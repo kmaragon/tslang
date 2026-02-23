@@ -20,6 +20,7 @@
 
 #include <tsclex/tokens/declare_token.hpp>
 #include <tsclex/tokens/import_token.hpp>
+#include "../error/declare_in_ambient_context.hpp"
 #include "declare_state.hpp"
 #include "import_state.hpp"
 #include "parser_state.hpp"
@@ -43,14 +44,18 @@ class module_scope_visitor : public basic_state_visitor {
 public:
 	module_scope_visitor(parser_state* s,
 						 const lex::source_location& loc,
-						 const lex::token& token) noexcept
-		: basic_state_visitor(s, loc), token_(token) {}
+						 const lex::token& token,
+						 bool ambient = false) noexcept
+		: basic_state_visitor(s, loc), token_(token), ambient_(ambient) {}
 
 	state_result operator()(const lex::tokens::import_token&) const {
 		return state_result::push<import_state>(token_);
 	}
 
 	state_result operator()(const lex::tokens::declare_token&) const {
+		if (ambient_) {
+			throw declare_in_ambient_context(location);
+		}
 		return state_result::push<declare_state>(token_);
 	}
 
@@ -69,6 +74,7 @@ public:
 
 private:
 	const lex::token& token_;
+	bool ambient_;
 };
 
 }  // namespace tscc::parse::state
