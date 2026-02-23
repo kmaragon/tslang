@@ -17,14 +17,54 @@
  */
 
 #include "declare_state.hpp"
+#include <tsclex/tokens/constant_value_token.hpp>
 #include <tsclex/tokens/module_token.hpp>
+#include <tsclex/tokens/namespace_token.hpp>
 #include "declare/declare_module_state.hpp"
+#include "namespace_state.hpp"
 #include "state_result.hpp"
 
 using namespace tscc;
+using namespace tscc::parse;
 using namespace tscc::parse::state;
 
 namespace {
+
+/**
+ * \brief Disambiguates `declare module "string"` from `declare module
+ * Identifier`
+ *
+ * Receives the name token (the one after `declare module`), inspects it, and
+ * pushes the appropriate state with reprocess so the child's header also sees
+ * the name token.
+ */
+class declare_module_dispatch_state : public parser_state {
+public:
+	declare_module_dispatch_state(lex::token declare_keyword,
+								  lex::token module_keyword)
+		: declare_keyword_(std::move(declare_keyword)),
+		  module_keyword_(std::move(module_keyword)) {}
+
+	state_result process(parser& /*p*/, const lex::token& token) override {
+		if (token.is<lex::tokens::constant_value_token>()) {
+			return state_result::push<declare_module_state>(
+					   std::move(declare_keyword_), std::move(module_keyword_))
+				.reprocess();
+		}
+		return state_result::push<namespace_state>(
+				   std::move(declare_keyword_), std::move(module_keyword_))
+			.reprocess();
+	}
+
+	accept_result accept_child(
+		std::unique_ptr<ast::ast_node> child) override {
+		return accept_result::complete(std::move(child));
+	}
+
+private:
+	lex::token declare_keyword_;
+	lex::token module_keyword_;
+};
 
 /**
  * \brief Visitor for routing the token after `declare`
@@ -43,7 +83,12 @@ public:
 		  token_(token) {}
 
 	state_result operator()(const lex::tokens::module_token&) const {
-		return state_result::push<declare_module_state>(declare_keyword_, token_);
+		return state_result::push<declare_module_dispatch_state>(
+			declare_keyword_, token_);
+	}
+
+	state_result operator()(const lex::tokens::namespace_token&) const {
+		return state_result::push<namespace_state>(declare_keyword_, token_);
 	}
 
 	using basic_state_visitor::operator();
@@ -55,7 +100,6 @@ public:
 	// - function_token -> push declare_function_state
 	// - class_token -> push declare_class_state
 	// - enum_token -> push declare_enum_state
-	// - namespace_token -> push declare_namespace_state
 	// - global_token -> push declare_global_state
 
 private:

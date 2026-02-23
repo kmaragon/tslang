@@ -3,6 +3,7 @@ set(SOURCES
         tscparse/ast/declare_module_node.cpp
         tscparse/ast/import_node.cpp
         tscparse/ast/module_node.cpp
+        tscparse/ast/namespace_node.cpp
         tscparse/ast/qualified_name.cpp
         tscparse/ast/source_file_node.cpp
         tscparse/error/declare_in_ambient_context.cpp
@@ -11,7 +12,6 @@ set(SOURCES
         tscparse/error/unexpected_end_of_text.cpp
         tscparse/state/declare/declare_module_header_state.cpp
         tscparse/state/declare/declare_module_state.cpp
-        tscparse/state/declare_state.cpp
         tscparse/state/import/binding_import_states.cpp
         tscparse/state/import/equals_import_states.cpp
         tscparse/state/import/from_clause_states.cpp
@@ -21,8 +21,11 @@ set(SOURCES
         tscparse/state/import/module_completion_states.cpp
         tscparse/state/import/named_import_state.cpp
         tscparse/state/import/namespace_import_states.cpp
+        tscparse/state/namespace/namespace_header_state.cpp
+        tscparse/state/declare_state.cpp
         tscparse/state/import_state.cpp
         tscparse/state/module_scope_state.cpp
+        tscparse/state/namespace_state.cpp
         tscparse/state/parser_state.cpp
         tscparse/state/state_result.cpp
         tscparse/error.cpp
@@ -34,9 +37,10 @@ set(HEADERS
         tscparse/ast/declare_module_node.hpp
         tscparse/ast/import_node.hpp
         tscparse/ast/lexeme.hpp
-        tscparse/ast/module_node.hpp
-        tscparse/ast/qualified_name.hpp
         tscparse/ast/lexeme_visitors.ipp
+        tscparse/ast/module_node.hpp
+        tscparse/ast/namespace_node.hpp
+        tscparse/ast/qualified_name.hpp
         tscparse/ast/source_file_node.hpp
         tscparse/error/declare_in_ambient_context.hpp
         tscparse/error/declaration_or_statement_expected.hpp
@@ -47,16 +51,18 @@ set(HEADERS
         tscparse/state/import/from_clause_states.hpp
         tscparse/state/import/import_attributes_state.hpp
         tscparse/state/import/import_node_builder.hpp
-        tscparse/state/token_helpers.hpp
         tscparse/state/import/initial_import_states.hpp
         tscparse/state/import/module_completion_states.hpp
         tscparse/state/import/named_import_state.hpp
         tscparse/state/import/namespace_import_states.hpp
+        tscparse/state/namespace/namespace_header_state.hpp
         tscparse/state/import_state.hpp
         tscparse/state/module_scope_state.hpp
         tscparse/state/module_scope_visitor.hpp
+        tscparse/state/namespace_state.hpp
         tscparse/state/parser_state.hpp
         tscparse/state/state_result.hpp
+        tscparse/state/token_helpers.hpp
         tscparse/error.hpp
         tscparse/filtered_token_index.hpp
         tscparse/parser.hpp

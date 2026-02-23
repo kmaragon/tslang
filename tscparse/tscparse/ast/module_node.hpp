@@ -24,6 +24,7 @@
 
 namespace tscc::parse::state {
 class module_scope_state;
+class namespace_state;
 }
 
 namespace tscc::parse::ast {
@@ -50,6 +51,7 @@ protected:
 
 private:
 	friend class ::tscc::parse::state::module_scope_state;
+	friend class ::tscc::parse::state::namespace_state;
 };
 
 }  // namespace tscc::parse::ast

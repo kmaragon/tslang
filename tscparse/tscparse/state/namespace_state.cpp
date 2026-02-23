@@ -16,25 +16,27 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "declare_module_state.hpp"
+#include "namespace_state.hpp"
 #include <tsclex/tokens/close_brace_token.hpp>
-#include "../module_scope_visitor.hpp"
-#include "../state_result.hpp"
-#include "declare_module_header_state.hpp"
+#include "module_scope_visitor.hpp"
+#include "namespace/namespace_header_state.hpp"
+#include "state_result.hpp"
 
 using namespace tscc;
 using namespace tscc::parse::state;
 
-declare_module_state::declare_module_state(lex::token declare_keyword,
-										   lex::token module_keyword)
-	: node_(new ast::declare_module_node(std::move(declare_keyword),
-										 std::move(module_keyword))) {}
+namespace_state::namespace_state(lex::token keyword, bool ambient)
+	: node_(new ast::namespace_node(std::move(keyword))), ambient_(ambient) {}
 
-state_result declare_module_state::process(parser& /*p*/,
-										   const lex::token& token) {
+namespace_state::namespace_state(lex::token declare_keyword, lex::token keyword)
+	: node_(new ast::namespace_node(std::move(keyword))), ambient_(true) {
+	node_->declare_keyword_ = std::move(declare_keyword);
+}
+
+state_result namespace_state::process(parser& /*p*/, const lex::token& token) {
 	if (!header_done_) {
 		header_done_ = true;
-		return state_result::push<declare_module_header_state>(node_.get())
+		return state_result::push<namespace_header_state>(node_.get())
 			.reprocess();
 	}
 
@@ -44,11 +46,10 @@ state_result declare_module_state::process(parser& /*p*/,
 	}
 
 	return token.visit(module_scope_visitor{this, token.location(), token,
-										   /*ambient=*/true,
-										   /*module_like=*/true});
+											ambient_, /*module_like=*/false});
 }
 
-accept_result declare_module_state::accept_child(
+accept_result namespace_state::accept_child(
 	std::unique_ptr<ast::ast_node> child) {
 	if (!child) {
 		return accept_result::stay();

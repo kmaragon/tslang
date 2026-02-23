@@ -20,21 +20,31 @@
 
 #include <tsclex/tokens/declare_token.hpp>
 #include <tsclex/tokens/import_token.hpp>
+#include <tsclex/tokens/module_token.hpp>
+#include <tsclex/tokens/namespace_token.hpp>
 #include "../error/declare_in_ambient_context.hpp"
 #include "declare_state.hpp"
 #include "import_state.hpp"
+#include "namespace_state.hpp"
 #include "parser_state.hpp"
 #include "state_result.hpp"
 
 namespace tscc::parse::state {
 
 /**
- * \brief Visitor for module scope token processing
+ * \brief Visitor for declaration scope token processing
  *
- * Handles content tokens valid at module scope (imports, exports,
- * declarations, etc.). Shared between module_scope_state (root) and
- * future declare_module_state. Framing tokens like `}` are handled
- * by the owning state before delegating to this visitor.
+ * Handles content tokens valid at declaration scopes: module (file) scope,
+ * namespace scope, ambient module, and ambient namespace. These four scopes
+ * share ~90% of their legal constructs, differing only along two axes:
+ *
+ * - \p ambient: when true, `declare` throws TS1038 and statements are illegal.
+ *   Set by declare_module_state and future declare_namespace_state.
+ * - \p module_like: when true, full ES imports are allowed. When false, only
+ *   `import X = Y.Z` alias form is legal (namespace scopes).
+ *
+ * Framing tokens like `}` are handled by the owning state before delegating
+ * to this visitor.
  *
  * Inherits from basic_state_visitor which provides the fallback
  * that throws declaration_or_statement_expected (TS1128).
@@ -45,23 +55,37 @@ public:
 	module_scope_visitor(parser_state* s,
 						 const lex::source_location& loc,
 						 const lex::token& token,
-						 bool ambient = false) noexcept
-		: basic_state_visitor(s, loc), token_(token), ambient_(ambient) {}
+						 bool ambient = false,
+						 bool module_like = true) noexcept
+		: basic_state_visitor(s, loc),
+		  token_(token),
+		  ambient_(ambient),
+		  module_like_(module_like) {}
 
 	state_result operator()(const lex::tokens::import_token&) const {
-		return state_result::push<import_state>(token_);
+		return state_result::push<import_state>(token_,
+												/*equals_only=*/!module_like_);
 	}
 
 	state_result operator()(const lex::tokens::declare_token&) const {
 		if (ambient_) {
 			throw declare_in_ambient_context(location);
 		}
+
 		return state_result::push<declare_state>(token_);
+	}
+
+	state_result operator()(const lex::tokens::namespace_token&) const {
+		return state_result::push<namespace_state>(token_, ambient_);
+	}
+
+	state_result operator()(const lex::tokens::module_token&) const {
+		return state_result::push<namespace_state>(token_, ambient_);
 	}
 
 	using basic_state_visitor::operator();
 
-	// TODO: Add handlers for tokens valid at module scope:
+	// TODO: Add handlers for tokens valid at declaration scopes:
 	// - export_token -> parse export declaration
 	// - class_token -> push class_declaration_state
 	// - function_token -> push function_declaration_state
@@ -70,11 +94,11 @@ public:
 	// - type_token -> parse type alias
 	// - const_token, let_token, var_token -> parse variable declaration
 	// - async_token, abstract_token -> push modifier state
-	// - namespace_token, module_token -> parse namespace/module
 
 private:
 	const lex::token& token_;
 	bool ambient_;
+	bool module_like_;
 };
 
 }  // namespace tscc::parse::state
