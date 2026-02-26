@@ -19,35 +19,34 @@
 #pragma once
 
 #include <memory>
-#include <tsclex/source.hpp>
-#include "module_node.hpp"
+#include <tsclex/token.hpp>
+#include "../../ast/type/type_parameter_node.hpp"
+#include "../parser_state.hpp"
 
-namespace tscc::parse {
-class parser;
-}
-
-namespace tscc::parse::ast {
+namespace tscc::parse::state {
 
 /**
- * \brief Root AST node representing a translation unit (source file)
+ * \brief Parses a single type parameter
  *
- * Owns the top-level declarations parsed from a single file.
- * Only the parser can construct instances and add children.
+ * Handles: [in] [out] Identifier [extends Type] [= Type]
+ * Enforces ordering constraints: `in` must precede `out`,
+ * duplicates are rejected.
  */
-class source_file_node final : public module_node {
-	friend class ::tscc::parse::parser;
-
+class type_parameter_state : public parser_state {
 public:
-	explicit source_file_node(std::shared_ptr<lex::source> source);
+	type_parameter_state();
 
-	/**
-	 * \brief Get the source file for this translation unit
-	 */
-	[[nodiscard]] const std::shared_ptr<lex::source>& source() const noexcept;
+	state_result process(parser& p, const lex::token& token) override;
+
+	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-
-	std::shared_ptr<lex::source> source_;
+	std::unique_ptr<ast::type_parameter_node> node_;
+	lex::token in_token_;
+	lex::token out_token_;
+	bool has_name_ = false;
+	bool constraint_pending_ = false;
+	bool default_pending_ = false;
 };
 
-}  // namespace tscc::parse::ast
+}  // namespace tscc::parse::state

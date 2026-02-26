@@ -18,36 +18,30 @@
 
 #pragma once
 
-#include <memory>
-#include <tsclex/source.hpp>
-#include "module_node.hpp"
+#include "../../ast/type/type_alias_node.hpp"
+#include "../parser_state.hpp"
 
-namespace tscc::parse {
-class parser;
-}
-
-namespace tscc::parse::ast {
+namespace tscc::parse::state {
 
 /**
- * \brief Root AST node representing a translation unit (source file)
+ * \brief Sub-state that consumes the type alias name, optional type
+ * parameters, and equals sign
  *
- * Owns the top-level declarations parsed from a single file.
- * Only the parser can construct instances and add children.
+ * Parses: `Identifier` [`<` type-params `>`] `=`
+ * Stores results into the type_alias_node, then completes with nullptr.
  */
-class source_file_node final : public module_node {
-	friend class ::tscc::parse::parser;
-
+class type_header_state : public parser_state {
 public:
-	explicit source_file_node(std::shared_ptr<lex::source> source);
+	explicit type_header_state(ast::type_alias_node* node);
 
-	/**
-	 * \brief Get the source file for this translation unit
-	 */
-	[[nodiscard]] const std::shared_ptr<lex::source>& source() const noexcept;
+	state_result process(parser& p, const lex::token& token) override;
+
+	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-
-	std::shared_ptr<lex::source> source_;
+	ast::type_alias_node* node_;
+	bool has_name_ = false;
+	bool type_params_done_ = false;
 };
 
-}  // namespace tscc::parse::ast
+}  // namespace tscc::parse::state

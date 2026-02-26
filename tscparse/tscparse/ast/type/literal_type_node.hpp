@@ -18,36 +18,35 @@
 
 #pragma once
 
-#include <memory>
-#include <tsclex/source.hpp>
-#include "module_node.hpp"
-
-namespace tscc::parse {
-class parser;
-}
+#include <tsclex/token.hpp>
+#include "../type_node.hpp"
 
 namespace tscc::parse::ast {
 
 /**
- * \brief Root AST node representing a translation unit (source file)
+ * \brief AST node for literal type expressions
  *
- * Owns the top-level declarations parsed from a single file.
- * Only the parser can construct instances and add children.
+ * Covers string literals ("foo"), numeric literals (42, -1),
+ * and boolean literals (true, false).
  */
-class source_file_node final : public module_node {
-	friend class ::tscc::parse::parser;
-
+class literal_type_node final : public type_node {
 public:
-	explicit source_file_node(std::shared_ptr<lex::source> source);
+	explicit literal_type_node(lex::token value);
+	literal_type_node(lex::token minus, lex::token value);
 
 	/**
-	 * \brief Get the source file for this translation unit
+	 * \brief Get the optional minus token (for negative numeric literals)
 	 */
-	[[nodiscard]] const std::shared_ptr<lex::source>& source() const noexcept;
+	[[nodiscard]] const lex::token* minus_token() const noexcept;
+
+	/**
+	 * \brief Get the value token (string, number, true, or false)
+	 */
+	[[nodiscard]] const lex::token& value_token() const noexcept;
 
 private:
-
-	std::shared_ptr<lex::source> source_;
+	lex::token minus_;
+	lex::token value_;
 };
 
 }  // namespace tscc::parse::ast

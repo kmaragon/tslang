@@ -41,6 +41,8 @@ class declare_module_node final : public module_node {
 	friend class ::tscc::parse::state::declare_module_header_state;
 
 public:
+	declare_module_node(lex::token declare_keyword, lex::token module_keyword);
+
 	/**
 	 * \brief Get the `declare` keyword token
 	 */
@@ -57,7 +59,6 @@ public:
 	[[nodiscard]] lexeme<std::string> module_name() const;
 
 private:
-	declare_module_node(lex::token declare_keyword, lex::token module_keyword);
 
 	lex::token declare_keyword_;
 	lex::token module_keyword_;

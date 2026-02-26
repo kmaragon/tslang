@@ -18,36 +18,22 @@
 
 #pragma once
 
-#include <memory>
-#include <tsclex/source.hpp>
-#include "module_node.hpp"
-
-namespace tscc::parse {
-class parser;
-}
-
 namespace tscc::parse::ast {
 
 /**
- * \brief Root AST node representing a translation unit (source file)
+ * \brief Context flags propagated through the type expression precedence ladder
  *
- * Owns the top-level declarations parsed from a single file.
- * Only the parser can construct instances and add children.
+ * Different type expression positions have different restrictions.
+ * These flags allow parse-time enforcement of constructs that are
+ * syntactically valid only in specific contexts.
  */
-class source_file_node final : public module_node {
-	friend class ::tscc::parse::parser;
+struct type_context {
+	/// Whether `unique symbol` is allowed (only in const variable declarations
+	/// and readonly static/interface properties)
+	bool allows_unique_symbol = false;
 
-public:
-	explicit source_file_node(std::shared_ptr<lex::source> source);
-
-	/**
-	 * \brief Get the source file for this translation unit
-	 */
-	[[nodiscard]] const std::shared_ptr<lex::source>& source() const noexcept;
-
-private:
-
-	std::shared_ptr<lex::source> source_;
+	/// Whether `const` type parameters are allowed (only in call/new expressions)
+	bool allows_const_type_params = false;
 };
 
 }  // namespace tscc::parse::ast

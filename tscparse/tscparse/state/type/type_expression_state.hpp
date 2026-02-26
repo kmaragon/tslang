@@ -19,35 +19,29 @@
 #pragma once
 
 #include <memory>
-#include <tsclex/source.hpp>
-#include "module_node.hpp"
+#include "../../ast/type/type_context.hpp"
+#include "../../ast/type_node.hpp"
+#include "../parser_state.hpp"
 
-namespace tscc::parse {
-class parser;
-}
-
-namespace tscc::parse::ast {
+namespace tscc::parse::state {
 
 /**
- * \brief Root AST node representing a translation unit (source file)
+ * \brief Entry point for parsing type expressions (conditional precedence level)
  *
- * Owns the top-level declarations parsed from a single file.
- * Only the parser can construct instances and add children.
+ * Currently passes through to union level. When conditional types are
+ * added (Phase 2), this will handle `A extends B ? C : D`.
  */
-class source_file_node final : public module_node {
-	friend class ::tscc::parse::parser;
-
+class type_expression_state : public parser_state {
 public:
-	explicit source_file_node(std::shared_ptr<lex::source> source);
+	explicit type_expression_state(ast::type_context ctx = {});
 
-	/**
-	 * \brief Get the source file for this translation unit
-	 */
-	[[nodiscard]] const std::shared_ptr<lex::source>& source() const noexcept;
+	state_result process(parser& p, const lex::token& token) override;
+
+	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-
-	std::shared_ptr<lex::source> source_;
+	ast::type_context ctx_;
+	bool init_done_ = false;
 };
 
-}  // namespace tscc::parse::ast
+}  // namespace tscc::parse::state

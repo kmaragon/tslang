@@ -20,9 +20,11 @@
 #include <tsclex/tokens/constant_value_token.hpp>
 #include <tsclex/tokens/module_token.hpp>
 #include <tsclex/tokens/namespace_token.hpp>
+#include <tsclex/tokens/type_token.hpp>
 #include "declare/declare_module_state.hpp"
 #include "namespace_state.hpp"
 #include "state_result.hpp"
+#include "type_state.hpp"
 
 using namespace tscc;
 using namespace tscc::parse;
@@ -89,6 +91,10 @@ public:
 
 	state_result operator()(const lex::tokens::namespace_token&) const {
 		return state_result::push<namespace_state>(declare_keyword_, token_);
+	}
+
+	state_result operator()(const lex::tokens::type_token&) const {
+		return state_result::push<type_state>(declare_keyword_, token_);
 	}
 
 	using basic_state_visitor::operator();

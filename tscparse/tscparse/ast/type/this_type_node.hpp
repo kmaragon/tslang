@@ -18,36 +18,25 @@
 
 #pragma once
 
-#include <memory>
-#include <tsclex/source.hpp>
-#include "module_node.hpp"
-
-namespace tscc::parse {
-class parser;
-}
+#include <tsclex/token.hpp>
+#include "../type_node.hpp"
 
 namespace tscc::parse::ast {
 
 /**
- * \brief Root AST node representing a translation unit (source file)
- *
- * Owns the top-level declarations parsed from a single file.
- * Only the parser can construct instances and add children.
+ * \brief AST node for the `this` type expression
  */
-class source_file_node final : public module_node {
-	friend class ::tscc::parse::parser;
-
+class this_type_node final : public type_node {
 public:
-	explicit source_file_node(std::shared_ptr<lex::source> source);
+	explicit this_type_node(lex::token keyword);
 
 	/**
-	 * \brief Get the source file for this translation unit
+	 * \brief Get the `this` keyword token
 	 */
-	[[nodiscard]] const std::shared_ptr<lex::source>& source() const noexcept;
+	[[nodiscard]] const lex::token& keyword() const noexcept;
 
 private:
-
-	std::shared_ptr<lex::source> source_;
+	lex::token keyword_;
 };
 
 }  // namespace tscc::parse::ast

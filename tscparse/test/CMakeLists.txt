@@ -5,6 +5,7 @@ set(TESTS
         import_tests.cpp
         namespace_tests.cpp
         parser_tests.cpp
+        type_tests.cpp
 )
 
 add_executable(tscparse.test ${TESTS})

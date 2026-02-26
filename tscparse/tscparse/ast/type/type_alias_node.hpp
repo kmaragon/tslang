@@ -18,35 +18,34 @@
 
 #pragma once
 
+#include <memory>
+#include <vector>
 #include <tsclex/token.hpp>
-#include "module_node.hpp"
-#include "qualified_name.hpp"
+#include "../lexeme.hpp"
+#include "../type_node.hpp"
+#include "type_parameter_node.hpp"
 
 namespace tscc::parse::state {
-class namespace_state;
-class namespace_header_state;
-}  // namespace tscc::parse::state
+class type_state;
+class type_header_state;
+class type_parameter_list_state;
+}
 
 namespace tscc::parse::ast {
 
 /**
- * \brief AST node for namespace/module declarations with identifier names
+ * \brief AST node for type alias declarations
  *
- * Covers all four entry paths:
- * - `namespace Foo { ... }`
- * - `module Foo { ... }`
- * - `declare namespace Foo { ... }`
- * - `declare module Foo { ... }`
- *
- * Supports dotted names (e.g. `namespace A.B.C { ... }`).
- * Inherits the children vector from module_node.
+ * Represents `type Foo<T> = SomeType;` declarations.
+ * Supports optional `declare` prefix and optional type parameters.
  */
-class namespace_node final : public module_node {
-	friend class ::tscc::parse::state::namespace_state;
-	friend class ::tscc::parse::state::namespace_header_state;
+class type_alias_node final : public ast_node {
+	friend class ::tscc::parse::state::type_state;
+	friend class ::tscc::parse::state::type_header_state;
+	friend class ::tscc::parse::state::type_parameter_list_state;
 
 public:
-	explicit namespace_node(lex::token keyword);
+	explicit type_alias_node(lex::token type_keyword);
 
 	/**
 	 * \brief Get the `declare` keyword token, if present
@@ -55,14 +54,25 @@ public:
 	[[nodiscard]] const lex::token* declare_keyword() const noexcept;
 
 	/**
-	 * \brief Get the `namespace` or `module` keyword token
+	 * \brief Get the `type` keyword token
 	 */
 	[[nodiscard]] const lex::token* keyword() const noexcept;
 
 	/**
-	 * \brief Get the namespace name (possibly dotted)
+	 * \brief Get the alias name as a lexeme
 	 */
-	[[nodiscard]] const qualified_name& name() const noexcept;
+	[[nodiscard]] lexeme<std::string_view> name() const;
+
+	/**
+	 * \brief Get the type parameters
+	 */
+	[[nodiscard]] const std::vector<std::unique_ptr<const type_parameter_node>>&
+	type_parameters() const noexcept;
+
+	/**
+	 * \brief Get the RHS type expression
+	 */
+	[[nodiscard]] const type_node& type() const noexcept;
 
 	/**
 	 * \brief Whether this is an ambient declaration (`declare` prefix present)
@@ -72,10 +82,14 @@ public:
 private:
 
 	lex::token declare_keyword_;
-	lex::token keyword_;
-	qualified_name name_;
-	lex::token open_brace_;
-	lex::token close_brace_;
+	lex::token type_keyword_;
+	lex::token name_;
+	lex::token less_than_;
+	std::vector<std::unique_ptr<const type_parameter_node>> type_parameters_;
+	lex::token greater_than_;
+	lex::token equals_;
+	std::unique_ptr<const type_node> type_;
+	lex::token semicolon_;
 };
 
 }  // namespace tscc::parse::ast

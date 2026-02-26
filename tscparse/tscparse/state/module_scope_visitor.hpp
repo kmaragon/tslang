@@ -22,12 +22,14 @@
 #include <tsclex/tokens/import_token.hpp>
 #include <tsclex/tokens/module_token.hpp>
 #include <tsclex/tokens/namespace_token.hpp>
+#include <tsclex/tokens/type_token.hpp>
 #include "../error/declare_in_ambient_context.hpp"
 #include "declare_state.hpp"
 #include "import_state.hpp"
 #include "namespace_state.hpp"
 #include "parser_state.hpp"
 #include "state_result.hpp"
+#include "type_state.hpp"
 
 namespace tscc::parse::state {
 
@@ -83,6 +85,10 @@ public:
 		return state_result::push<namespace_state>(token_, ambient_);
 	}
 
+	state_result operator()(const lex::tokens::type_token&) const {
+		return state_result::push<type_state>(token_);
+	}
+
 	using basic_state_visitor::operator();
 
 	// TODO: Add handlers for tokens valid at declaration scopes:
@@ -91,7 +97,6 @@ public:
 	// - function_token -> push function_declaration_state
 	// - interface_token -> parse interface declaration
 	// - enum_token -> parse enum declaration
-	// - type_token -> parse type alias
 	// - const_token, let_token, var_token -> parse variable declaration
 	// - async_token, abstract_token -> push modifier state
 

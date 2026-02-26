@@ -25,6 +25,7 @@
 namespace tscc::parse::state {
 class import_node_builder;
 class namespace_header_state;
+class type_reference_state;
 }
 
 namespace tscc::parse::ast {
@@ -39,6 +40,7 @@ namespace tscc::parse::ast {
 class qualified_name {
 	friend class state::import_node_builder;
 	friend class state::namespace_header_state;
+	friend class state::type_reference_state;
 
 public:
 	/// Whether the name has no segments

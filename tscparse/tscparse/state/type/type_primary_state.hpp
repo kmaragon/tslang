@@ -18,36 +18,29 @@
 
 #pragma once
 
-#include <memory>
-#include <tsclex/source.hpp>
-#include "module_node.hpp"
+#include <tsclex/token.hpp>
+#include "../../ast/type/type_context.hpp"
+#include "../parser_state.hpp"
 
-namespace tscc::parse {
-class parser;
-}
-
-namespace tscc::parse::ast {
+namespace tscc::parse::state {
 
 /**
- * \brief Root AST node representing a translation unit (source file)
+ * \brief Dispatches on a token to produce a primary type expression
  *
- * Owns the top-level declarations parsed from a single file.
- * Only the parser can construct instances and add children.
+ * Handles keyword types, literal types, `this`, identifiers (type
+ * references), and parenthesized types.
  */
-class source_file_node final : public module_node {
-	friend class ::tscc::parse::parser;
-
+class type_primary_state : public parser_state {
 public:
-	explicit source_file_node(std::shared_ptr<lex::source> source);
+	explicit type_primary_state(ast::type_context ctx);
 
-	/**
-	 * \brief Get the source file for this translation unit
-	 */
-	[[nodiscard]] const std::shared_ptr<lex::source>& source() const noexcept;
+	state_result process(parser& p, const lex::token& token) override;
+
+	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-
-	std::shared_ptr<lex::source> source_;
+	ast::type_context ctx_;
+	lex::token minus_;
 };
 
-}  // namespace tscc::parse::ast
+}  // namespace tscc::parse::state

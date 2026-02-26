@@ -18,36 +18,23 @@
 
 #pragma once
 
-#include <memory>
-#include <tsclex/source.hpp>
-#include "module_node.hpp"
-
-namespace tscc::parse {
-class parser;
-}
+#include "ast_node.hpp"
 
 namespace tscc::parse::ast {
 
 /**
- * \brief Root AST node representing a translation unit (source file)
+ * \brief Abstract base class for all type expression nodes
  *
- * Owns the top-level declarations parsed from a single file.
- * Only the parser can construct instances and add children.
+ * Provides compile-time safety for type positions: any AST slot that
+ * expects a type expression uses unique_ptr<const type_node> rather than
+ * bare ast_node, catching misuse at compile time.
  */
-class source_file_node final : public module_node {
-	friend class ::tscc::parse::parser;
-
+class type_node : public ast_node {
 public:
-	explicit source_file_node(std::shared_ptr<lex::source> source);
+	~type_node() override = default;
 
-	/**
-	 * \brief Get the source file for this translation unit
-	 */
-	[[nodiscard]] const std::shared_ptr<lex::source>& source() const noexcept;
-
-private:
-
-	std::shared_ptr<lex::source> source_;
+protected:
+	type_node() = default;
 };
 
 }  // namespace tscc::parse::ast

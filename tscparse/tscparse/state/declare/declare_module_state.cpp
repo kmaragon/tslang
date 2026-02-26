@@ -27,8 +27,8 @@ using namespace tscc::parse::state;
 
 declare_module_state::declare_module_state(lex::token declare_keyword,
 										   lex::token module_keyword)
-	: node_(new ast::declare_module_node(std::move(declare_keyword),
-										 std::move(module_keyword))) {}
+	: node_(std::make_unique<ast::declare_module_node>(
+		  std::move(declare_keyword), std::move(module_keyword))) {}
 
 state_result declare_module_state::process(parser& /*p*/,
 										   const lex::token& token) {

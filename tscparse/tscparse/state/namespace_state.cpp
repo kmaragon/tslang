@@ -26,10 +26,10 @@ using namespace tscc;
 using namespace tscc::parse::state;
 
 namespace_state::namespace_state(lex::token keyword, bool ambient)
-	: node_(new ast::namespace_node(std::move(keyword))), ambient_(ambient) {}
+	: node_(std::make_unique<ast::namespace_node>(std::move(keyword))), ambient_(ambient) {}
 
 namespace_state::namespace_state(lex::token declare_keyword, lex::token keyword)
-	: node_(new ast::namespace_node(std::move(keyword))), ambient_(true) {
+	: node_(std::make_unique<ast::namespace_node>(std::move(keyword))), ambient_(true) {
 	node_->declare_keyword_ = std::move(declare_keyword);
 }
 

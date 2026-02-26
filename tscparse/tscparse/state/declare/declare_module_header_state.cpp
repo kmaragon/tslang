@@ -49,9 +49,6 @@ public:
 		return state_result::stay();
 	}
 
-	// TODO: identifier form (declare module Foo { ... }) should push
-	// the same state as declare namespace for the identifier case.
-
 	[[noreturn]] state_result operator()(
 		const lex::tokens::basic_token&) const {
 		throw expected_token(location, "module name (string literal)",

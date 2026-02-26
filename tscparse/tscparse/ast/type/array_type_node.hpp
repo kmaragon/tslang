@@ -19,35 +19,29 @@
 #pragma once
 
 #include <memory>
-#include <tsclex/source.hpp>
-#include "module_node.hpp"
-
-namespace tscc::parse {
-class parser;
-}
+#include <tsclex/token.hpp>
+#include "../type_node.hpp"
 
 namespace tscc::parse::ast {
 
 /**
- * \brief Root AST node representing a translation unit (source file)
- *
- * Owns the top-level declarations parsed from a single file.
- * Only the parser can construct instances and add children.
+ * \brief AST node for array type expressions (`T[]`)
  */
-class source_file_node final : public module_node {
-	friend class ::tscc::parse::parser;
-
+class array_type_node final : public type_node {
 public:
-	explicit source_file_node(std::shared_ptr<lex::source> source);
+	array_type_node(std::unique_ptr<const type_node> element,
+					lex::token open_bracket,
+					lex::token close_bracket);
 
 	/**
-	 * \brief Get the source file for this translation unit
+	 * \brief Get the element type
 	 */
-	[[nodiscard]] const std::shared_ptr<lex::source>& source() const noexcept;
+	[[nodiscard]] const type_node& element_type() const noexcept;
 
 private:
-
-	std::shared_ptr<lex::source> source_;
+	std::unique_ptr<const type_node> element_;
+	lex::token open_bracket_;
+	lex::token close_bracket_;
 };
 
 }  // namespace tscc::parse::ast

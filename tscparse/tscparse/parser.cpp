@@ -44,8 +44,7 @@ parser::parser(lex::lexer& lexer, trivia_index* trivia_idx)
 	  trivia_index_(trivia_idx) {}
 
 std::unique_ptr<ast::source_file_node> parser::parse() {
-	auto root = std::unique_ptr<ast::source_file_node>(
-		new ast::source_file_node(lexer_.source()));
+	auto root = std::make_unique<ast::source_file_node>(lexer_.source());
 	state_stack_.emplace_back(
 		std::make_unique<state::module_scope_state>(root.get()));
 
