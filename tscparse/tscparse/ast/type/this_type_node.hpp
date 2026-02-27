@@ -19,16 +19,20 @@
 #pragma once
 
 #include <tsclex/token.hpp>
-#include "../type_node.hpp"
+#include "type_definition.hpp"
 
 namespace tscc::parse::ast {
 
 /**
  * \brief AST node for the `this` type expression
  */
-class this_type_node final : public type_node {
+class this_type_node final : public type_definition {
 public:
 	explicit this_type_node(lex::token keyword);
+
+	type_definition::kind type_kind() const noexcept override {
+		return kind::this_kind;
+	}
 
 	/**
 	 * \brief Get the `this` keyword token

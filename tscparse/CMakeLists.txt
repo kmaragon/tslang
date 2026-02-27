@@ -12,7 +12,7 @@ set(SOURCES
         tscparse/ast/type/literal_type_node.cpp
 
         tscparse/ast/type/this_type_node.cpp
-        tscparse/ast/type/type_alias_node.cpp
+        tscparse/ast/type_node.cpp
         tscparse/ast/type/type_parameter_node.cpp
         tscparse/ast/type/type_reference_node.cpp
         tscparse/ast/type/union_type_node.cpp
@@ -72,7 +72,7 @@ set(HEADERS
         tscparse/ast/type/literal_type_node.hpp
 
         tscparse/ast/type/this_type_node.hpp
-        tscparse/ast/type/type_alias_node.hpp
+        tscparse/ast/type/type_definition.hpp
         tscparse/ast/type/type_context.hpp
         tscparse/ast/type/type_parameter_node.hpp
         tscparse/ast/type/type_reference_node.hpp

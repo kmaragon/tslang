@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "../../ast/type/type_alias_node.hpp"
+#include "../../ast/type_node.hpp"
 #include "../parser_state.hpp"
 
 namespace tscc::parse::state {
@@ -28,18 +28,18 @@ namespace tscc::parse::state {
  * parameters, and equals sign
  *
  * Parses: `Identifier` [`<` type-params `>`] `=`
- * Stores results into the type_alias_node, then completes with nullptr.
+ * Stores results into the type_node, then completes with nullptr.
  */
 class type_header_state : public parser_state {
 public:
-	explicit type_header_state(ast::type_alias_node* node);
+	explicit type_header_state(ast::type_node* node);
 
 	state_result process(parser& p, const lex::token& token) override;
 
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-	ast::type_alias_node* node_;
+	ast::type_node* node_;
 	bool has_name_ = false;
 	bool type_params_done_ = false;
 };

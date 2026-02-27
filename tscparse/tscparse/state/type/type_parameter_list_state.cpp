@@ -28,7 +28,7 @@ using namespace tscc;
 using namespace tscc::parse::state;
 
 type_parameter_list_state::type_parameter_list_state(
-	ast::type_alias_node* node)
+	ast::type_node* node)
 	: node_(node) {}
 
 state_result type_parameter_list_state::process(parser& /*p*/,

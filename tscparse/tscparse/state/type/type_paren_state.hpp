@@ -21,7 +21,7 @@
 #include <memory>
 #include <tsclex/token.hpp>
 #include "../../ast/type/type_context.hpp"
-#include "../../ast/type_node.hpp"
+#include "../../ast/type/type_definition.hpp"
 #include "../parser_state.hpp"
 
 namespace tscc::parse::state {
@@ -45,7 +45,7 @@ private:
 	lex::token open_paren_;
 	ast::type_context ctx_;
 	bool init_done_ = false;
-	std::unique_ptr<const ast::type_node> inner_;
+	std::unique_ptr<const ast::type_definition> inner_;
 };
 
 }  // namespace tscc::parse::state

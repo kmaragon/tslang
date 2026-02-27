@@ -42,11 +42,13 @@ namespace tscc::parse::ast {
  * Inherits the children vector from module_node.
  */
 class namespace_node final : public module_node {
-	friend class ::tscc::parse::state::namespace_state;
-	friend class ::tscc::parse::state::namespace_header_state;
+	friend class state::namespace_state;
+	friend class state::namespace_header_state;
 
 public:
 	explicit namespace_node(lex::token keyword);
+
+	kind node_kind() const noexcept override;
 
 	/**
 	 * \brief Get the `declare` keyword token, if present

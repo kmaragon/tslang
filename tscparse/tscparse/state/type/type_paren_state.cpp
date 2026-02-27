@@ -36,7 +36,7 @@ state_result type_paren_state::process(parser& /*p*/,
 	}
 
 	if (token.is<lex::tokens::close_paren_token>()) {
-		auto* raw = const_cast<ast::type_node*>(inner_.release());
+		auto* raw = const_cast<ast::type_definition*>(inner_.release());
 		return state_result::complete(
 			std::unique_ptr<ast::ast_node>(raw));
 	}
@@ -46,7 +46,7 @@ state_result type_paren_state::process(parser& /*p*/,
 
 accept_result type_paren_state::accept_child(
 	std::unique_ptr<ast::ast_node> child) {
-	inner_ = std::unique_ptr<const ast::type_node>(
-		static_cast<const ast::type_node*>(child.release()));
+	inner_ = std::unique_ptr<const ast::type_definition>(
+		static_cast<const ast::type_definition*>(child.release()));
 	return accept_result::stay();
 }

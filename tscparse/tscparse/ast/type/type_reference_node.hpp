@@ -22,7 +22,7 @@
 #include <vector>
 #include <tsclex/token.hpp>
 #include "../qualified_name.hpp"
-#include "../type_node.hpp"
+#include "type_definition.hpp"
 
 namespace tscc::parse::state {
 class type_reference_state;
@@ -37,12 +37,16 @@ namespace tscc::parse::ast {
  * Covers named type references with optional dot-separated qualifiers
  * and optional type arguments.
  */
-class type_reference_node final : public type_node {
+class type_reference_node final : public type_definition {
 	friend class ::tscc::parse::state::type_reference_state;
 	friend class ::tscc::parse::state::type_argument_list_state;
 
 public:
 	type_reference_node();
+
+	type_definition::kind type_kind() const noexcept override {
+		return kind::reference;
+	}
 
 	/**
 	 * \brief Get the qualified name
@@ -52,14 +56,14 @@ public:
 	/**
 	 * \brief Get the type arguments (empty if no angle brackets)
 	 */
-	[[nodiscard]] const std::vector<std::unique_ptr<const type_node>>&
+	[[nodiscard]] const std::vector<std::unique_ptr<const type_definition>>&
 	type_arguments() const noexcept;
 
 private:
 
 	qualified_name name_;
 	lex::token less_than_;
-	std::vector<std::unique_ptr<const type_node>> type_arguments_;
+	std::vector<std::unique_ptr<const type_definition>> type_arguments_;
 	lex::token greater_than_;
 };
 

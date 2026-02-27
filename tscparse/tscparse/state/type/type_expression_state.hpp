@@ -20,7 +20,7 @@
 
 #include <memory>
 #include "../../ast/type/type_context.hpp"
-#include "../../ast/type_node.hpp"
+#include "../../ast/type/type_definition.hpp"
 #include "../parser_state.hpp"
 
 namespace tscc::parse::state {

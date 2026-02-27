@@ -54,21 +54,21 @@ state_result type_postfix_state::process(parser& /*p*/,
 		return state_result::stay();
 	}
 
-	auto* raw = const_cast<ast::type_node*>(base_.release());
+	auto* raw = const_cast<ast::type_definition*>(base_.release());
 	return state_result::complete(std::unique_ptr<ast::ast_node>(raw))
 		.reprocess();
 }
 
 accept_result type_postfix_state::accept_child(
 	std::unique_ptr<ast::ast_node> child) {
-	base_ = std::unique_ptr<const ast::type_node>(
-		static_cast<const ast::type_node*>(child.release()));
+	base_ = std::unique_ptr<const ast::type_definition>(
+		static_cast<const ast::type_definition*>(child.release()));
 	return accept_result::stay();
 }
 
 std::optional<state_result> type_postfix_state::on_eof() {
 	if (base_ && !open_bracket_) {
-		auto* raw = const_cast<ast::type_node*>(base_.release());
+		auto* raw = const_cast<ast::type_definition*>(base_.release());
 		return state_result::complete(std::unique_ptr<ast::ast_node>(raw));
 	}
 	return std::nullopt;

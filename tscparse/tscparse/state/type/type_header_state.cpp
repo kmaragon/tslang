@@ -27,7 +27,7 @@
 using namespace tscc;
 using namespace tscc::parse::state;
 
-type_header_state::type_header_state(ast::type_alias_node* node)
+type_header_state::type_header_state(ast::type_node* node)
 	: node_(node) {}
 
 state_result type_header_state::process(parser& /*p*/,

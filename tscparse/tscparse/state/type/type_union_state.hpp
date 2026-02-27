@@ -21,7 +21,7 @@
 #include <memory>
 #include <vector>
 #include "../../ast/type/type_context.hpp"
-#include "../../ast/type_node.hpp"
+#include "../../ast/type/type_definition.hpp"
 #include "../parser_state.hpp"
 
 namespace tscc::parse::state {
@@ -46,7 +46,7 @@ public:
 private:
 	ast::type_context ctx_;
 	bool init_done_ = false;
-	std::vector<std::unique_ptr<const ast::type_node>> members_;
+	std::vector<std::unique_ptr<const ast::type_definition>> members_;
 };
 
 }  // namespace tscc::parse::state

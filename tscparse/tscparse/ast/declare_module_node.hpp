@@ -43,6 +43,8 @@ class declare_module_node final : public module_node {
 public:
 	declare_module_node(lex::token declare_keyword, lex::token module_keyword);
 
+	kind node_kind() const noexcept override { return kind::declare_module; }
+
 	/**
 	 * \brief Get the `declare` keyword token
 	 */

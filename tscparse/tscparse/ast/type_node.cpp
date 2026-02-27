@@ -16,34 +16,34 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "type_alias_node.hpp"
+#include "type_node.hpp"
 
 using namespace tscc::parse::ast;
 
-type_alias_node::type_alias_node(tscc::lex::token type_keyword)
+type_node::type_node(lex::token type_keyword)
 	: type_keyword_(std::move(type_keyword)) {}
 
-const tscc::lex::token* type_alias_node::declare_keyword() const noexcept {
+const tscc::lex::token* type_node::declare_keyword() const noexcept {
 	return declare_keyword_ ? &declare_keyword_ : nullptr;
 }
 
-const tscc::lex::token* type_alias_node::keyword() const noexcept {
+const tscc::lex::token* type_node::keyword() const noexcept {
 	return &type_keyword_;
 }
 
-lexeme<std::string_view> type_alias_node::name() const {
+lexeme<std::string_view> type_node::name() const {
 	return {&name_};
 }
 
 const std::vector<std::unique_ptr<const type_parameter_node>>&
-type_alias_node::type_parameters() const noexcept {
+type_node::type_parameters() const noexcept {
 	return type_parameters_;
 }
 
-const type_node& type_alias_node::type() const noexcept {
+const type_definition& type_node::type() const noexcept {
 	return *type_;
 }
 
-bool type_alias_node::ambient() const noexcept {
-	return static_cast<bool>(declare_keyword_);
+bool type_node::ambient() const noexcept {
+	return declare_keyword_;
 }

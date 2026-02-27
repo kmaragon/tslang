@@ -21,7 +21,7 @@
 #include <memory>
 #include <tsclex/token.hpp>
 #include "../lexeme.hpp"
-#include "../type_node.hpp"
+#include "type_definition.hpp"
 
 namespace tscc::parse::state {
 class type_parameter_state;
@@ -42,6 +42,8 @@ class type_parameter_node final : public ast_node {
 public:
 	explicit type_parameter_node(lex::token name);
 
+	kind node_kind() const noexcept override { return kind::type_parameter; }
+
 	/**
 	 * \brief Get the parameter name as a lexeme
 	 */
@@ -60,12 +62,12 @@ public:
 	/**
 	 * \brief Get the constraint type (after `extends`), or nullptr if absent
 	 */
-	[[nodiscard]] const type_node* constraint() const noexcept;
+	[[nodiscard]] const type_definition* constraint() const noexcept;
 
 	/**
 	 * \brief Get the default type (after `=`), or nullptr if absent
 	 */
-	[[nodiscard]] const type_node* default_type() const noexcept;
+	[[nodiscard]] const type_definition* default_type() const noexcept;
 
 private:
 
@@ -73,9 +75,9 @@ private:
 	lex::token out_keyword_;
 	lex::token name_;
 	lex::token extends_;
-	std::unique_ptr<const type_node> constraint_;
+	std::unique_ptr<const type_definition> constraint_;
 	lex::token equals_;
-	std::unique_ptr<const type_node> default_;
+	std::unique_ptr<const type_definition> default_;
 };
 
 }  // namespace tscc::parse::ast

@@ -90,8 +90,8 @@ state_result type_parameter_state::process(parser& /*p*/,
 accept_result type_parameter_state::accept_child(
 	std::unique_ptr<ast::ast_node> child) {
 	child = node_->adopt_child(std::move(child));
-	auto type = std::unique_ptr<const ast::type_node>(
-		static_cast<const ast::type_node*>(child.release()));
+	auto type = std::unique_ptr<const ast::type_definition>(
+		static_cast<const ast::type_definition*>(child.release()));
 
 	if (constraint_pending_) {
 		constraint_pending_ = false;

@@ -20,7 +20,7 @@
 
 #include <memory>
 #include <tsclex/token.hpp>
-#include "../ast/type/type_alias_node.hpp"
+#include "../ast/type_node.hpp"
 #include "parser_state.hpp"
 
 namespace tscc::parse::state {
@@ -56,7 +56,7 @@ public:
 	std::optional<state_result> on_eof() override;
 
 private:
-	std::unique_ptr<ast::type_alias_node> node_;
+	std::unique_ptr<ast::type_node> node_;
 	bool header_done_ = false;
 	bool type_done_ = false;
 };

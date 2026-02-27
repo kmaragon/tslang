@@ -55,22 +55,22 @@ public:
 	 * Returns an invalid lexeme when the name is `default` —
 	 * use is_default() for that case.
 	 */
-	lexeme<std::string_view> name() const;
+	[[nodiscard]] lexeme<std::string_view> name() const;
 
 	/**
 	 * \brief Whether this specifier uses the `default` keyword as its name
 	 */
-	bool is_default() const noexcept;
+	[[nodiscard]] bool is_default() const noexcept;
 
 	/**
 	 * \brief Get the type-only modifier keyword, if present
 	 */
-	const lex::token* type_keyword() const noexcept;
+	[[nodiscard]] const lex::token* type_keyword() const noexcept;
 
 	/**
 	 * \brief Get the alias binding after `as`, if present
 	 */
-	lexeme<std::string_view> alias() const;
+	[[nodiscard]] lexeme<std::string_view> alias() const;
 };
 
 /**
@@ -89,12 +89,12 @@ public:
 	/**
 	 * \brief Get the attribute key (always normalized identifier)
 	 */
-	lexeme<std::string_view> key() const;
+	[[nodiscard]] lexeme<std::string_view> key() const;
 
 	/**
 	 * \brief Get the attribute value (always string literal)
 	 */
-	lexeme<std::string> value() const;
+	[[nodiscard]] lexeme<std::string> value() const;
 };
 
 /**
@@ -138,6 +138,8 @@ public:
 	 * \brief Construct an import node from its leading keyword
 	 */
 	explicit import_node(lex::token import_keyword);
+
+	kind node_kind() const noexcept override { return kind::import_kind; }
 
 	/**
 	 * \brief Get the import keyword token

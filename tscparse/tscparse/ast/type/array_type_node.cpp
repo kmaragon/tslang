@@ -20,13 +20,13 @@
 
 using namespace tscc::parse::ast;
 
-array_type_node::array_type_node(std::unique_ptr<const type_node> element,
+array_type_node::array_type_node(std::unique_ptr<const type_definition> element,
 								 tscc::lex::token open_bracket,
 								 tscc::lex::token close_bracket)
 	: element_(std::move(element)),
 	  open_bracket_(std::move(open_bracket)),
 	  close_bracket_(std::move(close_bracket)) {}
 
-const type_node& array_type_node::element_type() const noexcept {
+const type_definition& array_type_node::element_type() const noexcept {
 	return *element_;
 }

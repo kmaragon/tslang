@@ -26,7 +26,7 @@ const qualified_name& type_reference_node::name() const noexcept {
 	return name_;
 }
 
-const std::vector<std::unique_ptr<const type_node>>&
+const std::vector<std::unique_ptr<const type_definition>>&
 type_reference_node::type_arguments() const noexcept {
 	return type_arguments_;
 }

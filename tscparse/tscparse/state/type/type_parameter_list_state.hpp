@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "../../ast/type/type_alias_node.hpp"
+#include "../../ast/type_node.hpp"
 #include "../parser_state.hpp"
 
 namespace tscc::parse::state {
@@ -29,18 +29,18 @@ namespace tscc::parse::state {
  * Entered after the opening `<` has been consumed. Pushes
  * type_parameter_state for each parameter. Expects `,` between
  * parameters and `>` to close. Stores results directly into the
- * type_alias_node.
+ * type_node.
  */
 class type_parameter_list_state : public parser_state {
 public:
-	explicit type_parameter_list_state(ast::type_alias_node* node);
+	explicit type_parameter_list_state(ast::type_node* node);
 
 	state_result process(parser& p, const lex::token& token) override;
 
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
 private:
-	ast::type_alias_node* node_;
+	ast::type_node* node_;
 	bool init_done_ = false;
 };
 

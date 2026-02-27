@@ -21,10 +21,10 @@
 using namespace tscc::parse::ast;
 
 union_type_node::union_type_node(
-	std::vector<std::unique_ptr<const type_node>> members)
+	std::vector<std::unique_ptr<const type_definition>> members)
 	: members_(std::move(members)) {}
 
-const std::vector<std::unique_ptr<const type_node>>&
+const std::vector<std::unique_ptr<const type_definition>>&
 union_type_node::members() const noexcept {
 	return members_;
 }

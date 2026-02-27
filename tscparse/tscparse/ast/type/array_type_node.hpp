@@ -20,26 +20,30 @@
 
 #include <memory>
 #include <tsclex/token.hpp>
-#include "../type_node.hpp"
+#include "type_definition.hpp"
 
 namespace tscc::parse::ast {
 
 /**
  * \brief AST node for array type expressions (`T[]`)
  */
-class array_type_node final : public type_node {
+class array_type_node final : public type_definition {
 public:
-	array_type_node(std::unique_ptr<const type_node> element,
+	array_type_node(std::unique_ptr<const type_definition> element,
 					lex::token open_bracket,
 					lex::token close_bracket);
+
+	type_definition::kind type_kind() const noexcept override {
+		return kind::array;
+	}
 
 	/**
 	 * \brief Get the element type
 	 */
-	[[nodiscard]] const type_node& element_type() const noexcept;
+	[[nodiscard]] const type_definition& element_type() const noexcept;
 
 private:
-	std::unique_ptr<const type_node> element_;
+	std::unique_ptr<const type_definition> element_;
 	lex::token open_bracket_;
 	lex::token close_bracket_;
 };

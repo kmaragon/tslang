@@ -35,10 +35,10 @@ bool type_parameter_node::has_out() const noexcept {
 	return static_cast<bool>(out_keyword_);
 }
 
-const type_node* type_parameter_node::constraint() const noexcept {
+const type_definition* type_parameter_node::constraint() const noexcept {
 	return constraint_.get();
 }
 
-const type_node* type_parameter_node::default_type() const noexcept {
+const type_definition* type_parameter_node::default_type() const noexcept {
 	return default_.get();
 }

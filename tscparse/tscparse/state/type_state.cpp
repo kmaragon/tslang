@@ -25,10 +25,10 @@
 using namespace tscc::parse::state;
 
 type_state::type_state(lex::token type_keyword)
-	: node_(std::make_unique<ast::type_alias_node>(std::move(type_keyword))) {}
+	: node_(std::make_unique<ast::type_node>(std::move(type_keyword))) {}
 
 type_state::type_state(lex::token declare_keyword, lex::token type_keyword)
-	: node_(std::make_unique<ast::type_alias_node>(std::move(type_keyword))) {
+	: node_(std::make_unique<ast::type_node>(std::move(type_keyword))) {
 	node_->declare_keyword_ = std::move(declare_keyword);
 }
 
@@ -61,8 +61,8 @@ accept_result type_state::accept_child(std::unique_ptr<ast::ast_node> child) {
 
 	// RHS type expression completed. Set parent before const-casting.
 	child = node_->adopt_child(std::move(child));
-	node_->type_ = std::unique_ptr<const ast::type_node>(
-		static_cast<const ast::type_node*>(child.release()));
+	node_->type_ = std::unique_ptr<const ast::type_definition>(
+		static_cast<const ast::type_definition*>(child.release()));
 	return accept_result::stay();
 }
 

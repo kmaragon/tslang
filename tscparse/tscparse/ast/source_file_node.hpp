@@ -35,10 +35,12 @@ namespace tscc::parse::ast {
  * Only the parser can construct instances and add children.
  */
 class source_file_node final : public module_node {
-	friend class ::tscc::parse::parser;
+	friend class parser;
 
 public:
 	explicit source_file_node(std::shared_ptr<lex::source> source);
+
+	kind node_kind() const noexcept override { return kind::source_file; }
 
 	/**
 	 * \brief Get the source file for this translation unit

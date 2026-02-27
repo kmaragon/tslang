@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 
 namespace tscc::parse::ast {
@@ -32,7 +33,28 @@ class ast_node {
 	const ast_node* parent_ = nullptr;
 
 public:
+	/**
+	 * \brief Top-level discriminant for AST node dispatch
+	 *
+	 * For type expression nodes, use type_node::type_kind() for
+	 * further discrimination.
+	 */
+	enum class kind : uint8_t {
+		source_file,
+		import_kind,
+		namespace_kind,
+		declare_module,
+		type,
+		type_parameter,
+		type_definition,
+	};
+
 	virtual ~ast_node() = default;
+
+	/**
+	 * \brief Get the top-level node kind
+	 */
+	[[nodiscard]] virtual kind node_kind() const noexcept = 0;
 
 	/**
 	 * \brief Get the parent node

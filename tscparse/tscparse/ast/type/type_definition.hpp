@@ -18,32 +18,46 @@
 
 #pragma once
 
-#include <tsclex/token.hpp>
-#include "type_definition.hpp"
+#include <cstdint>
+#include "../ast_node.hpp"
 
 namespace tscc::parse::ast {
 
 /**
- * \brief AST node for keyword type expressions
+ * \brief Abstract base class for all type expression nodes
  *
- * Covers the built-in keyword types: string, number, boolean, void,
- * never, unknown, any, object, symbol, bigint, undefined, null.
+ * Provides compile-time safety for type positions: any AST slot that
+ * expects a type expression uses unique_ptr<const type_definition>
+ * rather than bare ast_node, catching misuse at compile time.
  */
-class keyword_type_node final : public type_definition {
+class type_definition : public ast_node {
 public:
-	explicit keyword_type_node(lex::token keyword);
+	/**
+	 * \brief Discriminant for type expression dispatch
+	 */
+	enum class kind : uint8_t {
+		keyword,
+		literal,
+		this_kind,
+		reference,
+		array,
+		union_kind,
+		intersection,
+	};
 
-	type_definition::kind type_kind() const noexcept override {
-		return kind::keyword;
+	~type_definition() override = default;
+
+	ast_node::kind node_kind() const noexcept final {
+		return ast_node::kind::type_definition;
 	}
 
 	/**
-	 * \brief Get the keyword token
+	 * \brief Get the type expression kind
 	 */
-	[[nodiscard]] const lex::token& keyword() const noexcept;
+	[[nodiscard]] virtual type_definition::kind type_kind() const noexcept = 0;
 
-private:
-	lex::token keyword_;
+protected:
+	type_definition() = default;
 };
 
 }  // namespace tscc::parse::ast

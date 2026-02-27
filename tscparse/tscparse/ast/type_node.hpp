@@ -18,23 +18,80 @@
 
 #pragma once
 
+#include <memory>
+#include <vector>
+#include <tsclex/token.hpp>
 #include "ast_node.hpp"
+#include "lexeme.hpp"
+#include "type/type_definition.hpp"
+#include "type/type_parameter_node.hpp"
+
+namespace tscc::parse::state {
+class type_state;
+class type_header_state;
+class type_parameter_list_state;
+}
 
 namespace tscc::parse::ast {
 
 /**
- * \brief Abstract base class for all type expression nodes
+ * \brief AST node for type alias declarations
  *
- * Provides compile-time safety for type positions: any AST slot that
- * expects a type expression uses unique_ptr<const type_node> rather than
- * bare ast_node, catching misuse at compile time.
+ * Represents `type Foo<T> = SomeType;` declarations.
+ * Supports optional `declare` prefix and optional type parameters.
  */
-class type_node : public ast_node {
-public:
-	~type_node() override = default;
+class type_node final : public ast_node {
+	friend class state::type_state;
+	friend class state::type_header_state;
+	friend class state::type_parameter_list_state;
 
-protected:
-	type_node() = default;
+public:
+	explicit type_node(lex::token type_keyword);
+
+	kind node_kind() const noexcept override { return kind::type; }
+
+	/**
+	 * \brief Get the `declare` keyword token, if present
+	 * \return Pointer to the token, or nullptr if no `declare` prefix
+	 */
+	[[nodiscard]] const lex::token* declare_keyword() const noexcept;
+
+	/**
+	 * \brief Get the `type` keyword token
+	 */
+	[[nodiscard]] const lex::token* keyword() const noexcept;
+
+	/**
+	 * \brief Get the alias name as a lexeme
+	 */
+	[[nodiscard]] lexeme<std::string_view> name() const;
+
+	/**
+	 * \brief Get the type parameters
+	 */
+	[[nodiscard]] const std::vector<std::unique_ptr<const type_parameter_node>>&
+	type_parameters() const noexcept;
+
+	/**
+	 * \brief Get the RHS type expression
+	 */
+	[[nodiscard]] const type_definition& type() const noexcept;
+
+	/**
+	 * \brief Whether this is an ambient declaration (`declare` prefix present)
+	 */
+	[[nodiscard]] bool ambient() const noexcept;
+
+private:
+	lex::token declare_keyword_;
+	lex::token type_keyword_;
+	lex::token name_;
+	lex::token less_than_;
+	std::vector<std::unique_ptr<const type_parameter_node>> type_parameters_;
+	lex::token greater_than_;
+	lex::token equals_;
+	std::unique_ptr<const type_definition> type_;
+	lex::token semicolon_;
 };
 
 }  // namespace tscc::parse::ast

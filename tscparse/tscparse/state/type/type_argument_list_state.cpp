@@ -53,7 +53,7 @@ state_result type_argument_list_state::process(parser& /*p*/,
 accept_result type_argument_list_state::accept_child(
 	std::unique_ptr<ast::ast_node> child) {
 	node_->type_arguments_.emplace_back(
-		std::unique_ptr<const ast::type_node>(
-			static_cast<const ast::type_node*>(child.release())));
+		std::unique_ptr<const ast::type_definition>(
+			static_cast<const ast::type_definition*>(child.release())));
 	return accept_result::stay();
 }

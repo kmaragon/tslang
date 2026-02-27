@@ -41,7 +41,7 @@ state_result type_union_state::process(parser& /*p*/,
 	}
 
 	if (members_.size() == 1) {
-		auto* raw = const_cast<ast::type_node*>(members_[0].release());
+		auto* raw = const_cast<ast::type_definition*>(members_[0].release());
 		return state_result::complete(std::unique_ptr<ast::ast_node>(raw))
 			.reprocess();
 	}
@@ -54,14 +54,14 @@ state_result type_union_state::process(parser& /*p*/,
 accept_result type_union_state::accept_child(
 	std::unique_ptr<ast::ast_node> child) {
 	members_.emplace_back(
-		std::unique_ptr<const ast::type_node>(
-			static_cast<const ast::type_node*>(child.release())));
+		std::unique_ptr<const ast::type_definition>(
+			static_cast<const ast::type_definition*>(child.release())));
 	return accept_result::stay();
 }
 
 std::optional<state_result> type_union_state::on_eof() {
 	if (members_.size() == 1) {
-		auto* raw = const_cast<ast::type_node*>(members_[0].release());
+		auto* raw = const_cast<ast::type_definition*>(members_[0].release());
 		return state_result::complete(std::unique_ptr<ast::ast_node>(raw));
 	}
 	if (members_.size() > 1) {

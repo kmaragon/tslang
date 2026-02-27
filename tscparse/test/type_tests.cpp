@@ -37,7 +37,7 @@
 #include <tsclex/tokens/undefined_token.hpp>
 #include <tsclex/tokens/unknown_token.hpp>
 #include <tsclex/tokens/void_token.hpp>
-#include <tscparse/ast/type/type_alias_node.hpp>
+#include <tscparse/ast/type_node.hpp>
 #include <tscparse/ast/type/keyword_type_node.hpp>
 #include <tscparse/ast/type/literal_type_node.hpp>
 #include <tscparse/ast/type/array_type_node.hpp>
@@ -52,9 +52,9 @@
 #include <tscparse/error/unexpected_end_of_text.hpp>
 #include "test_helpers.hpp"
 
-static const tscc::parse::ast::type_alias_node& parse_type_alias(
+static const tscc::parse::ast::type_node& parse_type_alias(
 	const std::string& input) {
-	return test_utils::parse_node<tscc::parse::ast::type_alias_node>(input);
+	return test_utils::parse_node<tscc::parse::ast::type_node>(input);
 }
 
 TEST_CASE("type alias", "[parser][type]") {
@@ -1098,7 +1098,7 @@ TEST_CASE("type alias", "[parser][type]") {
 			REQUIRE(ns.children().size() == 1);
 
 			auto* alias =
-				dynamic_cast<const tscc::parse::ast::type_alias_node*>(
+				dynamic_cast<const tscc::parse::ast::type_node*>(
 					ns.children()[0].get());
 			REQUIRE(alias != nullptr);
 			REQUIRE(alias->parent() == &ns);
@@ -1127,7 +1127,7 @@ TEST_CASE("type alias", "[parser][type]") {
 			REQUIRE(dm.children().size() == 1);
 
 			auto* alias =
-				dynamic_cast<const tscc::parse::ast::type_alias_node*>(
+				dynamic_cast<const tscc::parse::ast::type_node*>(
 					dm.children()[0].get());
 			REQUIRE(alias != nullptr);
 			REQUIRE(alias->parent() == &dm);

@@ -21,26 +21,30 @@
 #include <memory>
 #include <vector>
 #include <tsclex/token.hpp>
-#include "../type_node.hpp"
+#include "type_definition.hpp"
 
 namespace tscc::parse::ast {
 
 /**
  * \brief AST node for intersection type expressions (`A & B & C`)
  */
-class intersection_type_node final : public type_node {
+class intersection_type_node final : public type_definition {
 public:
 	explicit intersection_type_node(
-		std::vector<std::unique_ptr<const type_node>> members);
+		std::vector<std::unique_ptr<const type_definition>> members);
+
+	type_definition::kind type_kind() const noexcept override {
+		return kind::intersection;
+	}
 
 	/**
 	 * \brief Get the member types (2 or more)
 	 */
-	[[nodiscard]] const std::vector<std::unique_ptr<const type_node>>& members()
-		const noexcept;
+	[[nodiscard]] const std::vector<std::unique_ptr<const type_definition>>&
+	members() const noexcept;
 
 private:
-	std::vector<std::unique_ptr<const type_node>> members_;
+	std::vector<std::unique_ptr<const type_definition>> members_;
 };
 
 }  // namespace tscc::parse::ast

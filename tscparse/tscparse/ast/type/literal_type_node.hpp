@@ -19,7 +19,7 @@
 #pragma once
 
 #include <tsclex/token.hpp>
-#include "../type_node.hpp"
+#include "type_definition.hpp"
 
 namespace tscc::parse::ast {
 
@@ -29,10 +29,14 @@ namespace tscc::parse::ast {
  * Covers string literals ("foo"), numeric literals (42, -1),
  * and boolean literals (true, false).
  */
-class literal_type_node final : public type_node {
+class literal_type_node final : public type_definition {
 public:
 	explicit literal_type_node(lex::token value);
 	literal_type_node(lex::token minus, lex::token value);
+
+	type_definition::kind type_kind() const noexcept override {
+		return kind::literal;
+	}
 
 	/**
 	 * \brief Get the optional minus token (for negative numeric literals)
