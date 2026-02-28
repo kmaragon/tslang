@@ -244,6 +244,7 @@ jsdoc_token::jsdoc_token(const std::span<std::u32string>& comment_lines) {
 							trim_right();
 							line.append(
 								jsdoc_string_part(std::move(current_value)));
+							current_value = {};
 						}
 
 						line.append(jsdoc_tag_part(std::move(tag_name_str)));
@@ -266,6 +267,7 @@ jsdoc_token::jsdoc_token(const std::span<std::u32string>& comment_lines) {
 							trim_right();
 							line.append(
 								jsdoc_string_part(std::move(current_value)));
+							current_value = {};
 						}
 
 						line.append(jsdoc_type_part{std::u32string{type_name}});
@@ -283,6 +285,7 @@ jsdoc_token::jsdoc_token(const std::span<std::u32string>& comment_lines) {
 		if (!current_value.empty()) {
 			trim_right();
 			line.append(jsdoc_string_part(std::move(current_value)));
+			current_value = {};
 		}
 
 		lines_.emplace_back(std::move(line));

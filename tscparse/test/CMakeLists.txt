@@ -6,6 +6,8 @@ set(TESTS
         namespace_tests.cpp
         parser_tests.cpp
         type_tests.cpp
+        transition_listener.cpp
+        transition_logger.cpp
 )
 
 add_executable(tscparse.test ${TESTS})

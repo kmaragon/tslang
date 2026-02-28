@@ -114,6 +114,7 @@ set(HEADERS
         tscparse/error.hpp
         tscparse/filtered_token_index.hpp
         tscparse/parser.hpp
+        tscparse/parser_observer.hpp
         tscparse/trivia_index.hpp
 )
 

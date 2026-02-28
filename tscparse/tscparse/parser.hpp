@@ -25,6 +25,7 @@
 #include <vector>
 #include "ast/ast_node.hpp"
 #include "ast/source_file_node.hpp"
+#include "parser_observer.hpp"
 #include "state/parser_state.hpp"
 #include "state/state_result.hpp"
 #include "trivia_index.hpp"
@@ -39,6 +40,15 @@ namespace tscc::parse {
  */
 class parser {
 public:
+	/**
+	 * \brief Set a global observer for parser state transitions
+	 *
+	 * The observer receives on_push() calls whenever any parser instance
+	 * pushes a new state. Set to nullptr to disable observation.
+	 * Not thread-safe — set once before parsing begins.
+	 */
+	static void set_observer(parser_observer* obs) noexcept;
+
 	/**
 	 * \brief Construct a parser
 	 *
@@ -58,6 +68,8 @@ public:
 	std::unique_ptr<ast::source_file_node> parse();
 
 private:
+	static parser_observer* observer_;
+
 	lex::lexer& lexer_;
 	lex::lexer::iterator token_iter_;
 	lex::lexer::iterator token_end_;
@@ -86,7 +98,9 @@ private:
 	void flush_trivia(ast::ast_node* node);
 
 	// Handle a complete state_result: pop state, flush trivia, pass to parent.
-	void handle_complete(state::state_result result);
+	// triggering_token is the token that caused completion (nullptr for EOF).
+	void handle_complete(state::state_result result,
+						 const lex::token* triggering_token);
 
 	// Expect a specific token type or throw
 	template <typename TokenType>

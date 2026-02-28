@@ -1,0 +1,11 @@
+# Configuration for gen_diagrams.py
+# Controls how parser state transition DOT files are generated.
+
+# Default depth: how many levels of transitions to show from each state
+depth: 2
+
+# Per-pattern overrides for depth
+overrides:
+  module_scope_state:
+    pattern: "module_scope_*"
+    depth: 4

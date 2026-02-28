@@ -37,6 +37,12 @@
 using namespace tscc;
 using namespace tscc::parse;
 
+parser_observer* parser::observer_ = nullptr;
+
+void parser::set_observer(parser_observer* obs) noexcept {
+	observer_ = obs;
+}
+
 parser::parser(lex::lexer& lexer, trivia_index* trivia_idx)
 	: lexer_(lexer),
 	  token_iter_(lexer.begin()),
@@ -53,30 +59,49 @@ std::unique_ptr<ast::source_file_node> parser::parse() {
 	while (!at_token_end()) {
 		const auto& token = current_token();
 		auto result = state_stack_.back()->process(*this, token);
-
-		if (!result.should_reprocess()) {
-			advance_token();
-			collect_trivia();
-		}
+		const bool should_advance = !result.should_reprocess();
 
 		if (result.is_stay()) {
+			if (should_advance) {
+				advance_token();
+				collect_trivia();
+			}
 			continue;
 		}
 
 		if (result.is_push()) {
 			state_stack_.emplace_back(std::move(result).take_child());
+			if (observer_) {
+				observer_->on_push(
+					*state_stack_[state_stack_.size() - 2],
+					token,
+					*state_stack_.back());
+			}
+			if (should_advance) {
+				advance_token();
+				collect_trivia();
+			}
 			continue;
 		}
 
 		if (result.is_complete()) {
-			handle_complete(std::move(result));
+			handle_complete(std::move(result), &token);
+			if (should_advance) {
+				advance_token();
+				collect_trivia();
+			}
+			continue;
+		}
+
+		if (should_advance) {
+			throw std::logic_error("how did I get here?");
 		}
 	}
 
 	// Handle EOF: unwind any states that can complete at EOF
 	while (state_stack_.size() > 1) {
 		if (auto eof_result = state_stack_.back()->on_eof()) {
-			handle_complete(std::move(*eof_result));
+			handle_complete(std::move(*eof_result), nullptr);
 		} else {
 			throw unexpected_end_of_text(last_location_);
 		}
@@ -146,8 +171,13 @@ void parser::flush_trivia(ast::ast_node* node) {
 	pending_trivia_.clear();
 }
 
-void parser::handle_complete(state::state_result result) {
+void parser::handle_complete(state::state_result result,
+							 const lex::token* triggering_token) {
 	auto node = std::move(result).take_node();
+	if (observer_) {
+		observer_->on_complete(
+			*state_stack_.back(), triggering_token, node.get());
+	}
 	state_stack_.pop_back();
 
 	while (true) {
@@ -164,6 +194,10 @@ void parser::handle_complete(state::state_result result) {
 		}
 
 		node = std::move(accept).take_node();
+		if (observer_) {
+			observer_->on_cascade(
+				*state_stack_.back(), triggering_token, node.get());
+		}
 		state_stack_.pop_back();
 	}
 }

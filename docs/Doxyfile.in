@@ -1,0 +1,44 @@
+# Doxyfile for TSCC
+# Generated settings use @CMAKE_*@ placeholders resolved by configure_file()
+
+PROJECT_NAME           = "TSCC"
+PROJECT_BRIEF          = "A TypeScript Compiler"
+
+# Input sources
+INPUT                  = @CMAKE_SOURCE_DIR@/tsccore \
+                         @CMAKE_SOURCE_DIR@/tsclex \
+                         @CMAKE_SOURCE_DIR@/tscparse \
+                         @CMAKE_SOURCE_DIR@/docs
+FILE_PATTERNS          = *.hpp *.cpp *.md
+RECURSIVE              = YES
+
+# Exclude non-documentation files
+EXCLUDE                = @CMAKE_SOURCE_DIR@/CLAUDE.md
+EXCLUDE_PATTERNS       = */test/* */private/*
+
+# Main page
+USE_MDFILE_AS_MAINPAGE = @CMAKE_SOURCE_DIR@/docs/mainpage.md
+
+# Output
+OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@
+GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
+
+# Graphviz DOT integration
+HAVE_DOT               = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+DOTFILE_DIRS           = @CMAKE_CURRENT_BINARY_DIR@/diagrams
+
+# Extraction settings
+EXTRACT_ALL            = NO
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+
+# Source browsing
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+
+# Markdown support
+MARKDOWN_SUPPORT       = YES
+AUTOLINK_SUPPORT       = YES
