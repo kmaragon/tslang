@@ -45,6 +45,8 @@ set(SOURCES
         tscparse/state/type/type_reference_state.cpp
         tscparse/state/type/type_union_state.cpp
         tscparse/state/declare_state.cpp
+        tscparse/state/export_state.cpp
+        tscparse/state/multiline_state.cpp
         tscparse/state/import_state.cpp
         tscparse/state/module_scope_state.cpp
         tscparse/state/namespace_state.cpp
@@ -103,6 +105,8 @@ set(HEADERS
         tscparse/state/type/type_primary_state.hpp
         tscparse/state/type/type_reference_state.hpp
         tscparse/state/type/type_union_state.hpp
+        tscparse/state/export_state.hpp
+        tscparse/state/multiline_state.hpp
         tscparse/state/import_state.hpp
         tscparse/state/module_scope_state.hpp
         tscparse/state/module_scope_visitor.hpp

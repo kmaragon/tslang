@@ -18,7 +18,6 @@
 
 #include "type_postfix_state.hpp"
 #include <tsclex/tokens/close_bracket_token.hpp>
-#include <tsclex/tokens/newline_token.hpp>
 #include <tsclex/tokens/open_bracket_token.hpp>
 #include "../../ast/type/array_type_node.hpp"
 #include "../../error/expected_token.hpp"
@@ -29,10 +28,8 @@ using namespace tscc::parse::state;
 
 type_postfix_state::type_postfix_state(ast::type_context ctx) : ctx_(ctx) {}
 
-state_result type_postfix_state::process(parser& /*p*/,
-										 const lex::token& token) {
-	if (token.is<lex::tokens::newline_token>()) return state_result::stay();
-
+state_result type_postfix_state::process_content(parser& /*p*/,
+												 const lex::token& token) {
 	if (!init_done_) {
 		init_done_ = true;
 		return state_result::push<type_primary_state>(ctx_).reprocess();

@@ -22,7 +22,7 @@
 #include <vector>
 #include "../../ast/type/type_context.hpp"
 #include "../../ast/type/type_definition.hpp"
-#include "../parser_state.hpp"
+#include "../multiline_state.hpp"
 
 namespace tscc::parse::state {
 
@@ -33,11 +33,11 @@ namespace tscc::parse::state {
  * each operand. Supports leading `&` (e.g. `& A & B`).
  * If only one operand, returns it directly without wrapping.
  */
-class type_intersection_state : public parser_state {
+class type_intersection_state : public multiline_state {
 public:
 	explicit type_intersection_state(ast::type_context ctx);
 
-	state_result process(parser& p, const lex::token& token) override;
+	state_result process_content(parser& p, const lex::token& token) override;
 
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 

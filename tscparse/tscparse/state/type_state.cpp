@@ -27,6 +27,38 @@
 
 using namespace tscc::parse::state;
 
+class type_state::post_type_visitor : public basic_state_visitor {
+public:
+	post_type_visitor(type_state* s,
+					  const lex::source_location& loc,
+					  const lex::token& token) noexcept
+		: basic_state_visitor(s, loc), s_(s), token_(token) {}
+
+	state_result operator()(const lex::tokens::semicolon_token&) const {
+		s_->node_->semicolon_ = token_;
+		return state_result::complete(std::move(s_->node_));
+	}
+
+	state_result operator()(const lex::tokens::newline_token&) const {
+		return state_result::complete(std::move(s_->node_)).reprocess();
+	}
+
+	state_result operator()(const lex::tokens::close_brace_token&) const {
+		return state_result::complete(std::move(s_->node_)).reprocess();
+	}
+
+	[[noreturn]] state_result operator()(
+		const lex::tokens::basic_token&) const {
+		throw expected_token(location, "';'", token_->to_string());
+	}
+
+	using basic_state_visitor::operator();
+
+private:
+	type_state* s_;
+	const lex::token& token_;
+};
+
 type_state::type_state(lex::token type_keyword)
 	: node_(std::make_unique<ast::type_node>(std::move(type_keyword))) {}
 
@@ -46,23 +78,7 @@ state_result type_state::process(parser& /*p*/, const lex::token& token) {
 		return state_result::push<type_expression_state>().reprocess();
 	}
 
-	// After RHS type, expect semicolon or ASI.
-	if (token.is<lex::tokens::semicolon_token>()) {
-		node_->semicolon_ = token;
-		return state_result::complete(std::move(node_));
-	}
-
-	// ASI rule 1: newline triggers semicolon insertion.
-	if (token.is<lex::tokens::newline_token>()) {
-		return state_result::complete(std::move(node_));
-	}
-
-	// ASI rule 2: closing brace triggers semicolon insertion.
-	if (token.is<lex::tokens::close_brace_token>()) {
-		return state_result::complete(std::move(node_)).reprocess();
-	}
-
-	throw expected_token(token.location(), "';'", token->to_string());
+	return token.visit(post_type_visitor{this, token.location(), token});
 }
 
 accept_result type_state::accept_child(std::unique_ptr<ast::ast_node> child) {

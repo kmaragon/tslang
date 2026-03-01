@@ -19,6 +19,7 @@
 #pragma once
 
 #include <memory>
+#include <tsclex/source_location.hpp>
 #include "../ast/ast_node.hpp"
 #include "parser_state.hpp"
 
@@ -61,6 +62,11 @@ public:
 
 	[[nodiscard]] state_result reprocess() &&;
 
+	void set_newline_location(lex::source_location loc) noexcept;
+
+	[[nodiscard]] const std::optional<lex::source_location>& newline_location()
+		const noexcept;
+
 	[[nodiscard]] bool should_reprocess() const noexcept;
 	[[nodiscard]] bool is_stay() const noexcept;
 	[[nodiscard]] bool is_push() const noexcept;
@@ -76,6 +82,7 @@ private:
 
 	action action_ = action::stay;
 	bool reprocess_ = false;
+	std::optional<lex::source_location> newline_loc_;
 	std::unique_ptr<parser_state> child_;
 	std::unique_ptr<ast::ast_node> node_;
 };

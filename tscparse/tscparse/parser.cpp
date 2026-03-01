@@ -154,6 +154,7 @@ void parser::collect_trivia() {
 				synthetic_newline_.emplace(
 					lex::make_token<lex::tokens::newline_token>(
 						token_iter_->location()));
+
 				pending_trivia_.emplace_back(std::move(*token_iter_));
 				return true;
 			} else if constexpr (std::is_same_v<
@@ -165,6 +166,7 @@ void parser::collect_trivia() {
 					synthetic_newline_.emplace(
 						lex::make_token<lex::tokens::newline_token>(
 							token_iter_->location()));
+
 				pending_trivia_.emplace_back(std::move(*token_iter_));
 				return true;
 			} else if constexpr (std::is_same_v<T, lex::tokens::jsdoc_token>) {
@@ -174,6 +176,7 @@ void parser::collect_trivia() {
 					synthetic_newline_.emplace(
 						lex::make_token<lex::tokens::newline_token>(
 							token_iter_->location()));
+
 				pending_trivia_.emplace_back(std::move(*token_iter_));
 				return true;
 			} else if constexpr (std::is_same_v<T,
@@ -206,6 +209,10 @@ void parser::flush_trivia(ast::ast_node* node) {
 
 void parser::handle_complete(state::state_result result,
 							 const lex::token* triggering_token) {
+	if (result.newline_location()) {
+		synthetic_newline_.emplace(lex::make_token<lex::tokens::newline_token>(
+			*result.newline_location()));
+	}
 	auto node = std::move(result).take_node();
 	if (observer_) {
 		observer_->on_complete(*state_stack_.back(), triggering_token,

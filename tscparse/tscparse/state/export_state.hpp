@@ -18,49 +18,28 @@
 
 #pragma once
 
-#include <memory>
 #include <tsclex/token.hpp>
-#include "../ast/type_node.hpp"
 #include "parser_state.hpp"
 
 namespace tscc::parse::state {
 
 /**
- * \brief Coordinator state for type alias declarations
+ * \brief Routing state for the `export` keyword
  *
- * Handles both bare `type Foo = T;` and declared `declare type Foo = T;`.
- * Pushes type_header_state for the name, type params, and `=`,
- * then type_expression_state for the RHS type, then expects `;` or ASI.
+ * Dispatches on the token following `export` to push the appropriate
+ * declaration state. When the child completes, stamps the export keyword
+ * on the returned AST node.
  */
-class type_state : public parser_state {
+class export_state : public parser_state {
 public:
-	/**
-	 * \brief Construct for bare type alias (no declare prefix)
-	 *
-	 * \param type_keyword The `type` keyword token
-	 */
-	explicit type_state(lex::token type_keyword);
-
-	/**
-	 * \brief Construct for declared type alias (always ambient)
-	 *
-	 * \param declare_keyword The `declare` keyword token
-	 * \param type_keyword The `type` keyword token
-	 */
-	type_state(lex::token declare_keyword, lex::token type_keyword);
+	explicit export_state(lex::token export_keyword);
 
 	state_result process(parser& p, const lex::token& token) override;
 
 	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
 
-	std::optional<state_result> on_eof() override;
-
 private:
-	std::unique_ptr<ast::type_node> node_;
-	bool header_done_ = false;
-	bool type_done_ = false;
-
-	class post_type_visitor;
+	lex::token export_keyword_;
 };
 
 }  // namespace tscc::parse::state

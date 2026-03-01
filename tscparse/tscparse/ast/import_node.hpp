@@ -28,6 +28,7 @@
 
 namespace tscc::parse::state {
 class import_node_builder;
+class export_state;
 }
 
 namespace tscc::parse::ast {
@@ -132,6 +133,7 @@ public:
  */
 class import_node : public ast_node {
 	friend class state::import_node_builder;
+	friend class state::export_state;
 
 public:
 	/**
@@ -140,6 +142,12 @@ public:
 	explicit import_node(lex::token import_keyword);
 
 	kind node_kind() const noexcept override { return kind::import_kind; }
+
+	/**
+	 * \brief Get the `export` keyword token, if present
+	 * \return Pointer to the token, or nullptr if no `export` prefix
+	 */
+	const lex::token* export_keyword() const noexcept;
 
 	/**
 	 * \brief Get the import keyword token
@@ -243,6 +251,7 @@ private:
 	equals_form::require_data& ensure_require();
 	attributes_data& ensure_attributes();
 
+	lex::token export_keyword_;
 	lex::token import_keyword_;
 	std::optional<lex::token> type_keyword_;
 	std::variant<std::monostate, side_effect_form, from_form, equals_form>

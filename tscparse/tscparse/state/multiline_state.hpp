@@ -18,35 +18,32 @@
 
 #pragma once
 
-#include <memory>
-#include <tsclex/token.hpp>
-#include "../../ast/type/type_context.hpp"
-#include "../../ast/type/type_definition.hpp"
-#include "../multiline_state.hpp"
+#include <optional>
+#include <tsclex/source_location.hpp>
+#include "parser_state.hpp"
 
 namespace tscc::parse::state {
 
 /**
- * \brief Handles postfix type operations (`T[]`, `T[K]`)
+ * \brief Base class for parser states whose constructs can span multiple lines
  *
- * Pushes primary level for the base type, then checks for `[` to
- * apply array or indexed access suffixes.
+ * Intercepts newline tokens and tracks their location. When the subclass
+ * gives up on a non-continuation token (complete + reprocess), the stored
+ * newline location is attached to the result so the parser can restore
+ * the synthetic newline for the parent state's ASI handling.
+ *
+ * Subclasses override process_content() instead of process().
  */
-class type_postfix_state : public multiline_state {
+class multiline_state : public parser_state {
 public:
-	explicit type_postfix_state(ast::type_context ctx);
+	state_result process(parser& p, const lex::token& token) final override;
 
-	state_result process_content(parser& p, const lex::token& token) override;
-
-	accept_result accept_child(std::unique_ptr<ast::ast_node> child) override;
-
-	std::optional<state_result> on_eof() override;
+protected:
+	virtual state_result process_content(parser& p,
+										 const lex::token& token) = 0;
 
 private:
-	ast::type_context ctx_;
-	bool init_done_ = false;
-	std::unique_ptr<const ast::type_definition> base_;
-	lex::token open_bracket_;
+	std::optional<lex::source_location> newline_loc_;
 };
 
 }  // namespace tscc::parse::state

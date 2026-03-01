@@ -46,6 +46,15 @@ state_result state_result::reprocess() && {
 	return std::move(*this);
 }
 
+void state_result::set_newline_location(lex::source_location loc) noexcept {
+	newline_loc_ = std::move(loc);
+}
+
+const std::optional<tscc::lex::source_location>&
+state_result::newline_location() const noexcept {
+	return newline_loc_;
+}
+
 bool state_result::should_reprocess() const noexcept {
 	return reprocess_;
 }

@@ -2,6 +2,7 @@ find_package(Catch2 CONFIG REQUIRED)
 
 set(TESTS
         declare_tests.cpp
+        export_tests.cpp
         import_tests.cpp
         namespace_tests.cpp
         parser_tests.cpp

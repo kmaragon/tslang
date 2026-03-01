@@ -82,6 +82,10 @@ import_node::attributes_data& import_node::ensure_attributes() {
 import_node::import_node(lex::token import_keyword)
 	: import_keyword_(std::move(import_keyword)) {}
 
+const tscc::lex::token* import_node::export_keyword() const noexcept {
+	return export_keyword_ ? &export_keyword_ : nullptr;
+}
+
 const tscc::lex::token* import_node::import_keyword() const noexcept {
 	return &import_keyword_;
 }

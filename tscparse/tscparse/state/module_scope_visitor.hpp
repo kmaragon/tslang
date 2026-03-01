@@ -19,12 +19,14 @@
 #pragma once
 
 #include <tsclex/tokens/declare_token.hpp>
+#include <tsclex/tokens/export_token.hpp>
 #include <tsclex/tokens/import_token.hpp>
 #include <tsclex/tokens/module_token.hpp>
 #include <tsclex/tokens/namespace_token.hpp>
 #include <tsclex/tokens/type_token.hpp>
 #include "../error/declare_in_ambient_context.hpp"
 #include "declare_state.hpp"
+#include "export_state.hpp"
 #include "import_state.hpp"
 #include "namespace_state.hpp"
 #include "parser_state.hpp"
@@ -85,6 +87,10 @@ public:
 		return state_result::push<namespace_state>(token_, ambient_);
 	}
 
+	state_result operator()(const lex::tokens::export_token&) const {
+		return state_result::push<export_state>(token_);
+	}
+
 	state_result operator()(const lex::tokens::type_token&) const {
 		return state_result::push<type_state>(token_);
 	}
@@ -92,7 +98,6 @@ public:
 	using basic_state_visitor::operator();
 
 	// TODO: Add handlers for tokens valid at declaration scopes:
-	// - export_token -> parse export declaration
 	// - class_token -> push class_declaration_state
 	// - function_token -> push function_declaration_state
 	// - interface_token -> parse interface declaration

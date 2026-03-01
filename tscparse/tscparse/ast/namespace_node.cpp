@@ -28,6 +28,10 @@ ast_node::kind namespace_node::node_kind() const noexcept {
 	return kind::namespace_kind;
 }
 
+const lex::token* namespace_node::export_keyword() const noexcept {
+	return export_keyword_ ? &export_keyword_ : nullptr;
+}
+
 const lex::token* namespace_node::declare_keyword() const noexcept {
 	return declare_keyword_ ? &declare_keyword_ : nullptr;
 }

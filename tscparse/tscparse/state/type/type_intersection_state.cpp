@@ -18,7 +18,6 @@
 
 #include "type_intersection_state.hpp"
 #include <tsclex/tokens/ampersand_token.hpp>
-#include <tsclex/tokens/newline_token.hpp>
 #include "../../ast/type/intersection_type_node.hpp"
 #include "../state_result.hpp"
 #include "type_operator_state.hpp"
@@ -28,10 +27,8 @@ using namespace tscc::parse::state;
 type_intersection_state::type_intersection_state(ast::type_context ctx)
 	: ctx_(ctx) {}
 
-state_result type_intersection_state::process(parser& /*p*/,
-											  const lex::token& token) {
-	if (token.is<lex::tokens::newline_token>()) return state_result::stay();
-
+state_result type_intersection_state::process_content(parser& /*p*/,
+													  const lex::token& token) {
 	if (!init_done_) {
 		init_done_ = true;
 		if (token.is<lex::tokens::ampersand_token>()) {
@@ -50,16 +47,15 @@ state_result type_intersection_state::process(parser& /*p*/,
 			.reprocess();
 	}
 
-	return state_result::complete(
-		std::make_unique<ast::intersection_type_node>(std::move(members_)))
+	return state_result::complete(std::make_unique<ast::intersection_type_node>(
+									  std::move(members_)))
 		.reprocess();
 }
 
 accept_result type_intersection_state::accept_child(
 	std::unique_ptr<ast::ast_node> child) {
-	members_.emplace_back(
-		std::unique_ptr<const ast::type_definition>(
-			static_cast<const ast::type_definition*>(child.release())));
+	members_.emplace_back(std::unique_ptr<const ast::type_definition>(
+		static_cast<const ast::type_definition*>(child.release())));
 	return accept_result::stay();
 }
 
