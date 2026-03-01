@@ -18,6 +18,7 @@
 
 #include "type_primary_state.hpp"
 #include <tsclex/tokens/any_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include <tsclex/tokens/bigint_token.hpp>
 #include <tsclex/tokens/boolean_token.hpp>
 #include <tsclex/tokens/constant_value_token.hpp>
@@ -91,6 +92,8 @@ type_primary_state::type_primary_state(ast::type_context ctx) : ctx_(ctx) {}
 
 state_result type_primary_state::process(parser& /*p*/,
 										 const lex::token& token) {
+	if (token.is<lex::tokens::newline_token>()) return state_result::stay();
+
 	if (minus_) {
 		if (!token.is<lex::tokens::constant_value_token>()) {
 			throw expected_token(token.location(), "numeric literal",

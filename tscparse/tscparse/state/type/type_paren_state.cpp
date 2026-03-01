@@ -18,6 +18,7 @@
 
 #include "type_paren_state.hpp"
 #include <tsclex/tokens/close_paren_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include "../../error/expected_token.hpp"
 #include "../state_result.hpp"
 #include "type_expression_state.hpp"
@@ -30,6 +31,8 @@ type_paren_state::type_paren_state(lex::token open_paren,
 
 state_result type_paren_state::process(parser& /*p*/,
 									   const lex::token& token) {
+	if (token.is<lex::tokens::newline_token>()) return state_result::stay();
+
 	if (!init_done_) {
 		init_done_ = true;
 		return state_result::push<type_expression_state>(ctx_).reprocess();

@@ -85,6 +85,8 @@ public:
 							 token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	state_result handle_specifier_name() const {
 		s_->pending_name_ = token_;
@@ -155,6 +157,8 @@ public:
 							 token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	// "type" is the type modifier, this token is the specifier name
 	state_result handle_name_after_type() const {
@@ -196,6 +200,8 @@ public:
 							 token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	named_import_state* s_;
 	const lex::token& token_;
@@ -232,6 +238,8 @@ public:
 		throw expected_token(location, "identifier", token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	state_result handle_alias() const {
 		s_->flush_specifier_with_alias(token_);
@@ -263,6 +271,8 @@ public:
 		const lex::tokens::basic_token&) const {
 		throw expected_token(location, "',' or '}'", token_->to_string());
 	}
+
+	using basic_state_visitor::operator();
 
 private:
 	named_import_state* s_;

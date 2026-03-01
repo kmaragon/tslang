@@ -77,6 +77,7 @@ private:
 	std::vector<lex::token> pending_trivia_;
 	lex::source_location
 		last_location_;	 // Track last valid location for EOF errors
+	std::optional<lex::token> synthetic_newline_;
 	std::vector<std::unique_ptr<state::parser_state>> state_stack_;
 
 	// Internal: advance token iterator

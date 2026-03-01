@@ -45,6 +45,8 @@ public:
 		throw expected_token(location, "'from'", token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	expect_from_state* s_;
 	const lex::token& token_;
@@ -78,6 +80,8 @@ public:
 		const lex::tokens::basic_token&) const {
 		throw expected_token(location, "module specifier", token_->to_string());
 	}
+
+	using basic_state_visitor::operator();
 
 private:
 	after_from_state* s_;

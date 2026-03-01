@@ -55,6 +55,8 @@ public:
 		throw expected_token(location, "'{'", token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	import_attributes_state* s_;
 	const lex::token& token_;
@@ -100,6 +102,8 @@ public:
 							 token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	state_result handle_key() const {
 		s_->pending_key_ = token_;
@@ -128,6 +132,8 @@ public:
 		throw expected_token(location, "':'", token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	import_attributes_state* s_;
 	const lex::token& token_;
@@ -152,6 +158,8 @@ public:
 		const lex::tokens::basic_token&) const {
 		throw expected_token(location, "string literal", token_->to_string());
 	}
+
+	using basic_state_visitor::operator();
 
 private:
 	import_attributes_state* s_;
@@ -179,6 +187,8 @@ public:
 		const lex::tokens::basic_token&) const {
 		throw expected_token(location, "',' or '}'", token_->to_string());
 	}
+
+	using basic_state_visitor::operator();
 
 private:
 	import_attributes_state* s_;

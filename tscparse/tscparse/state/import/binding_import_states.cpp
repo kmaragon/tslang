@@ -67,6 +67,8 @@ public:
 							 token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	after_default_state* s_;
 	const lex::token& token_;
@@ -89,6 +91,8 @@ public:
 		const lex::tokens::basic_token&) const {
 		throw expected_token(location, "'='", token_->to_string());
 	}
+
+	using basic_state_visitor::operator();
 
 private:
 	after_default_state* s_;
@@ -131,6 +135,8 @@ public:
 		const lex::tokens::basic_token&) const {
 		throw expected_token(location, "'*' or '{'", token_->to_string());
 	}
+
+	using basic_state_visitor::operator();
 
 private:
 	after_comma_state* s_;

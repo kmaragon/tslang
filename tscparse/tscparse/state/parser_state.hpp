@@ -22,6 +22,7 @@
 #include <optional>
 #include <tsclex/token.hpp>
 #include <tsclex/tokens/basic_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 
 namespace tscc::parse {
 class parser;
@@ -94,6 +95,8 @@ public:
 	basic_state_visitor(parser_state* s,
 						const lex::source_location& loc) noexcept
 		: state(s), location(loc) {}
+
+	state_result operator()(const lex::tokens::newline_token&) const;
 
 	[[noreturn]] state_result operator()(const lex::tokens::basic_token&) const;
 };

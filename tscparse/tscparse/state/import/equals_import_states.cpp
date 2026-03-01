@@ -20,11 +20,13 @@
 #include <stdexcept>
 #include <tsclex/tokens/as_token.hpp>
 #include <tsclex/tokens/assert_token.hpp>
+#include <tsclex/tokens/close_brace_token.hpp>
 #include <tsclex/tokens/close_paren_token.hpp>
 #include <tsclex/tokens/constant_value_token.hpp>
 #include <tsclex/tokens/dot_token.hpp>
 #include <tsclex/tokens/from_token.hpp>
 #include <tsclex/tokens/identifier_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include <tsclex/tokens/open_paren_token.hpp>
 #include <tsclex/tokens/require_token.hpp>
 #include <tsclex/tokens/semicolon_token.hpp>
@@ -72,6 +74,8 @@ public:
 							 token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	state_result handle_identifier() const {
 		s_->builder_->add_entity_identifier(token_);
@@ -111,6 +115,8 @@ public:
 		const lex::tokens::basic_token&) const {
 		throw expected_token(location, "identifier", token_->to_string());
 	}
+
+	using basic_state_visitor::operator();
 
 private:
 	state_result handle_identifier() const {
@@ -154,6 +160,8 @@ public:
 		throw expected_token(location, "'('", token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	expect_require_paren_state* s_;
 	const lex::token& token_;
@@ -188,6 +196,8 @@ public:
 		const lex::tokens::basic_token&) const {
 		throw expected_token(location, "module specifier", token_->to_string());
 	}
+
+	using basic_state_visitor::operator();
 
 private:
 	after_require_open_state* s_;
@@ -224,6 +234,8 @@ public:
 		throw expected_token(location, "')'", token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	after_require_module_state* s_;
 	const lex::token& token_;
@@ -234,17 +246,30 @@ class after_require_module_state::after_close_visitor
 public:
 	after_close_visitor(after_require_module_state* s,
 						const lex::source_location& loc,
-						const lex::token& /*token*/) noexcept
-		: basic_state_visitor(s, loc) {}
+						const lex::token& token) noexcept
+		: basic_state_visitor(s, loc), token_(token) {}
 
 	state_result operator()(const lex::tokens::semicolon_token&) const {
 		return state_result::complete(nullptr);
 	}
 
-	// ASI
-	state_result operator()(const lex::tokens::basic_token&) const {
+	state_result operator()(const lex::tokens::newline_token&) const {
+		return state_result::complete(nullptr);
+	}
+
+	state_result operator()(const lex::tokens::close_brace_token&) const {
 		return state_result::complete(nullptr).reprocess();
 	}
+
+	[[noreturn]] state_result operator()(
+		const lex::tokens::basic_token&) const {
+		throw expected_token(location, "';'", token_->to_string());
+	}
+
+	using basic_state_visitor::operator();
+
+private:
+	const lex::token& token_;
 };
 
 state_result after_require_module_state::process(parser& /*p*/,
@@ -272,8 +297,8 @@ class import_entity_state::after_id_visitor : public basic_state_visitor {
 public:
 	after_id_visitor(import_entity_state* s,
 					 const lex::source_location& loc,
-					 const lex::token& /*token*/) noexcept
-		: basic_state_visitor(s, loc), s_(s) {}
+					 const lex::token& token) noexcept
+		: basic_state_visitor(s, loc), s_(s), token_(token) {}
 
 	state_result operator()(const lex::tokens::dot_token&) const {
 		s_->expecting_id_ = true;
@@ -284,13 +309,24 @@ public:
 		return state_result::complete(nullptr);
 	}
 
-	// ASI
-	state_result operator()(const lex::tokens::basic_token&) const {
+	state_result operator()(const lex::tokens::newline_token&) const {
+		return state_result::complete(nullptr);
+	}
+
+	state_result operator()(const lex::tokens::close_brace_token&) const {
 		return state_result::complete(nullptr).reprocess();
 	}
 
+	[[noreturn]] state_result operator()(
+		const lex::tokens::basic_token&) const {
+		throw expected_token(location, "';'", token_->to_string());
+	}
+
+	using basic_state_visitor::operator();
+
 private:
 	import_entity_state* s_;
+	const lex::token& token_;
 };
 
 class import_entity_state::expect_id_visitor : public basic_state_visitor {
@@ -323,6 +359,8 @@ public:
 		const lex::tokens::basic_token&) const {
 		throw expected_token(location, "identifier", token_->to_string());
 	}
+
+	using basic_state_visitor::operator();
 
 private:
 	state_result handle_identifier() const {

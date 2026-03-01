@@ -18,6 +18,7 @@
 
 #include "type_argument_list_state.hpp"
 #include <tsclex/tokens/comma_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include <tsclex/tokens/greater_token.hpp>
 #include "../../error/expected_token.hpp"
 #include "../state_result.hpp"
@@ -32,6 +33,8 @@ type_argument_list_state::type_argument_list_state(
 
 state_result type_argument_list_state::process(parser& /*p*/,
 											   const lex::token& token) {
+	if (token.is<lex::tokens::newline_token>()) return state_result::stay();
+
 	if (!init_done_) {
 		init_done_ = true;
 		return state_result::push<type_expression_state>(ctx_).reprocess();

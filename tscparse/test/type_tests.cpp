@@ -1253,5 +1253,12 @@ TEST_CASE("type alias", "[parser][type]") {
 				test_utils::parse_source("type T = ();"),
 				tscc::parse::expected_token);
 		}
+
+		SECTION("same-line type aliases without semicolon (no ASI)") {
+			REQUIRE_THROWS_AS(
+				test_utils::parse_source(
+					"type X = string type Y = number"),
+				tscc::parse::expected_token);
+		}
 	}
 }

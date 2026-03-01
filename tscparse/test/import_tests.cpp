@@ -1271,6 +1271,28 @@ TEST_CASE("import", "[parser][import]") {
 			REQUIRE_FALSE(second_import->default_binding());
 		}
 
+		SECTION("ASI: multiline comment with newline triggers ASI") {
+			auto r = test_utils::parse_source(
+				"import \"x/y/z\" /** This\nis a comment */ import \"a/b/c\"");
+
+			REQUIRE(r.root != nullptr);
+			REQUIRE(r.root->children().size() == 2);
+
+			auto* first_import = dynamic_cast<
+				const tscc::parse::ast::import_node*>(
+				r.root->children()[0].get());
+			REQUIRE(first_import != nullptr);
+			REQUIRE(first_import->module_specifier());
+			REQUIRE(first_import->module_specifier().value() == "x/y/z");
+
+			auto* second_import = dynamic_cast<
+				const tscc::parse::ast::import_node*>(
+				r.root->children()[1].get());
+			REQUIRE(second_import != nullptr);
+			REQUIRE(second_import->module_specifier());
+			REQUIRE(second_import->module_specifier().value() == "a/b/c");
+		}
+
 		SECTION("ASI: import with bindings followed by another import") {
 			auto r = test_utils::parse_source(
 				"import foo from \"a\"\nimport bar from \"b\"");
@@ -1382,6 +1404,33 @@ TEST_CASE("import", "[parser][import]") {
 		SECTION("attribute missing value") {
 			REQUIRE_THROWS_AS(
 				parse_import("import foo from \"m\" with { type: }"),
+				tscc::parse::expected_token);
+		}
+
+		SECTION("same-line imports without semicolon (no ASI)") {
+			REQUIRE_THROWS_AS(
+				test_utils::parse_source("import \"a\" import \"b\""),
+				tscc::parse::expected_token);
+		}
+
+		SECTION("same-line binding imports without semicolon (no ASI)") {
+			REQUIRE_THROWS_AS(
+				test_utils::parse_source(
+					"import foo from \"a\" import bar from \"b\""),
+				tscc::parse::expected_token);
+		}
+
+		SECTION("same-line require imports without semicolon (no ASI)") {
+			REQUIRE_THROWS_AS(
+				test_utils::parse_source(
+					"import foo = require(\"x\") import bar = require(\"y\")"),
+				tscc::parse::expected_token);
+		}
+
+		SECTION("same-line entity imports without semicolon (no ASI)") {
+			REQUIRE_THROWS_AS(
+				test_utils::parse_source(
+					"import foo = A.B import bar = C.D"),
 				tscc::parse::expected_token);
 		}
 	}

@@ -169,7 +169,7 @@ def collect_reachable(graph, start, max_depth):
     visited = set()
     frontier = {start}
 
-    for depth in range(max_depth):
+    for _ in range(1, max_depth):
         next_frontier = set()
         for state in frontier:
             if state in visited:
@@ -198,8 +198,12 @@ def generate_dot(state_name, edges):
     lines = []
     lines.append(f'digraph "{state_name}" {{')
     lines.append("    rankdir=LR;")
-    lines.append('    node [shape=box, style=rounded, fontname="Helvetica"];')
-    lines.append('    edge [fontname="Helvetica", fontsize=10];')
+    lines.append("    concentrate=true;")
+    lines.append("    margin=0;")
+    lines.append("    ranksep=0.2;")
+    lines.append("    nodesep=0.1;")
+    lines.append('    node [shape=box, style=rounded, fontname="Helvetica", fontsize=9, margin="0.05,0.02"];')
+    lines.append('    edge [fontname="Helvetica", fontsize=8];')
     lines.append("")
 
     # Highlight the root state

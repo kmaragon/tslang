@@ -131,7 +131,7 @@ public:
 	bool operator==(const jsdoc_token& other) const;
 	bool operator!=(const jsdoc_token& other) const;
 
-	std::span<jsdoc_line> lines() const;
+	std::span<const jsdoc_line> lines() const;
 
 	std::string to_string() const override;
 

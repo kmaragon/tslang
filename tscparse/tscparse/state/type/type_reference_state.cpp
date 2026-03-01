@@ -18,6 +18,7 @@
 
 #include "type_reference_state.hpp"
 #include <tsclex/tokens/dot_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include <tsclex/tokens/less_token.hpp>
 #include "../../error/expected_token.hpp"
 #include "../state_result.hpp"
@@ -32,6 +33,8 @@ type_reference_state::type_reference_state(ast::type_context ctx)
 
 state_result type_reference_state::process(parser& /*p*/,
 										   const lex::token& token) {
+	if (token.is<lex::tokens::newline_token>()) return state_result::stay();
+
 	if (expect_segment_) {
 		if (!detail::can_be_identifier(token)) {
 			throw expected_token(token.location(), "identifier",

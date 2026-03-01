@@ -18,6 +18,7 @@
 
 #include "type_parameter_list_state.hpp"
 #include <tsclex/tokens/comma_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include <tsclex/tokens/greater_token.hpp>
 #include "../../ast/type/type_parameter_node.hpp"
 #include "../../error/expected_token.hpp"
@@ -33,6 +34,8 @@ type_parameter_list_state::type_parameter_list_state(
 
 state_result type_parameter_list_state::process(parser& /*p*/,
 												const lex::token& token) {
+	if (token.is<lex::tokens::newline_token>()) return state_result::stay();
+
 	if (!init_done_) {
 		init_done_ = true;
 		if (token.is<lex::tokens::greater_token>()) {

@@ -27,6 +27,11 @@ std::optional<state_result> parser_state::on_eof() {
 }
 
 state_result basic_state_visitor::operator()(
+	const lex::tokens::newline_token&) const {
+	return state_result::stay();
+}
+
+state_result basic_state_visitor::operator()(
 	const lex::tokens::basic_token&) const {
 	throw declaration_or_statement_expected(location);
 }

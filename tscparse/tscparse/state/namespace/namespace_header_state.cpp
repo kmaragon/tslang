@@ -18,6 +18,7 @@
 
 #include "namespace_header_state.hpp"
 #include <tsclex/tokens/dot_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include <tsclex/tokens/identifier_token.hpp>
 #include <tsclex/tokens/open_brace_token.hpp>
 #include "../../error/expected_token.hpp"
@@ -31,6 +32,8 @@ namespace_header_state::namespace_header_state(ast::namespace_node* node)
 
 state_result namespace_header_state::process(parser& /*p*/,
 											 const lex::token& token) {
+	if (token.is<lex::tokens::newline_token>()) return state_result::stay();
+
 	if (expect_segment_) {
 		if (!token.is<lex::tokens::identifier_token>()) {
 			throw expected_token(token.location(), "identifier",

@@ -317,6 +317,14 @@ private:
 	std::optional<all_tokens_t> token_;
 };
 
+template<typename T, typename... Args>
+constexpr token make_token(const source_location& location, Args&&... args) {
+	token result;
+	result.emplace_token<T>(location, std::forward<Args>(args)...);
+	return result;
+}
+
+
 }  // namespace tscc::lex
 
 #undef ALL_TOKEN_TYPES

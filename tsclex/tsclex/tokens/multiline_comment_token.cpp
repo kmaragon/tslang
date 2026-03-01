@@ -32,7 +32,7 @@ multiline_comment_token::multiline_comment_token(
 }
 
 bool multiline_comment_token::operator==(
-	const tscc::lex::tokens::multiline_comment_token& other) const {
+	const multiline_comment_token& other) const {
 	if (lines_.size() != other.lines_.size()) {
 		return false;
 	}
@@ -46,8 +46,12 @@ bool multiline_comment_token::operator==(
 }
 
 bool multiline_comment_token::operator!=(
-	const tscc::lex::tokens::multiline_comment_token& other) const {
+	const multiline_comment_token& other) const {
 	return !operator==(other);
+}
+
+const std::vector<std::string>& multiline_comment_token::lines() const {
+	return lines_;
 }
 
 std::string multiline_comment_token::to_string() const {

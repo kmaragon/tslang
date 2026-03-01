@@ -35,8 +35,9 @@ public:
 	bool operator==(const multiline_comment_token& other) const;
 	bool operator!=(const multiline_comment_token& other) const;
 
-	std::string to_string() const override;
+	const std::vector<std::string>& lines() const;
 
+	std::string to_string() const override;
 private:
 	std::vector<std::string> lines_;
 };

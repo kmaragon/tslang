@@ -312,6 +312,10 @@ bool jsdoc_token::operator!=(const jsdoc_token& other) const {
 	return !operator==(other);
 }
 
+std::span<const jsdoc_token::jsdoc_line> jsdoc_token::lines() const {
+	return lines_;
+}
+
 std::string jsdoc_token::to_string() const {
 	auto it = lines_.begin();
 	if (it == lines_.end())

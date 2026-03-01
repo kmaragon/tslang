@@ -18,6 +18,7 @@
 
 #include "type_parameter_state.hpp"
 #include <tsclex/tokens/eq_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include <tsclex/tokens/extends_token.hpp>
 #include <tsclex/tokens/in_token.hpp>
 #include <tsclex/tokens/out_token.hpp>
@@ -33,6 +34,8 @@ type_parameter_state::type_parameter_state() = default;
 
 state_result type_parameter_state::process(parser& /*p*/,
 										   const lex::token& token) {
+	if (token.is<lex::tokens::newline_token>()) return state_result::stay();
+
 	if (!has_name_) {
 		if (token.is<lex::tokens::in_token>()) {
 			if (in_token_) {

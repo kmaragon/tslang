@@ -93,6 +93,8 @@ public:
 			token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	state_result handle_identifier() const {
 		return state_result::push<after_default_state>(s_->builder_, token_);
@@ -135,6 +137,8 @@ public:
 		const lex::tokens::basic_token&) const {
 		throw expected_token(location, "identifier", token_->to_string());
 	}
+
+	using basic_state_visitor::operator();
 
 private:
 	state_result handle_name() const {
@@ -222,6 +226,8 @@ public:
 		throw expected_token(location, "identifier, '*', '{', or 'from'",
 							 token_->to_string());
 	}
+
+	using basic_state_visitor::operator();
 
 private:
 	state_result handle_identifier() const {

@@ -72,10 +72,8 @@ std::unique_ptr<ast::source_file_node> parser::parse() {
 		if (result.is_push()) {
 			state_stack_.emplace_back(std::move(result).take_child());
 			if (observer_) {
-				observer_->on_push(
-					*state_stack_[state_stack_.size() - 2],
-					token,
-					*state_stack_.back());
+				observer_->on_push(*state_stack_[state_stack_.size() - 2],
+								   token, *state_stack_.back());
 			}
 			if (should_advance) {
 				advance_token();
@@ -120,6 +118,10 @@ std::unique_ptr<ast::source_file_node> parser::parse() {
 }
 
 void parser::advance_token() {
+	if (synthetic_newline_) {
+		synthetic_newline_.reset();
+		return;
+	}
 	if (token_iter_ != token_end_) {
 		last_location_ = token_iter_->location();
 		++token_iter_;
@@ -127,10 +129,14 @@ void parser::advance_token() {
 }
 
 const lex::token& parser::current_token() const {
+	if (synthetic_newline_)
+		return *synthetic_newline_;
 	return *token_iter_;
 }
 
 bool parser::at_token_end() const {
+	if (synthetic_newline_)
+		return false;
 	return token_iter_ == token_end_;
 }
 
@@ -141,14 +147,37 @@ lex::token parser::consume_token() {
 }
 
 void parser::collect_trivia() {
-	while (!at_token_end()) {
-		bool is_trivia = current_token().visit([&](const auto& tok) {
+	while (token_iter_ != token_end_) {
+		bool is_trivia = token_iter_->visit([&](const auto& tok) {
 			using T = std::decay_t<decltype(tok)>;
-			if constexpr (std::is_same_v<T, lex::tokens::newline_token> ||
-						  std::is_same_v<T, lex::tokens::comment_token> ||
-						  std::is_same_v<
-							  T, lex::tokens::multiline_comment_token> ||
-						  std::is_same_v<T, lex::tokens::jsdoc_token>) {
+			if constexpr (std::is_same_v<T, lex::tokens::newline_token>) {
+				synthetic_newline_.emplace(
+					lex::make_token<lex::tokens::newline_token>(
+						token_iter_->location()));
+				pending_trivia_.emplace_back(std::move(*token_iter_));
+				return true;
+			} else if constexpr (std::is_same_v<
+									 T, lex::tokens::multiline_comment_token>) {
+				if (static_cast<const lex::tokens::multiline_comment_token&>(
+						tok)
+						.lines()
+						.size() > 1)
+					synthetic_newline_.emplace(
+						lex::make_token<lex::tokens::newline_token>(
+							token_iter_->location()));
+				pending_trivia_.emplace_back(std::move(*token_iter_));
+				return true;
+			} else if constexpr (std::is_same_v<T, lex::tokens::jsdoc_token>) {
+				if (static_cast<const lex::tokens::jsdoc_token&>(tok)
+						.lines()
+						.size() > 1)
+					synthetic_newline_.emplace(
+						lex::make_token<lex::tokens::newline_token>(
+							token_iter_->location()));
+				pending_trivia_.emplace_back(std::move(*token_iter_));
+				return true;
+			} else if constexpr (std::is_same_v<T,
+												lex::tokens::comment_token>) {
 				pending_trivia_.emplace_back(std::move(*token_iter_));
 				return true;
 			}
@@ -157,8 +186,12 @@ void parser::collect_trivia() {
 
 		if (!is_trivia)
 			break;
-		advance_token();
+		last_location_ = token_iter_->location();
+		++token_iter_;
 	}
+
+	if (token_iter_ == token_end_)
+		synthetic_newline_.reset();
 }
 
 void parser::flush_trivia(ast::ast_node* node) {
@@ -175,8 +208,8 @@ void parser::handle_complete(state::state_result result,
 							 const lex::token* triggering_token) {
 	auto node = std::move(result).take_node();
 	if (observer_) {
-		observer_->on_complete(
-			*state_stack_.back(), triggering_token, node.get());
+		observer_->on_complete(*state_stack_.back(), triggering_token,
+							   node.get());
 	}
 	state_stack_.pop_back();
 
@@ -195,8 +228,8 @@ void parser::handle_complete(state::state_result result,
 
 		node = std::move(accept).take_node();
 		if (observer_) {
-			observer_->on_cascade(
-				*state_stack_.back(), triggering_token, node.get());
+			observer_->on_cascade(*state_stack_.back(), triggering_token,
+								  node.get());
 		}
 		state_stack_.pop_back();
 	}
@@ -264,8 +297,7 @@ lex::token parser::expect_token(std::string_view token_name) {
 	}
 
 	if (!current_token().is<TokenType>()) {
-		throw expected_token(current_token().location(),
-							 token_name,
+		throw expected_token(current_token().location(), token_name,
 							 current_token()->to_string());
 	}
 

@@ -18,6 +18,7 @@
 
 #include "declare_module_header_state.hpp"
 #include <tsclex/tokens/constant_value_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include <tsclex/tokens/open_brace_token.hpp>
 #include "../../error/expected_token.hpp"
 #include "../state_result.hpp"
@@ -55,6 +56,8 @@ public:
 							 token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	const lex::token& token_;
 };
@@ -67,6 +70,8 @@ declare_module_header_state::declare_module_header_state(
 
 state_result declare_module_header_state::process(parser& /*p*/,
 												  const lex::token& token) {
+	if (token.is<lex::tokens::newline_token>()) return state_result::stay();
+
 	if (!has_name_) {
 		has_name_ = true;
 		token.visit(

@@ -43,6 +43,7 @@ private:
 
 	enum class mode { initial, awaiting_sub, post_sub };
 	mode mode_ = mode::initial;
+	bool saw_newline_ = false;
 
 	class initial_visitor;
 	class post_sub_visitor;

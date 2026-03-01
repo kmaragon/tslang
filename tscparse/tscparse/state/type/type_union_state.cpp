@@ -18,6 +18,7 @@
 
 #include "type_union_state.hpp"
 #include <tsclex/tokens/bar_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include "../../ast/type/union_type_node.hpp"
 #include "../state_result.hpp"
 #include "type_intersection_state.hpp"
@@ -28,6 +29,8 @@ type_union_state::type_union_state(ast::type_context ctx) : ctx_(ctx) {}
 
 state_result type_union_state::process(parser& /*p*/,
 									   const lex::token& token) {
+	if (token.is<lex::tokens::newline_token>()) return state_result::stay();
+
 	if (!init_done_) {
 		init_done_ = true;
 		if (token.is<lex::tokens::bar_token>()) {

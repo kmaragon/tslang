@@ -49,6 +49,8 @@ public:
 		throw expected_token(location, "'as'", token_->to_string());
 	}
 
+	using basic_state_visitor::operator();
+
 private:
 	expect_as_state* s_;
 	const lex::token& token_;
@@ -96,6 +98,8 @@ public:
 		const lex::tokens::basic_token&) const {
 		throw expected_token(location, "identifier", token_->to_string());
 	}
+
+	using basic_state_visitor::operator();
 
 private:
 	state_result handle_identifier() const {

@@ -18,6 +18,7 @@
 
 #include "type_header_state.hpp"
 #include <tsclex/tokens/eq_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include <tsclex/tokens/less_token.hpp>
 #include "../../error/expected_token.hpp"
 #include "../state_result.hpp"
@@ -32,6 +33,8 @@ type_header_state::type_header_state(ast::type_node* node)
 
 state_result type_header_state::process(parser& /*p*/,
 										const lex::token& token) {
+	if (token.is<lex::tokens::newline_token>()) return state_result::stay();
+
 	if (!has_name_) {
 		if (!detail::can_be_identifier(token)) {
 			throw expected_token(token.location(), "identifier",

@@ -1746,8 +1746,6 @@ auto nc = next_code_point(next);
 			auto start = location();
 			advance(gc + nc);
 
-			nc = next_code_point(next);
-
 			// read the identifier
 			wbuffer_.clear();
 			while (true) {

@@ -19,8 +19,11 @@
 #include "module_completion_states.hpp"
 #include <stdexcept>
 #include <tsclex/tokens/assert_token.hpp>
+#include <tsclex/tokens/close_brace_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include <tsclex/tokens/semicolon_token.hpp>
 #include <tsclex/tokens/with_token.hpp>
+#include "../../error/expected_token.hpp"
 #include "../state_result.hpp"
 #include "import_attributes_state.hpp"
 
@@ -48,10 +51,23 @@ public:
 		return push_attributes();
 	}
 
-	// ASI: any other token completes the import without consuming it
-	state_result operator()(const lex::tokens::basic_token&) const {
+	// with/assert can follow a newline, so record the newline and wait.
+	state_result operator()(const lex::tokens::newline_token&) const {
+		s_->saw_newline_ = true;
+		return state_result::stay();
+	}
+
+	state_result operator()(const lex::tokens::close_brace_token&) const {
 		return state_result::complete(nullptr).reprocess();
 	}
+
+	state_result operator()(const lex::tokens::basic_token&) const {
+		if (s_->saw_newline_)
+			return state_result::complete(nullptr).reprocess();
+		throw expected_token(location, "';'", token_->to_string());
+	}
+
+	using basic_state_visitor::operator();
 
 private:
 	state_result push_attributes() const {
@@ -68,17 +84,30 @@ class after_module_spec_state::post_sub_visitor : public basic_state_visitor {
 public:
 	post_sub_visitor(after_module_spec_state* s,
 					 const lex::source_location& loc,
-					 const lex::token& /*token*/) noexcept
-		: basic_state_visitor(s, loc) {}
+					 const lex::token& token) noexcept
+		: basic_state_visitor(s, loc), token_(token) {}
 
 	state_result operator()(const lex::tokens::semicolon_token&) const {
 		return state_result::complete(nullptr);
 	}
 
-	// ASI: any other token completes after attributes
-	state_result operator()(const lex::tokens::basic_token&) const {
+	state_result operator()(const lex::tokens::newline_token&) const {
+		return state_result::complete(nullptr);
+	}
+
+	state_result operator()(const lex::tokens::close_brace_token&) const {
 		return state_result::complete(nullptr).reprocess();
 	}
+
+	[[noreturn]] state_result operator()(
+		const lex::tokens::basic_token&) const {
+		throw expected_token(location, "';'", token_->to_string());
+	}
+
+	using basic_state_visitor::operator();
+
+private:
+	const lex::token& token_;
 };
 
 state_result after_module_spec_state::process(parser& /*p*/,

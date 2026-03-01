@@ -17,7 +17,10 @@
  */
 
 #include "type_state.hpp"
+#include <tsclex/tokens/close_brace_token.hpp>
+#include <tsclex/tokens/newline_token.hpp>
 #include <tsclex/tokens/semicolon_token.hpp>
+#include "../error/expected_token.hpp"
 #include "state_result.hpp"
 #include "type/type_expression_state.hpp"
 #include "type/type_header_state.hpp"
@@ -49,8 +52,17 @@ state_result type_state::process(parser& /*p*/, const lex::token& token) {
 		return state_result::complete(std::move(node_));
 	}
 
-	// ASI: complete without consuming the token.
-	return state_result::complete(std::move(node_)).reprocess();
+	// ASI rule 1: newline triggers semicolon insertion.
+	if (token.is<lex::tokens::newline_token>()) {
+		return state_result::complete(std::move(node_));
+	}
+
+	// ASI rule 2: closing brace triggers semicolon insertion.
+	if (token.is<lex::tokens::close_brace_token>()) {
+		return state_result::complete(std::move(node_)).reprocess();
+	}
+
+	throw expected_token(token.location(), "';'", token->to_string());
 }
 
 accept_result type_state::accept_child(std::unique_ptr<ast::ast_node> child) {
