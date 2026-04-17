@@ -47,10 +47,7 @@ void import_node_builder::init_named_imports() {
 void import_node_builder::add_named_specifier(lex::token name,
 											  lex::token type_keyword,
 											  lex::token alias) {
-	detail::normalize_identifier(name);
-	if (alias)
-		detail::normalize_identifier(alias);
-	ast::import_specifier spec;
+	ast::named_specifier spec;
 	spec.name_ = std::move(name);
 	spec.type_keyword_ = std::move(type_keyword);
 	spec.alias_ = std::move(alias);

@@ -18,12 +18,25 @@
 
 #include "declare_module_state.hpp"
 #include <tsclex/tokens/close_brace_token.hpp>
+#include "../../ast/exportable_node.hpp"
+#include "../../error/export_assignment_conflicts.hpp"
 #include "../module_scope_visitor.hpp"
 #include "../state_result.hpp"
 #include "declare_module_header_state.hpp"
 
 using namespace tscc;
 using namespace tscc::parse::state;
+
+namespace {
+
+const lex::token* named_export_keyword(const parse::ast::ast_node& node) {
+	if (!parse::ast::ast_node::is_exportable(node.node_kind()))
+		return nullptr;
+	return static_cast<const parse::ast::exportable_node&>(node)
+		.export_keyword();
+}
+
+}  // namespace
 
 declare_module_state::declare_module_state(lex::token declare_keyword,
 										   lex::token module_keyword)
@@ -54,7 +67,19 @@ accept_result declare_module_state::accept_child(
 		return accept_result::stay();
 	}
 
-	child = node_->adopt_child(std::move(child));
-	node_->children_.emplace_back(std::move(child));
+	if (child->node_kind() == parse::ast::ast_node::kind::export_assignment) {
+		if (has_export_assignment_ || has_named_export_ || has_default_export_)
+			throw export_assignment_conflicts(
+				static_cast<const parse::ast::exportable_node&>(*child)
+					.export_keyword()->location());
+		has_export_assignment_ = true;
+	} else if (auto* ek = named_export_keyword(*child)) {
+		if (has_export_assignment_)
+			throw export_assignment_conflicts(ek->location());
+		has_named_export_ = true;
+	}
+	// TODO: check for export_default_node (TS2309, TS2528)
+
+	node_->children_.emplace_back(node_->adopt_child(std::move(child)));
 	return accept_result::stay();
 }

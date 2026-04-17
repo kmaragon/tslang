@@ -1,8 +1,5 @@
 # TSCC — A TypeScript Compiler {#mainpage}
 
-TSCC is a C++23 TypeScript compiler targeting the latest TypeScript specification.
-The long-term goal is a TypeScript-to-machine-code compiler that can eventually be
-ported back into TypeScript itself.
 
 ## Components
 

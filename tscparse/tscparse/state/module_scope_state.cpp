@@ -17,10 +17,23 @@
  */
 
 #include "module_scope_state.hpp"
+#include "../ast/exportable_node.hpp"
+#include "../error/export_assignment_conflicts.hpp"
 #include "module_scope_visitor.hpp"
 
 using namespace tscc;
 using namespace tscc::parse::state;
+
+namespace {
+
+const lex::token* named_export_keyword(const parse::ast::ast_node& node) {
+	if (!parse::ast::ast_node::is_exportable(node.node_kind()))
+		return nullptr;
+	return static_cast<const parse::ast::exportable_node&>(node)
+		.export_keyword();
+}
+
+}  // namespace
 
 module_scope_state::module_scope_state(ast::module_node* target)
 	: target_(target) {}
@@ -32,7 +45,19 @@ state_result module_scope_state::process(parser& /*p*/,
 
 accept_result module_scope_state::accept_child(
 	std::unique_ptr<ast::ast_node> child) {
-	child = target_->adopt_child(std::move(child));
+	if (child->node_kind() == parse::ast::ast_node::kind::export_assignment) {
+		if (has_export_assignment_ || has_named_export_ || has_default_export_)
+			throw export_assignment_conflicts(
+				static_cast<const parse::ast::exportable_node&>(*child)
+					.export_keyword()->location());
+		has_export_assignment_ = true;
+	} else if (auto* ek = named_export_keyword(*child)) {
+		if (has_export_assignment_)
+			throw export_assignment_conflicts(ek->location());
+		has_named_export_ = true;
+	}
+	// TODO: check for export_default_node (TS2309, TS2528)
+
 	target_->children_.emplace_back(target_->adopt_child(std::move(child)));
 	return accept_result::stay();
 }

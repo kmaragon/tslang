@@ -44,6 +44,9 @@ public:
 private:
 	std::unique_ptr<ast::declare_module_node> node_;
 	bool header_done_ = false;
+	bool has_export_assignment_ = false;
+	bool has_default_export_ = false;
+	bool has_named_export_ = false;
 };
 
 }  // namespace tscc::parse::state

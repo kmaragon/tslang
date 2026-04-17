@@ -22,6 +22,7 @@
 #include <cmath>
 #include <cstring>
 #include <tsccore/regex/scan_regex.hpp>
+#include <tsccore/xml.hpp>
 #include "error/conflicting_regex_flags.hpp"
 #include "error/duplicate_regex_flag.hpp"
 #include "error/expected_command.hpp"
@@ -1702,9 +1703,12 @@ void lexer::scan_jsx_attribute_part(token& into) {
 
 			advance(nc);
 			if (next == quote_char) {
-				// end of the quote
-				into.emplace_token<tokens::jsx_attribute_value_token>(
-					location(), wbuffer_, (char)quote_char);
+				try {
+					into.emplace_token<tokens::jsx_attribute_value_token>(
+						location(), wbuffer_, (char)quote_char);
+				} catch (const invalid_xml_character& e) {
+					throw invalid_character(attribute_start + 1 + e.position());
+				}
 				context_stack_.pop_back();
 				return;
 			}
@@ -1795,6 +1799,7 @@ auto nc = next_code_point(next);
 	}
 
 	wbuffer_.clear();
+	auto text_start = location();
 	while (true) {
 		nc = next_code_point(next);
 		if (!nc) {
@@ -1812,13 +1817,20 @@ auto nc = next_code_point(next);
 				gpos_.advance_line();
 			}
 		} else if (next == '{') {
-			// we have a token starting
-			into.emplace_token<tokens::jsx_text_token>(location(),
-													   std::move(wbuffer_));
+			try {
+				into.emplace_token<tokens::jsx_text_token>(location(),
+														   std::move(wbuffer_));
+			} catch (const invalid_xml_character& e) {
+				throw invalid_character(text_start + e.position());
+			}
 			return;
 		} else if (next == '<') {
-			into.emplace_token<tokens::jsx_text_token>(location(),
-													   std::move(wbuffer_));
+			try {
+				into.emplace_token<tokens::jsx_text_token>(location(),
+														   std::move(wbuffer_));
+			} catch (const invalid_xml_character& e) {
+				throw invalid_character(text_start + e.position());
+			}
 			return;
 		}
 

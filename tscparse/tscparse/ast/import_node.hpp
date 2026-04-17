@@ -22,57 +22,16 @@
 #include <tsclex/token.hpp>
 #include <variant>
 #include <vector>
-#include "ast_node.hpp"
+#include "exportable_node.hpp"
 #include "lexeme.hpp"
+#include "named_specifier.hpp"
 #include "qualified_name.hpp"
 
 namespace tscc::parse::state {
 class import_node_builder;
-class export_state;
 }
 
 namespace tscc::parse::ast {
-
-/**
- * \brief A single specifier within a named import list
- *
- * Represents one element inside braces: [type] name [as alias]
- *
- * The name field holds an identifier_token (contextual keywords are
- * normalized), a constant_value_token (string literal), or a
- * default_token. The alias, when present, is always an identifier_token.
- */
-class import_specifier {
-	friend class state::import_node_builder;
-
-	lex::token name_;
-	lex::token type_keyword_;
-	lex::token alias_;
-
-public:
-	/**
-	 * \brief Get the specifier name as a lexeme
-	 *
-	 * Returns an invalid lexeme when the name is `default` —
-	 * use is_default() for that case.
-	 */
-	[[nodiscard]] lexeme<std::string_view> name() const;
-
-	/**
-	 * \brief Whether this specifier uses the `default` keyword as its name
-	 */
-	[[nodiscard]] bool is_default() const noexcept;
-
-	/**
-	 * \brief Get the type-only modifier keyword, if present
-	 */
-	[[nodiscard]] const lex::token* type_keyword() const noexcept;
-
-	/**
-	 * \brief Get the alias binding after `as`, if present
-	 */
-	[[nodiscard]] lexeme<std::string_view> alias() const;
-};
 
 /**
  * \brief A single key: value pair in an import attributes clause
@@ -131,9 +90,8 @@ public:
  * Import equals (namespace alias):
  *   import [type] name = Qualified.Name;
  */
-class import_node : public ast_node {
+class import_node : public exportable_node {
 	friend class state::import_node_builder;
-	friend class state::export_state;
 
 public:
 	/**
@@ -142,12 +100,6 @@ public:
 	explicit import_node(lex::token import_keyword);
 
 	kind node_kind() const noexcept override { return kind::import_kind; }
-
-	/**
-	 * \brief Get the `export` keyword token, if present
-	 * \return Pointer to the token, or nullptr if no `export` prefix
-	 */
-	const lex::token* export_keyword() const noexcept;
 
 	/**
 	 * \brief Get the import keyword token
@@ -172,7 +124,7 @@ public:
 	/**
 	 * \brief Get all specifiers in the named import list
 	 */
-	const std::vector<import_specifier>& named_specifiers() const noexcept;
+	const std::vector<named_specifier>& named_specifiers() const noexcept;
 
 	/**
 	 * \brief Get the module specifier string literal, if present
@@ -221,7 +173,7 @@ private:
 		};
 
 		struct named_binding {
-			std::vector<import_specifier> specifiers;
+			std::vector<named_specifier> specifiers;
 		};
 
 		std::variant<std::monostate, namespace_binding, named_binding>
@@ -251,7 +203,6 @@ private:
 	equals_form::require_data& ensure_require();
 	attributes_data& ensure_attributes();
 
-	lex::token export_keyword_;
 	lex::token import_keyword_;
 	std::optional<lex::token> type_keyword_;
 	std::variant<std::monostate, side_effect_form, from_form, equals_form>

@@ -1,8 +1,13 @@
 
 set(SOURCES
         tscparse/ast/declare_module_node.cpp
+        tscparse/ast/export_assignment_node.cpp
+        tscparse/ast/export_star_node.cpp
+        tscparse/ast/exportable_node.cpp
+        tscparse/ast/named_export_node.cpp
         tscparse/ast/import_node.cpp
         tscparse/ast/module_node.cpp
+        tscparse/ast/named_specifier.cpp
         tscparse/ast/namespace_node.cpp
         tscparse/ast/qualified_name.cpp
         tscparse/ast/source_file_node.cpp
@@ -18,10 +23,19 @@ set(SOURCES
         tscparse/ast/type/union_type_node.cpp
         tscparse/error/declare_in_ambient_context.cpp
         tscparse/error/declaration_or_statement_expected.cpp
+        tscparse/error/duplicate_default_export.cpp
         tscparse/error/expected_token.cpp
+        tscparse/error/export_assignment_conflicts.cpp
+        tscparse/error/export_assignment_not_at_top_level.cpp
+        tscparse/error/export_default_not_at_top_level.cpp
         tscparse/error/unexpected_end_of_text.cpp
         tscparse/state/declare/declare_module_header_state.cpp
         tscparse/state/declare/declare_module_state.cpp
+        tscparse/state/export/export_assignment_state.cpp
+        tscparse/state/export/export_star_chain_states.cpp
+        tscparse/state/export/export_star_state.cpp
+        tscparse/state/export/named_export_chain_states.cpp
+        tscparse/state/export/named_export_state.cpp
         tscparse/state/import/binding_import_states.cpp
         tscparse/state/import/equals_import_states.cpp
         tscparse/state/import/from_clause_states.cpp
@@ -32,6 +46,11 @@ set(SOURCES
         tscparse/state/import/named_import_state.cpp
         tscparse/state/import/namespace_import_states.cpp
         tscparse/state/namespace/namespace_header_state.cpp
+        tscparse/state/specifier/specifier_alias_state.cpp
+        tscparse/state/specifier/specifier_head_state.cpp
+        tscparse/state/specifier/specifier_list_state.cpp
+        tscparse/state/specifier/specifier_resolve_type_state.cpp
+        tscparse/state/specifier/specifier_state.cpp
         tscparse/state/type/type_argument_list_state.cpp
         tscparse/state/type/type_expression_state.cpp
         tscparse/state/type/type_header_state.cpp
@@ -60,10 +79,15 @@ set(SOURCES
 set(HEADERS
         tscparse/ast/ast_node.hpp
         tscparse/ast/declare_module_node.hpp
+        tscparse/ast/export_assignment_node.hpp
+        tscparse/ast/export_star_node.hpp
+        tscparse/ast/exportable_node.hpp
+        tscparse/ast/named_export_node.hpp
         tscparse/ast/import_node.hpp
         tscparse/ast/lexeme.hpp
         tscparse/ast/lexeme_visitors.ipp
         tscparse/ast/module_node.hpp
+        tscparse/ast/named_specifier.hpp
         tscparse/ast/namespace_node.hpp
         tscparse/ast/qualified_name.hpp
         tscparse/ast/source_file_node.hpp
@@ -81,8 +105,17 @@ set(HEADERS
         tscparse/ast/type/union_type_node.hpp
         tscparse/error/declare_in_ambient_context.hpp
         tscparse/error/declaration_or_statement_expected.hpp
+        tscparse/error/duplicate_default_export.hpp
         tscparse/error/expected_token.hpp
+        tscparse/error/export_assignment_conflicts.hpp
+        tscparse/error/export_assignment_not_at_top_level.hpp
+        tscparse/error/export_default_not_at_top_level.hpp
         tscparse/error/unexpected_end_of_text.hpp
+        tscparse/state/export/export_assignment_state.hpp
+        tscparse/state/export/export_star_chain_states.hpp
+        tscparse/state/export/export_star_state.hpp
+        tscparse/state/export/named_export_chain_states.hpp
+        tscparse/state/export/named_export_state.hpp
         tscparse/state/import/binding_import_states.hpp
         tscparse/state/import/equals_import_states.hpp
         tscparse/state/import/from_clause_states.hpp
@@ -93,6 +126,11 @@ set(HEADERS
         tscparse/state/import/named_import_state.hpp
         tscparse/state/import/namespace_import_states.hpp
         tscparse/state/namespace/namespace_header_state.hpp
+        tscparse/state/specifier/specifier_alias_state.hpp
+        tscparse/state/specifier/specifier_head_state.hpp
+        tscparse/state/specifier/specifier_list_state.hpp
+        tscparse/state/specifier/specifier_resolve_type_state.hpp
+        tscparse/state/specifier/specifier_state.hpp
         tscparse/state/type/type_argument_list_state.hpp
         tscparse/state/type/type_expression_state.hpp
         tscparse/state/type/type_header_state.hpp

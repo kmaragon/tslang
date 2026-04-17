@@ -23,10 +23,6 @@ using namespace tscc::parse::ast;
 type_node::type_node(lex::token type_keyword)
 	: type_keyword_(std::move(type_keyword)) {}
 
-const tscc::lex::token* type_node::export_keyword() const noexcept {
-	return export_keyword_ ? &export_keyword_ : nullptr;
-}
-
 const tscc::lex::token* type_node::declare_keyword() const noexcept {
 	return declare_keyword_ ? &declare_keyword_ : nullptr;
 }

@@ -17,6 +17,7 @@
  */
 
 #include <tscfakes/test_common.hpp>
+#include <tsclex/error/invalid_character.hpp>
 
 TEST_CASE("JSX Tokens", "[lexer]") {
 	auto [file, source, create_lexer, tokenize] = test_utils::create_test_setup();
@@ -397,6 +398,28 @@ TEST_CASE("JSX Tokens", "[lexer]") {
 			auto lexer = create_lexer("<div onClick={unterminated");
 			REQUIRE_THROWS(
 				std::vector<tscc::lex::token>{lexer.begin(), lexer.end()});
+		}
+
+		SECTION("Invalid XML character reference in text") {
+			auto lexer = create_lexer("<div>&#xD800;</div>");
+			REQUIRE_THROWS_AS(
+				(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()}),
+				tscc::lex::invalid_character);
+		}
+
+		SECTION("Invalid XML character reference in attribute") {
+			auto lexer =
+				create_lexer(R"(<div title="&#xD800;">text</div>)");
+			REQUIRE_THROWS_AS(
+				(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()}),
+				tscc::lex::invalid_character);
+		}
+
+		SECTION("Null character reference in text") {
+			auto lexer = create_lexer("<div>&#0;</div>");
+			REQUIRE_THROWS_AS(
+				(std::vector<tscc::lex::token>{lexer.begin(), lexer.end()}),
+				tscc::lex::invalid_character);
 		}
 	}
 }

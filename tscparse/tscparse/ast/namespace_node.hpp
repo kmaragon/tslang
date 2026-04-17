@@ -25,7 +25,6 @@
 namespace tscc::parse::state {
 class namespace_state;
 class namespace_header_state;
-class export_state;
 }  // namespace tscc::parse::state
 
 namespace tscc::parse::ast {
@@ -45,18 +44,11 @@ namespace tscc::parse::ast {
 class namespace_node final : public module_node {
 	friend class state::namespace_state;
 	friend class state::namespace_header_state;
-	friend class state::export_state;
 
 public:
 	explicit namespace_node(lex::token keyword);
 
 	kind node_kind() const noexcept override;
-
-	/**
-	 * \brief Get the `export` keyword token, if present
-	 * \return Pointer to the token, or nullptr if no `export` prefix
-	 */
-	[[nodiscard]] const lex::token* export_keyword() const noexcept;
 
 	/**
 	 * \brief Get the `declare` keyword token, if present
@@ -81,7 +73,6 @@ public:
 
 private:
 
-	lex::token export_keyword_;
 	lex::token declare_keyword_;
 	lex::token keyword_;
 	qualified_name name_;

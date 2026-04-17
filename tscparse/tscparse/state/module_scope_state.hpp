@@ -43,6 +43,9 @@ public:
 
 private:
 	ast::module_node* target_;
+	bool has_export_assignment_ = false;
+	bool has_default_export_ = false;
+	bool has_named_export_ = false;
 };
 
 }  // namespace tscc::parse::state

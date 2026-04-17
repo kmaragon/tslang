@@ -20,25 +20,6 @@
 
 using namespace tscc::parse::ast;
 
-lexeme<std::string_view> import_specifier::name() const {
-	if (name_.is<lex::tokens::default_token>())
-		return {};
-	return {&name_};
-}
-
-bool import_specifier::is_default() const noexcept {
-	return name_.is<lex::tokens::default_token>();
-}
-
-const tscc::lex::token* import_specifier::type_keyword() const noexcept {
-	return type_keyword_ ? &type_keyword_ : nullptr;
-}
-
-lexeme<std::string_view> import_specifier::alias() const {
-	return alias_ ? lexeme<std::string_view>{&alias_}
-				  : lexeme<std::string_view>{};
-}
-
 lexeme<std::string_view> import_attribute::key() const {
 	return {&key_};
 }
@@ -82,10 +63,6 @@ import_node::attributes_data& import_node::ensure_attributes() {
 import_node::import_node(lex::token import_keyword)
 	: import_keyword_(std::move(import_keyword)) {}
 
-const tscc::lex::token* import_node::export_keyword() const noexcept {
-	return export_keyword_ ? &export_keyword_ : nullptr;
-}
-
 const tscc::lex::token* import_node::import_keyword() const noexcept {
 	return &import_keyword_;
 }
@@ -111,7 +88,7 @@ lexeme<std::string_view> import_node::namespace_name() const {
 	return {};
 }
 
-const std::vector<import_specifier>& import_node::named_specifiers()
+const std::vector<named_specifier>& import_node::named_specifiers()
 	const noexcept {
 	auto* f = std::get_if<from_form>(&form_);
 	if (f) {
@@ -119,7 +96,7 @@ const std::vector<import_specifier>& import_node::named_specifiers()
 		if (n)
 			return n->specifiers;
 	}
-	static const std::vector<import_specifier> empty;
+	static const std::vector<named_specifier> empty;
 	return empty;
 }
 

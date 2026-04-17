@@ -32,7 +32,7 @@ namespace tscc::parse::state {
  */
 class export_state : public parser_state {
 public:
-	explicit export_state(lex::token export_keyword);
+	export_state(lex::token export_keyword, bool module_like);
 
 	state_result process(parser& p, const lex::token& token) override;
 
@@ -40,6 +40,7 @@ public:
 
 private:
 	lex::token export_keyword_;
+	bool module_like_;
 };
 
 }  // namespace tscc::parse::state

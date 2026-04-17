@@ -88,7 +88,7 @@ public:
 	}
 
 	state_result operator()(const lex::tokens::export_token&) const {
-		return state_result::push<export_state>(token_);
+		return state_result::push<export_state>(token_, module_like_);
 	}
 
 	state_result operator()(const lex::tokens::type_token&) const {

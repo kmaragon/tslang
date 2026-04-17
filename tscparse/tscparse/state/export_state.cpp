@@ -17,15 +17,23 @@
  */
 
 #include "export_state.hpp"
+#include <tsclex/tokens/asterisk_token.hpp>
 #include <tsclex/tokens/declare_token.hpp>
+#include <tsclex/tokens/default_token.hpp>
+#include <tsclex/tokens/eq_token.hpp>
 #include <tsclex/tokens/import_token.hpp>
 #include <tsclex/tokens/module_token.hpp>
 #include <tsclex/tokens/namespace_token.hpp>
+#include <tsclex/tokens/open_brace_token.hpp>
 #include <tsclex/tokens/type_token.hpp>
-#include "../ast/import_node.hpp"
-#include "../ast/namespace_node.hpp"
-#include "../ast/type_node.hpp"
+#include "../ast/exportable_node.hpp"
+#include "../error/declaration_or_statement_expected.hpp"
+#include "../error/export_assignment_not_at_top_level.hpp"
+#include "../error/export_default_not_at_top_level.hpp"
 #include "declare_state.hpp"
+#include "export/export_assignment_state.hpp"
+#include "export/export_star_state.hpp"
+#include "export/named_export_state.hpp"
 #include "import_state.hpp"
 #include "namespace_state.hpp"
 #include "state_result.hpp"
@@ -47,8 +55,11 @@ class export_visitor : public basic_state_visitor {
 public:
 	export_visitor(parser_state* s,
 				   const lex::source_location& loc,
-				   const lex::token& token) noexcept
-		: basic_state_visitor(s, loc), token_(token) {}
+				   const lex::token& token,
+				   bool module_like) noexcept
+		: basic_state_visitor(s, loc),
+		  token_(token),
+		  module_like_(module_like) {}
 
 	state_result operator()(const lex::tokens::type_token&) const {
 		return state_result::push<type_state>(token_);
@@ -70,6 +81,27 @@ public:
 		return state_result::push<declare_state>(token_);
 	}
 
+	state_result operator()(const lex::tokens::default_token&) const {
+		if (!module_like_)
+			throw export_default_not_at_top_level(location);
+		// TODO: push export_default_state
+		throw declaration_or_statement_expected(location);
+	}
+
+	state_result operator()(const lex::tokens::eq_token&) const {
+		if (!module_like_)
+			throw export_assignment_not_at_top_level(location);
+		return state_result::push<export_assignment_state>(token_);
+	}
+
+	state_result operator()(const lex::tokens::asterisk_token&) const {
+		return state_result::push<export_star_state>(token_);
+	}
+
+	state_result operator()(const lex::tokens::open_brace_token&) const {
+		return state_result::push<named_export_state>();
+	}
+
 	using basic_state_visitor::operator();
 
 	// TODO: Add handlers for tokens valid after `export`:
@@ -78,32 +110,28 @@ public:
 	// - interface_token -> push interface_declaration_state
 	// - enum_token -> push enum_declaration_state
 	// - const_token, let_token, var_token -> push variable_declaration_state
-	// - default_token -> push export_default_state
-	// - open_brace_token -> push named_exports_state
-	// - asterisk_token -> push export_star_state
-	// - equals_token -> push export_assignment_state
 	// - async_token -> push async_function_declaration_state
 	// - abstract_token -> push abstract_class_declaration_state
 
 private:
 	const lex::token& token_;
+	bool module_like_;
 };
 
 }  // namespace
 
-export_state::export_state(lex::token export_keyword)
-	: export_keyword_(std::move(export_keyword)) {}
+export_state::export_state(lex::token export_keyword, bool module_like)
+	: export_keyword_(std::move(export_keyword)), module_like_(module_like) {}
 
 state_result export_state::process(parser& /*p*/, const lex::token& token) {
-	return token.visit(export_visitor{this, token.location(), token});
+	return token.visit(
+		export_visitor{this, token.location(), token, module_like_});
 }
 
 accept_result export_state::accept_child(std::unique_ptr<ast::ast_node> child) {
-	if (auto* t = dynamic_cast<ast::type_node*>(child.get()))
-		t->export_keyword_ = std::move(export_keyword_);
-	else if (auto* ns = dynamic_cast<ast::namespace_node*>(child.get()))
-		ns->export_keyword_ = std::move(export_keyword_);
-	else if (auto* imp = dynamic_cast<ast::import_node*>(child.get()))
-		imp->export_keyword_ = std::move(export_keyword_);
+	if (ast::ast_node::is_exportable(child->node_kind())) {
+		static_cast<ast::exportable_node*>(child.get())
+			->set_export_keyword(std::move(export_keyword_));
+}
 	return accept_result::complete(std::move(child));
 }

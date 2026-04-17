@@ -20,7 +20,7 @@
 
 #include <memory>
 #include <vector>
-#include "ast_node.hpp"
+#include "exportable_node.hpp"
 
 namespace tscc::parse::state {
 class module_scope_state;
@@ -36,7 +36,7 @@ namespace tscc::parse::ast {
  * (root) and future declare_module_node inherit from this to share the
  * container and accessor.
  */
-class module_node : public ast_node {
+class module_node : public exportable_node {
 public:
 	/**
 	 * \brief Get the declarations in this module scope

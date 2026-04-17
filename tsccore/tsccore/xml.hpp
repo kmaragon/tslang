@@ -17,12 +17,49 @@
  */
 
 #pragma once
+#include <cstddef>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
 namespace tscc {
 
-std::u32string xml_decode(const std::u32string_view& input);
-std::u32string xml_encode(const std::u32string_view& input);
+/**
+ * \brief Policy for handling characters outside the XML Char production
+ *
+ * XML 1.0 restricts legal characters to:
+ *   #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]
+ *
+ * This enum controls what happens when encode encounters a codepoint
+ * outside that range, or when decode encounters a numeric character
+ * reference to such a codepoint.
+ */
+enum class xml_invalid_char {
+	throw_exception,
+	drop,
+};
+
+/**
+ * \brief Thrown when an invalid XML character is encountered
+ */
+class invalid_xml_character : public std::runtime_error {
+public:
+	invalid_xml_character(char32_t codepoint, std::size_t position);
+
+	char32_t codepoint() const noexcept { return codepoint_; }
+	std::size_t position() const noexcept { return position_; }
+
+private:
+	char32_t codepoint_;
+	std::size_t position_;
+};
+
+std::u32string xml_decode(
+	const std::u32string_view& input,
+	xml_invalid_char policy = xml_invalid_char::throw_exception);
+
+std::u32string xml_encode(
+	const std::u32string_view& input,
+	xml_invalid_char policy = xml_invalid_char::throw_exception);
 
 }

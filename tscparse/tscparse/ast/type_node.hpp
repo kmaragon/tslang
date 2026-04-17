@@ -21,7 +21,7 @@
 #include <memory>
 #include <vector>
 #include <tsclex/token.hpp>
-#include "ast_node.hpp"
+#include "exportable_node.hpp"
 #include "lexeme.hpp"
 #include "type/type_definition.hpp"
 #include "type/type_parameter_node.hpp"
@@ -30,7 +30,6 @@ namespace tscc::parse::state {
 class type_state;
 class type_header_state;
 class type_parameter_list_state;
-class export_state;
 }
 
 namespace tscc::parse::ast {
@@ -41,22 +40,15 @@ namespace tscc::parse::ast {
  * Represents `type Foo<T> = SomeType;` declarations.
  * Supports optional `declare` prefix and optional type parameters.
  */
-class type_node final : public ast_node {
+class type_node final : public exportable_node {
 	friend class state::type_state;
 	friend class state::type_header_state;
 	friend class state::type_parameter_list_state;
-	friend class state::export_state;
 
 public:
 	explicit type_node(lex::token type_keyword);
 
 	kind node_kind() const noexcept override { return kind::type; }
-
-	/**
-	 * \brief Get the `export` keyword token, if present
-	 * \return Pointer to the token, or nullptr if no `export` prefix
-	 */
-	[[nodiscard]] const lex::token* export_keyword() const noexcept;
 
 	/**
 	 * \brief Get the `declare` keyword token, if present
@@ -91,7 +83,6 @@ public:
 	[[nodiscard]] bool ambient() const noexcept;
 
 private:
-	lex::token export_keyword_;
 	lex::token declare_keyword_;
 	lex::token type_keyword_;
 	lex::token name_;
